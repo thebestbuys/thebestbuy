@@ -1,7 +1,4 @@
-// product-card.jsx — cartes produit (hero + secondaire)
-
-function ProductImage({ product, size = 'normal' }) {
-  // Mockup: forme abstraite colorée pour chaque catégorie
+export function ProductImage({ product, size = 'normal' }) {
   const cat = product.category;
   const c = product.color;
 
@@ -13,8 +10,8 @@ function ProductImage({ product, size = 'normal' }) {
           <div className="phone-notch" />
           <div className="phone-camera" />
         </div>
-      </div>);
-
+      </div>
+    );
   }
   if (cat === 'laptop') {
     return (
@@ -23,8 +20,8 @@ function ProductImage({ product, size = 'normal' }) {
           <div className="laptop-screen" style={{ background: c }} />
           <div className="laptop-base" />
         </div>
-      </div>);
-
+      </div>
+    );
   }
   return (
     <div className="prod-img-wrap" data-size={size}>
@@ -33,41 +30,51 @@ function ProductImage({ product, size = 'normal' }) {
         <div className="hp-cup hp-cup-l" />
         <div className="hp-cup hp-cup-r" />
       </div>
-    </div>);
-
+    </div>
+  );
 }
 
-function Stars({ rating }) {
+export function Stars({ rating }) {
   const full = Math.floor(rating);
   const half = rating - full >= 0.4;
   return (
     <span className="stars" aria-label={`${rating} sur 5`}>
-      {[0, 1, 2, 3, 4].map((i) =>
-      <span key={i} className={'star ' + (i < full ? 'full' : i === full && half ? 'half' : 'empty')}>★</span>
-      )}
-    </span>);
-
+      {[0, 1, 2, 3, 4].map((i) => (
+        <span key={i} className={'star ' + (i < full ? 'full' : i === full && half ? 'half' : 'empty')}>★</span>
+      ))}
+    </span>
+  );
 }
 
-function ScoreRing({ score, size = 64 }) {
+export function ScoreRing({ score, size = 64 }) {
   const r = (size - 8) / 2;
   const circ = 2 * Math.PI * r;
-  const dash = score / 100 * circ;
+  const dash = (score / 100) * circ;
   const color = score >= 85 ? 'var(--accent-good)' : score >= 70 ? 'var(--accent)' : 'var(--text-muted)';
   return (
-    <div className="score-ring" style={{ width: 64, height: 64 }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ width: "64px", height: "64px" }}>
+    <div className="score-ring" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ width: size, height: size }}>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(0,0,0,.07)" strokeWidth="3" />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth="3"
-        strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
-        transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth="3"
+          strokeDasharray={`${dash} ${circ}`}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
       </svg>
-      <div className="score-ring-num" style={{ fontSize: size * 0.32 }}>{score}<span className="score-pct">%</span></div>
-    </div>);
-
+      <div className="score-ring-num" style={{ fontSize: size * 0.32 }}>
+        {score}<span className="score-pct">%</span>
+      </div>
+    </div>
+  );
 }
 
-function HeroCard({ product, density, onSelect }) {
+export function HeroCard({ product, density, onSelect }) {
   return (
     <article className={'hero-card density-' + density} onClick={() => onSelect(product)}>
       <div className="hero-badge">
@@ -92,7 +99,7 @@ function HeroCard({ product, density, onSelect }) {
               <span className="price-num">{product.price.toLocaleString('fr-FR')}</span>
               <span className="price-currency">€</span>
             </div>
-            <button className="btn-primary" onClick={(e) => {e.stopPropagation();onSelect(product);}}>
+            <button className="btn-primary" onClick={(e) => { e.stopPropagation(); onSelect(product); }}>
               Voir détails
               <span className="btn-arrow">→</span>
             </button>
@@ -103,11 +110,11 @@ function HeroCard({ product, density, onSelect }) {
           <div className="hero-score-label">match</div>
         </div>
       </div>
-    </article>);
-
+    </article>
+  );
 }
 
-function SmallCard({ product, rank, density, onSelect }) {
+export function SmallCard({ product, rank, density, onSelect }) {
   return (
     <article className={'small-card density-' + density} onClick={() => onSelect(product)}>
       <div className="small-rank">#{rank}</div>
@@ -130,12 +137,6 @@ function SmallCard({ product, rank, density, onSelect }) {
           </div>
         </div>
       </div>
-    </article>);
-
+    </article>
+  );
 }
-
-window.HeroCard = HeroCard;
-window.SmallCard = SmallCard;
-window.ProductImage = ProductImage;
-window.ScoreRing = ScoreRing;
-window.Stars = Stars;

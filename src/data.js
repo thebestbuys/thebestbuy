@@ -1,12 +1,10 @@
-// data.jsx — produits + questions par catégorie
-
-const CATEGORIES = [
+export const CATEGORIES = [
   { id: 'phone', label: 'Smartphone', icon: '◰' },
   { id: 'laptop', label: 'Ordinateur portable', icon: '▭' },
   { id: 'headphones', label: 'Casque audio', icon: '◯' },
 ];
 
-const QUESTIONS = {
+export const QUESTIONS = {
   phone: [
     {
       id: 'usage',
@@ -20,7 +18,7 @@ const QUESTIONS = {
     },
     {
       id: 'budget',
-      text: "Quel budget envisagez-vous ?",
+      text: 'Quel budget envisagez-vous ?',
       choices: [
         { id: 'low', label: 'Moins de 500 €', max: 500 },
         { id: 'mid', label: '500 – 900 €', min: 500, max: 900 },
@@ -41,7 +39,7 @@ const QUESTIONS = {
   laptop: [
     {
       id: 'usage',
-      text: "Pour quel usage principal ?",
+      text: 'Pour quel usage principal ?',
       choices: [
         { id: 'creative', label: 'Création (vidéo, design)', tags: ['creative'] },
         { id: 'dev', label: 'Développement / data', tags: ['perf', 'dev'] },
@@ -51,7 +49,7 @@ const QUESTIONS = {
     },
     {
       id: 'portability',
-      text: "Quelle importance pour la portabilité ?",
+      text: 'Quelle importance pour la portabilité ?',
       choices: [
         { id: 'ultra', label: 'Très portable (< 1.4 kg)', tags: ['portable'] },
         { id: 'mid', label: 'Équilibré', tags: ['balanced'] },
@@ -60,7 +58,7 @@ const QUESTIONS = {
     },
     {
       id: 'budget',
-      text: "Quel budget envisagez-vous ?",
+      text: 'Quel budget envisagez-vous ?',
       choices: [
         { id: 'low', label: 'Moins de 1 000 €', max: 1000 },
         { id: 'mid', label: '1 000 – 1 800 €', min: 1000, max: 1800 },
@@ -72,7 +70,7 @@ const QUESTIONS = {
   headphones: [
     {
       id: 'type',
-      text: "Quel format préférez-vous ?",
+      text: 'Quel format préférez-vous ?',
       choices: [
         { id: 'over', label: 'Casque circum-aural', tags: ['over'] },
         { id: 'in', label: 'Écouteurs intra-auriculaires', tags: ['in'] },
@@ -81,7 +79,7 @@ const QUESTIONS = {
     },
     {
       id: 'priority',
-      text: "Quelle est votre priorité ?",
+      text: 'Quelle est votre priorité ?',
       choices: [
         { id: 'anc', label: 'Réduction de bruit', tags: ['anc'] },
         { id: 'audio', label: 'Qualité audio audiophile', tags: ['audio'] },
@@ -91,7 +89,7 @@ const QUESTIONS = {
     },
     {
       id: 'budget',
-      text: "Quel budget envisagez-vous ?",
+      text: 'Quel budget envisagez-vous ?',
       choices: [
         { id: 'low', label: 'Moins de 150 €', max: 150 },
         { id: 'mid', label: '150 – 300 €', min: 150, max: 300 },
@@ -102,7 +100,7 @@ const QUESTIONS = {
   ],
 };
 
-const PRODUCTS = {
+export const PRODUCTS = {
   phone: [
     {
       id: 'p1', brand: 'Aurora', model: 'Aurora 15 Pro', price: 1229,
@@ -254,7 +252,3 @@ const PRODUCTS = {
     },
   ],
 };
-
-window.CATEGORIES = CATEGORIES;
-window.QUESTIONS = QUESTIONS;
-window.PRODUCTS = PRODUCTS;

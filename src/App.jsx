@@ -1,8 +1,16 @@
-// app.jsx — orchestrateur principal
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { CATEGORIES, PRODUCTS } from './data.js';
+import { rankByPreferences } from './scoring.js';
+import { askAI } from './lib/askAI.js';
+import ChatPanel from './components/ChatPanel.jsx';
+import { HeroCard, ProductImage, ScoreRing, SmallCard, Stars } from './components/ProductCard.jsx';
+import {
+  TweakRadio,
+  TweakSection,
+  TweaksPanel,
+  useTweaks,
+} from './components/TweaksPanel.jsx';
 
-const { useState, useEffect, useMemo, useRef } = React;
-
-// Mots-clés pour détecter la catégorie depuis la requête libre
 const CATEGORY_KEYWORDS = {
   phone: ['téléphone', 'telephone', 'smartphone', 'phone', 'iphone', 'mobile', 'portable android', 'samsung galaxy', 'pixel'],
   laptop: ['ordinateur', 'laptop', 'pc portable', 'macbook', 'pc', 'notebook', 'ultrabook'],
@@ -18,10 +26,10 @@ function detectCategory(query) {
 }
 
 function CategoryPicker({ onPick }) {
-  const [query, setQuery] = React.useState('');
-  const inputRef = React.useRef(null);
+  const [query, setQuery] = useState('');
+  const inputRef = useRef(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
@@ -164,7 +172,7 @@ function ProductDetail({ product, onClose, onBuy }) {
   );
 }
 
-function App() {
+export default function App() {
   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
     "chatLayout": "bubbles",
     "heroVariant": "wide",
@@ -175,96 +183,96 @@ function App() {
 
   const [category, setCategory] = useState(null);
   const [initialQuery, setInitialQuery] = useState('');
-  const [answers, setAnswers] = useState({});
   const [messages, setMessages] = useState([]);
-  const [questionIdx, setQuestionIdx] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [preferences, setPreferences] = useState({ tags: [], budget_max: null, budget_min: null });
   const [isTyping, setIsTyping] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selected, setSelected] = useState(null);
+  const [done, setDone] = useState(false);
+  const [turnCount, setTurnCount] = useState(0);
 
-  const questions = category ? window.QUESTIONS[category] : [];
-  const products = category ? window.PRODUCTS[category].map(p => ({ ...p, category })) : [];
-  const currentQuestion = !isTyping && questionIdx < questions.length ? questions[questionIdx] : null;
-  const allDone = category && questionIdx >= questions.length;
-  const progress = category ? Math.min(100, Math.round((questionIdx / questions.length) * 100)) : 0;
-
-  // Démarre la conversation
-  useEffect(() => {
-    if (!category) return;
-    const cat = window.CATEGORIES.find(c => c.id === category);
-    const initialMsgs = [];
-    if (initialQuery) {
-      initialMsgs.push({ role: 'user', text: initialQuery });
-    }
-    initialMsgs.push({
-      role: 'bot',
-      text: initialQuery
-        ? `Compris — je cherche dans la catégorie ${cat.label.toLowerCase()}. Quelques questions pour affiner :`
-        : `Parfait, on cherche un ${cat.label.toLowerCase()}. Je vais vous poser quelques questions pour affiner.`
-    });
-    setMessages(initialMsgs);
-    setIsTyping(true);
-    const t1 = setTimeout(() => {
-      setMessages(m => [...m, { role: 'bot', text: questions[0].text }]);
-      setIsTyping(false);
-    }, 900);
-    return () => clearTimeout(t1);
-  }, [category]);
+  const products = useMemo(
+    () => (category ? PRODUCTS[category].map((p) => ({ ...p, category })) : []),
+    [category],
+  );
 
   const ranked = useMemo(() => {
     if (!category) return [];
-    return window.rankProducts(products, answers, questions).slice(0, 5);
-  }, [category, answers, refreshKey]);
+    return rankByPreferences(products, preferences).slice(0, 5);
+  }, [category, products, preferences, refreshKey]);
 
-  const handleAnswer = (qId, choice) => {
-    setMessages(m => [...m, { role: 'user', text: choice.label }]);
-    setAnswers(a => ({ ...a, [qId]: choice.id }));
-    setRefreshKey(k => k + 1);
+  const progress = done ? 100 : Math.min(90, turnCount * 22);
 
-    const nextIdx = questionIdx + 1;
+  const runTurn = async (history) => {
     setIsTyping(true);
-    setTimeout(() => {
-      if (nextIdx < questions.length) {
-        setMessages(m => [...m, { role: 'bot', text: questions[nextIdx].text }]);
-        setQuestionIdx(nextIdx);
-      } else {
-        setMessages(m => [...m, { role: 'bot', text: "Voilà ma sélection sur la droite. La carte mise en avant est mon meilleur match. Vous pouvez cliquer sur n'importe quel produit pour voir le détail." }]);
-        setQuestionIdx(nextIdx);
+    setCurrentQuestion(null);
+    try {
+      const result = await askAI({ messages: history, category });
+      const reply = result?.reply || '…';
+      setMessages((m) => [...m, { role: 'bot', text: reply }]);
+      if (result?.preferences && typeof result.preferences === 'object') {
+        setPreferences(result.preferences);
       }
+      if (result?.action === 'recommend') {
+        setDone(true);
+        setCurrentQuestion(null);
+      } else if (result?.question && Array.isArray(result.question.choices)) {
+        setCurrentQuestion(result.question);
+      } else {
+        setCurrentQuestion(null);
+      }
+      setRefreshKey((k) => k + 1);
+    } catch (e) {
+      setMessages((m) => [...m, {
+        role: 'bot',
+        text: `Désolé, le service de recommandation n'a pas répondu (${e.message}). Réessayez ou rafraîchissez la page.`,
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 800);
+    }
   };
 
-  const handleFreeText = (txt) => {
-    setMessages(m => [...m, { role: 'user', text: txt }]);
-    setIsTyping(true);
-    setTimeout(() => {
-      setMessages(m => [...m, {
-        role: 'bot',
-        text: allDone
-          ? "Bien noté, j'ajuste les recommandations. Souhaitez-vous reprendre le questionnaire ?"
-          : "Merci, je tiens compte de cette précision. Voici la question suivante :"
-      }]);
-      setIsTyping(false);
-    }, 700);
+  useEffect(() => {
+    if (!category) return;
+    const initial = initialQuery
+      ? [{ role: 'user', text: initialQuery }]
+      : [{ role: 'user', text: `Je cherche un ${CATEGORIES.find((c) => c.id === category).label.toLowerCase()}.` }];
+    setMessages(initial);
+    runTurn(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
+
+  const sendUserMessage = (text) => {
+    const next = [...messages, { role: 'user', text }];
+    setMessages(next);
+    setTurnCount((c) => c + 1);
+    runTurn(next);
   };
+
+  const handleAnswer = (_qId, choice) => sendUserMessage(choice.label);
+  const handleFreeText = (txt) => sendUserMessage(txt);
 
   const handleRestart = () => {
     setCategory(null);
     setInitialQuery('');
-    setAnswers({});
     setMessages([]);
-    setQuestionIdx(0);
+    setCurrentQuestion(null);
+    setPreferences({ tags: [], budget_max: null, budget_min: null });
     setIsTyping(false);
     setSelected(null);
+    setDone(false);
+    setTurnCount(0);
   };
 
   const handleBuy = (p) => {
     setSelected(null);
-    setMessages(m => [...m, { role: 'bot', text: `Je vous redirige vers le ${p.model} chez notre marchand partenaire ✓` }]);
+    setMessages((m) => [...m, { role: 'bot', text: `Je vous redirige vers le ${p.model} chez notre marchand partenaire ✓` }]);
   };
 
-  if (!category) return <CategoryPicker onPick={(cat, q) => { setCategory(cat); setInitialQuery(q || ''); }} />;
+  if (!category) {
+    return <CategoryPicker onPick={(cat, q) => { setCategory(cat); setInitialQuery(q || ''); }} />;
+  }
 
   const top = ranked[0];
   const rest = ranked.slice(1, 5);
@@ -287,12 +295,11 @@ function App() {
           <div>
             <div className="results-eyebrow">Top 5 sélection</div>
             <h2 className="results-title">
-              {window.CATEGORIES.find(c => c.id === category).label}s {' '}
-              <span className="results-count">· {Object.keys(answers).length}/{questions.length} critères</span>
+              {CATEGORIES.find((c) => c.id === category).label}s
             </h2>
           </div>
           <div className="results-meta">
-            {allDone ? "Sélection finalisée" : "Affinage en cours…"}
+            {done ? 'Sélection finalisée' : 'Affinage en cours…'}
           </div>
         </header>
 
@@ -352,5 +359,3 @@ function App() {
     </div>
   );
 }
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);

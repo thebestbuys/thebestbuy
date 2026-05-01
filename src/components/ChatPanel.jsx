@@ -1,40 +1,39 @@
-import { useRef, useState, useEffect } from 'react';
-import type { Message, Question } from '../types';
+import { useEffect, useRef, useState } from 'react';
 
-interface Props {
-  messages: Message[];
-  currentQuestion: Question | null;
-  onAnswer: (qId: string, choice: Question['choices'][number]) => void;
-  onFreeText: (text: string) => void;
-  onRestart: () => void;
-  isTyping: boolean;
-  progress: number;
-}
-
-function ChatBubble({ role, text }: { role: Message['role']; text: string }) {
+function ChatBubble({ role, children, layout }) {
+  if (layout === 'list') {
+    return (
+      <div className={'chat-list-row role-' + role}>
+        <div className="chat-list-tag">{role === 'bot' ? 'Assistant' : 'Vous'}</div>
+        <div className="chat-list-text">{children}</div>
+      </div>
+    );
+  }
   return (
-    <div className={`chat-bubble role-${role}`}>
-      <div className="chat-bubble-text">{text}</div>
+    <div className={'chat-bubble role-' + role}>
+      <div className="chat-bubble-text">{children}</div>
     </div>
   );
 }
 
-function TypingDots() {
+function TypingDots({ layout }) {
+  if (layout === 'list') {
+    return (
+      <div className="chat-list-row role-bot">
+        <div className="chat-list-tag">Assistant</div>
+        <div className="chat-list-text"><span className="typing"><i/><i/><i/></span></div>
+      </div>
+    );
+  }
   return (
     <div className="chat-bubble role-bot">
-      <div className="chat-bubble-text">
-        <span className="typing">
-          <i /><i /><i />
-        </span>
-      </div>
+      <div className="chat-bubble-text"><span className="typing"><i/><i/><i/></span></div>
     </div>
   );
 }
 
-export function ChatPanel({
-  messages, currentQuestion, onAnswer, onFreeText, onRestart, isTyping, progress,
-}: Props) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, isTyping, layout, progress }) {
+  const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
 
   useEffect(() => {
@@ -43,7 +42,7 @@ export function ChatPanel({
     }
   }, [messages, isTyping, currentQuestion]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const submit = (e) => {
     e.preventDefault();
     if (!freeText.trim()) return;
     onFreeText(freeText.trim());
@@ -51,7 +50,7 @@ export function ChatPanel({
   };
 
   return (
-    <aside className="chat-panel">
+    <aside className="chat-panel" data-layout={layout}>
       <header className="chat-header">
         <div className="chat-header-left">
           <div className="chat-avatar">
@@ -75,17 +74,14 @@ export function ChatPanel({
 
       <div ref={scrollRef} className="chat-stream">
         {messages.map((m, i) => (
-          <ChatBubble key={i} role={m.role} text={m.text} />
+          <ChatBubble key={i} role={m.role} layout={layout}>{m.text}</ChatBubble>
         ))}
-        {isTyping && <TypingDots />}
+        {isTyping && <TypingDots layout={layout} />}
+
         {!isTyping && currentQuestion && (
           <div className="chat-choices">
             {currentQuestion.choices.map((c) => (
-              <button
-                key={c.id}
-                className="choice-chip"
-                onClick={() => onAnswer(currentQuestion.id, c)}
-              >
+              <button key={c.id} className="choice-chip" onClick={() => onAnswer(currentQuestion.id, c)}>
                 {c.label}
               </button>
             ))}
@@ -93,7 +89,7 @@ export function ChatPanel({
         )}
       </div>
 
-      <form className="chat-input" onSubmit={handleSubmit}>
+      <form className="chat-input" onSubmit={submit}>
         <input
           type="text"
           placeholder={currentQuestion ? 'Ou écrivez votre réponse…' : 'Précisez vos critères…'}
@@ -102,11 +98,7 @@ export function ChatPanel({
         />
         <button type="submit" disabled={!freeText.trim()} aria-label="Envoyer">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path
-              d="M2 8 L14 8 M9 3 L14 8 L9 13"
-              stroke="currentColor" strokeWidth="1.6"
-              strokeLinecap="round" strokeLinejoin="round"
-            />
+            <path d="M2 8 L14 8 M9 3 L14 8 L9 13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
       </form>
