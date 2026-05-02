@@ -1,7 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { PRODUCTS } from "../data.js";
+import { rankByPreferences } from "../scoring.js";
+import { askAI } from "../lib/askAI.js";
 
 // Which search variant to ship: 'A' = Premium Search, 'B' = Hey-Jordan Hub.
 const VARIANT = "B";
+
+const CATEGORY_KEYWORDS = {
+  phone: ["phone", "iphone", "smartphone", "mobile", "téléphone", "telephone", "pixel"],
+  laptop: ["laptop", "macbook", "pc", "notebook", "ultrabook", "ordinateur", "gaming", "computer"],
+  headphones: ["headphone", "headphones", "earbud", "earbuds", "airpod", "airpods", "casque", "écouteur", "ecouteur", "audio", "wireless"],
+};
+
+function detectCategory(query) {
+  const q = (query || "").toLowerCase();
+  for (const [cat, kws] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (kws.some((k) => q.includes(k))) return cat;
+  }
+  return null;
+}
 
 const BB = {
   coral: "#F26B4E",
@@ -133,45 +150,12 @@ function Chip({ children, onClick, variant = "soft", icon }) {
   );
 }
 
-function makeScript(query) {
-  const q = query || "wireless headphones";
-  return [
-    {
-      role: "user",
-      text: `I'm looking for ${q}, can you help me find a good one?`,
-    },
-    {
-      role: "ai",
-      text: `Of course — happy to help! 😊  To narrow it down, what will you mostly use them for?`,
-      chips: ["Daily commute", "Working from home", "Workouts", "Travel"],
-    },
-    { role: "user", text: `Mostly daily commute.` },
-    {
-      role: "ai",
-      text: `Got it. Commuting usually means noisy trains and buses — how important is active noise cancellation?`,
-      chips: ["Must-have", "Nice to have", "Doesn't matter"],
-    },
-    { role: "user", text: `Must-have, definitely.` },
-    {
-      role: "ai",
-      text: `Perfect. Last one — what's a comfortable budget?`,
-      chips: ["Under $150", "$150–$300", "$300+"],
-    },
-    { role: "user", text: `Around $150–$300.` },
-    {
-      role: "ai",
-      text: `Great — based on what you told me, here's my top pick:`,
-      card: true,
-    },
-    {
-      role: "ai",
-      text: `Does this match what you had in mind, or should we keep looking?`,
-      actions: ["Perfect, thanks!", "Keep searching"],
-    },
-  ];
-}
-
-function ProductCard() {
+function ProductCard({ product }) {
+  const brand = product?.brand || "Sonara Audio";
+  const model = product?.model || "Sonara Hush Pro — Over-Ear ANC";
+  const price = product?.price;
+  const rating = product?.rating ?? 4.8;
+  const reviews = product?.reviews ?? 2300;
   return (
     <div
       style={{
@@ -236,7 +220,7 @@ function ProductCard() {
             textTransform: "uppercase",
           }}
         >
-          Sonara Audio
+          {brand}
         </div>
         <div
           style={{
@@ -247,7 +231,7 @@ function ProductCard() {
             lineHeight: 1.25,
           }}
         >
-          Sonara Hush Pro — Over-Ear ANC
+          {model}
         </div>
         <div
           style={{
@@ -260,7 +244,7 @@ function ProductCard() {
           }}
         >
           <span style={{ color: BB.amber }}>★★★★★</span>
-          <span>4.8 · 2.3k reviews</span>
+          <span>{rating.toFixed(1)} · {(reviews / 1000).toFixed(1)}k reviews</span>
         </div>
         <div
           style={{
@@ -272,17 +256,7 @@ function ProductCard() {
         >
           <div>
             <span style={{ fontSize: 18, fontWeight: 800, color: BB.ink }}>
-              $229
-            </span>
-            <span
-              style={{
-                fontSize: 12,
-                color: BB.inkMute,
-                marginLeft: 6,
-                textDecoration: "line-through",
-              }}
-            >
-              $279
+              {price != null ? `${price.toLocaleString("fr-FR")} €` : "$229"}
             </span>
           </div>
           <button
@@ -308,57 +282,103 @@ function ProductCard() {
 }
 
 function ChatScreen({ query, onBack, accent = BB.coral }) {
-  const script = useMemo(() => makeScript(query), [query]);
-  const [step, setStep] = useState(0);
+  const category = useMemo(() => detectCategory(query), [query]);
+  const [messages, setMessages] = useState(() =>
+    query ? [{ role: "user", text: query }] : [],
+  );
+  const [preferences, setPreferences] = useState({
+    tags: [],
+    budget_max: null,
+    budget_min: null,
+  });
   const [typing, setTyping] = useState(false);
   const [done, setDone] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [input, setInput] = useState("");
   const scrollRef = useRef(null);
+  const initRan = useRef(false);
+
+  const runTurn = async (history) => {
+    setTyping(true);
+    try {
+      const result = await askAI({ messages: history, category });
+      const reply = result?.reply || "…";
+      const chips =
+        result?.action === "ask" &&
+        Array.isArray(result?.question?.choices) &&
+        result.question.choices.length
+          ? result.question.choices.map((c) => c.label)
+          : undefined;
+      const isRecommend = result?.action === "recommend";
+      const aiMsg = {
+        role: "ai",
+        text: reply,
+        chips,
+        card: isRecommend,
+        actions: isRecommend ? ["Perfect, thanks!", "Keep searching"] : undefined,
+      };
+      setMessages((m) => [...m, aiMsg]);
+      if (result?.preferences && typeof result.preferences === "object") {
+        setPreferences(result.preferences);
+      }
+      if (isRecommend) setDone(true);
+    } catch (e) {
+      setMessages((m) => [
+        ...m,
+        {
+          role: "ai",
+          text: `Sorry — the recommendation service didn't respond (${e.message}). Try again or restart.`,
+        },
+      ]);
+    } finally {
+      setTyping(false);
+    }
+  };
 
   useEffect(() => {
-    let t1, t2;
-    if (step === 0) {
-      t1 = setTimeout(() => {
-        setTyping(true);
-        t2 = setTimeout(() => {
-          setTyping(false);
-          setStep(1);
-        }, 1100);
-      }, 500);
-    }
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
+    if (initRan.current) return;
+    initRan.current = true;
+    const initial = query
+      ? [{ role: "user", text: query }]
+      : [{ role: "user", text: "I'm looking for a product, can you help?" }];
+    runTurn(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const advanceUser = () => {
-    const nextAi = script.findIndex((m, i) => i > step && m.role === "ai");
-    setStep(step + 1);
-    setTimeout(() => setTyping(true), 250);
-    setTimeout(() => {
-      setTyping(false);
-      setStep(nextAi >= 0 ? nextAi : step + 2);
-    }, 250 + 1200);
-  };
 
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [step, typing]);
+  }, [messages, typing]);
 
-  const messages = script.slice(0, step + 1);
-  const isLastStep = step >= script.length - 1;
-  const showInputBar = !isLastStep && !done;
-
-  const handleChip = () => {
-    if (typing || done) return;
-    advanceUser();
+  const sendUser = (text) => {
+    if (typing || done || !text.trim()) return;
+    const next = [...messages, { role: "user", text: text.trim() }];
+    setMessages(next);
+    runTurn(next);
   };
+
+  const handleChip = (label) => sendUser(label);
   const handleAction = (label) => {
     setFeedback(label);
-    setDone(true);
+    if (label.toLowerCase().includes("keep")) {
+      setDone(false);
+      sendUser("Let's keep looking for other options.");
+    }
   };
+  const handleSubmitInput = (e) => {
+    e.preventDefault();
+    sendUser(input);
+    setInput("");
+  };
+
+  const showInputBar = !done;
+
+  const topProduct = useMemo(() => {
+    if (!category) return null;
+    const list = PRODUCTS[category]?.map((p) => ({ ...p, category })) || [];
+    if (!list.length) return null;
+    return rankByPreferences(list, preferences)[0];
+  }, [category, preferences]);
 
   return (
     <div
@@ -466,9 +486,10 @@ function ChatScreen({ query, onBack, accent = BB.coral }) {
             key={i}
             msg={m}
             accent={accent}
-            onChip={() => i === messages.length - 1 && handleChip()}
+            product={m.card ? topProduct : null}
+            onChip={(c) => i === messages.length - 1 && handleChip(c)}
             onAction={(a) => i === messages.length - 1 && handleAction(a)}
-            interactive={i === messages.length - 1 && !typing && !done}
+            interactive={i === messages.length - 1 && !typing}
           />
         ))}
         {typing && <TypingDots />}
@@ -476,7 +497,8 @@ function ChatScreen({ query, onBack, accent = BB.coral }) {
       </div>
 
       {showInputBar && (
-        <div
+        <form
+          onSubmit={handleSubmitInput}
           style={{
             padding: "10px 12px 12px",
             borderTop: `1px solid ${BB.line}`,
@@ -486,43 +508,60 @@ function ChatScreen({ query, onBack, accent = BB.coral }) {
             gap: 8,
           }}
         >
-          <div
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={typing ? "Thinking…" : "Type a message…"}
+            disabled={typing}
             style={{
               flex: 1,
               height: 40,
               borderRadius: 999,
+              border: 0,
+              outline: "none",
               background: BB.cream,
-              display: "flex",
-              alignItems: "center",
-              padding: "0 14px",
-              color: BB.inkMute,
+              padding: "0 16px",
+              color: BB.ink,
               fontSize: 13,
+              fontFamily: BB.body,
+              minWidth: 0,
             }}
-          >
-            Type a message…
-          </div>
+          />
           <button
+            type="submit"
+            disabled={typing || !input.trim()}
             style={{
               width: 40,
               height: 40,
               borderRadius: "50%",
               border: 0,
-              background: BB.cream,
+              background: input.trim() && !typing ? BB.coral : BB.cream,
+              color: input.trim() && !typing ? "#fff" : BB.inkMute,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              cursor: "pointer",
+              cursor: input.trim() && !typing ? "pointer" : "default",
+              transition: "background 0.15s",
             }}
+            aria-label="Send"
           >
-            <MicIcon />
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path
+                d="M2 7h10M8 3l4 4-4 4"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
-        </div>
+        </form>
       )}
     </div>
   );
 }
 
-function Bubble({ msg, accent, onChip, onAction, interactive }) {
+function Bubble({ msg, accent, product, onChip, onAction, interactive }) {
   const isUser = msg.role === "user";
   return (
     <div
@@ -553,7 +592,7 @@ function Bubble({ msg, accent, onChip, onAction, interactive }) {
       </div>
       {msg.card && (
         <div style={{ width: "88%", maxWidth: 280 }}>
-          <ProductCard />
+          <ProductCard product={product} />
         </div>
       )}
       {msg.chips && interactive && (
