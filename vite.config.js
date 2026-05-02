@@ -8,6 +8,9 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    // Relative asset URLs so the Capacitor webview can load them from the
+    // file:// (or capacitor://) scheme. Harmless for the web build too.
+    base: './',
     plugins: [
       react(),
       {

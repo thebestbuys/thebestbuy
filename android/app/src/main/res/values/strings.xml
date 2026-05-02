@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BestBuys</string>
+    <string name="title_activity_main">BestBuys</string>
+    <string name="package_name">com.bestbuys.app</string>
+    <string name="custom_url_scheme">com.bestbuys.app</string>
+</resources>
