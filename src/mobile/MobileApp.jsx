@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { askAI, enrichProduct } from "../lib/askAI.js";
 
 // Which search variant to ship: 'A' = Premium Search, 'B' = Hey-Jordan Hub.
@@ -1181,7 +1181,7 @@ export default function MobileApp() {
           opacity: transitioning ? 0 : 1,
           transform: transitioning ? "scale(0.985)" : "scale(1)",
           transition: "opacity 0.22s ease, transform 0.22s ease",
-          "padding-top": "45px",
+          paddingTop: "45px",
         }}
       >
         {view === "search" ? (

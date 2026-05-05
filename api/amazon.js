@@ -1,6 +1,14 @@
 const AFFILIATE_TAG = 'bestbuys007-21';
 
+function setCors(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Max-Age', '86400');
+}
+
 function send(res, status, payload) {
+  setCors(res);
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify(payload));
@@ -72,6 +80,12 @@ async function searchAmazonFr(query) {
 }
 
 export default async function handler(req, res) {
+  if (req.method === 'OPTIONS') {
+    setCors(res);
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
   if (req.method !== 'GET') return send(res, 405, { error: 'Method not allowed' });
 
   const q = req.query?.q;

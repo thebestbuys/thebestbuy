@@ -10,7 +10,15 @@ async function readBody(req) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
+function setCors(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Max-Age', '86400');
+}
+
 function send(res, status, payload) {
+  setCors(res);
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify(payload));
@@ -70,6 +78,12 @@ function toGeminiContents(messages) {
 }
 
 export default async function handler(req, res) {
+  if (req.method === 'OPTIONS') {
+    setCors(res);
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
   if (req.method !== 'POST') {
     return send(res, 405, { error: 'Method not allowed' });
   }
