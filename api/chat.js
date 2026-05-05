@@ -1,7 +1,7 @@
 import { PRODUCTS } from '../src/data.js';
 
-const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-const MODEL = 'gpt-4o-mini';
+const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 async function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
@@ -55,14 +55,23 @@ FORMAT DE RÉPONSE: tu dois répondre UNIQUEMENT avec un objet JSON valide de ce
 }`;
 }
 
+// Convert OpenAI-style messages [{role, content}] to Gemini contents format.
+// Gemini roles are "user" and "model"; "assistant" maps to "model".
+function toGeminiContents(messages) {
+  return messages.map((m) => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }],
+  }));
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return send(res, 405, { error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return send(res, 500, { error: 'OPENAI_API_KEY not configured on server' });
+    return send(res, 500, { error: 'GEMINI_API_KEY not configured on server' });
   }
 
   let body;
@@ -78,25 +87,22 @@ export default async function handler(req, res) {
   }
   const products = (category && PRODUCTS[category]) || [];
 
-  const systemMessage = { role: 'system', content: buildSystemPrompt(category, products) };
-
   let upstream;
   try {
-    upstream = await fetch(OPENAI_URL, {
+    upstream = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: MODEL,
-        messages: [systemMessage, ...messages],
-        response_format: { type: 'json_object' },
-        temperature: 0.5,
+        systemInstruction: { parts: [{ text: buildSystemPrompt(category, products) }] },
+        contents: toGeminiContents(messages),
+        generationConfig: {
+          temperature: 0.5,
+          responseMimeType: 'application/json',
+        },
       }),
     });
   } catch (e) {
-    return send(res, 502, { error: 'Network error reaching OpenAI', detail: String(e) });
+    return send(res, 502, { error: 'Network error reaching Gemini', detail: String(e) });
   }
 
   if (!upstream.ok) {
@@ -111,9 +117,9 @@ export default async function handler(req, res) {
     return send(res, 502, { error: 'Upstream returned non-JSON' });
   }
 
-  const content = json.choices?.[0]?.message?.content;
+  const content = json.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!content) {
-    return send(res, 502, { error: 'No content in OpenAI response' });
+    return send(res, 502, { error: 'No content in Gemini response' });
   }
 
   let parsed;

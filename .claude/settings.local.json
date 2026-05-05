@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(cd /d \"e:\\\\WS\\\\git\\\\thebestbuy\")",
+      "Bash(npm run *)"
     ]
   }
 }
