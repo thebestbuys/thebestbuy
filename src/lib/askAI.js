@@ -19,7 +19,7 @@ export async function askAI({ messages, category }) {
     let detail = '';
     try {
       const errBody = await res.json();
-      detail = errBody.error || JSON.stringify(errBody);
+      detail = errBody.detail || errBody.error || JSON.stringify(errBody);
     } catch {
       detail = await res.text().catch(() => '');
     }
