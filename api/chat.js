@@ -1,5 +1,3 @@
-import { PRODUCTS } from '../src/data.js';
-
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
@@ -17,32 +15,27 @@ function send(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-function buildSystemPrompt(category, products) {
-  const slim = products.map((p) => ({
-    id: p.id, brand: p.brand, model: p.model, price: p.price, tags: p.tags,
-  }));
+function buildSystemPrompt(category) {
   return `Tu es Bestbuys, un conseiller d'achat conversationnel en français.
 
-OBJECTIF: identifier le meilleur produit pour l'utilisateur dans le catalogue ci-dessous, en posant 3 à 5 questions courtes maximum, puis en recommandant.
-
-CATÉGORIE: ${category || 'inconnue'}
-CATALOGUE (avec tags du vocabulaire à utiliser):
-${JSON.stringify(slim, null, 2)}
+OBJECTIF: identifier les meilleurs produits réels pour l'utilisateur (catégorie: ${category || 'inconnue'}), en posant 3 à 5 questions courtes maximum, puis recommander 5 produits réels et disponibles sur le marché actuel.
 
 RÈGLES:
 - Réponds toujours en français.
 - Une seule question à la fois, courte, 2 à 4 choix concrets.
-- Chaque "choice" doit avoir des "tags" tirés du vocabulaire du catalogue ci-dessus (ex: "ios", "android", "camera", "perf", "pro", "balanced", "anc", "portable", "gaming", "office", "creative", "audio", "sport", "calls", "over", "in"). Si la question concerne le budget, mets les tags à [] et utilise "min"/"max" en euros sur les choix.
-- Le champ "preferences" doit ACCUMULER tous les tags et contraintes de budget recueillis depuis le début de la conversation (pas seulement le dernier tour). Ne supprime pas les préférences précédentes.
-- Après 3 à 5 réponses utiles, passe action="recommend", question=null. La sélection s'affiche automatiquement à droite.
+- Les choix peuvent avoir des "tags" décrivant les préférences (ex: "ios", "android", "camera", "perf", "anc", "portable", "gaming") ou des bornes budget avec "min"/"max" en euros.
+- Le champ "preferences" doit ACCUMULER tous les tags et contraintes de budget (ne supprime jamais les précédentes).
+- Après 3 à 5 réponses utiles, passe action="recommend" et retourne 5 produits RÉELS classés du plus au moins adapté.
+- Chaque produit doit avoir un score de correspondance (0-99) basé sur les préférences collectées.
+- Les produits doivent être des modèles réels disponibles à l'achat aujourd'hui.
 
-FORMAT DE RÉPONSE: tu dois répondre UNIQUEMENT avec un objet JSON valide de cette forme exacte:
+FORMAT DE RÉPONSE: UNIQUEMENT un objet JSON valide de cette forme exacte:
 {
   "reply": "message à afficher dans le chat",
-  "action": "ask" ou "recommend",
-  "question": null OU {
+  "action": "ask" | "recommend",
+  "question": null | {
     "id": "slug-court",
-    "text": "texte de la question (peut répéter reply ou être plus précis)",
+    "text": "texte de la question",
     "choices": [
       {"id": "slug", "label": "Libellé court", "tags": ["tag1"], "min": null, "max": null}
     ]
@@ -51,12 +44,23 @@ FORMAT DE RÉPONSE: tu dois répondre UNIQUEMENT avec un objet JSON valide de ce
     "tags": ["tag1", "tag2"],
     "budget_max": null,
     "budget_min": null
-  }
-}`;
+  },
+  "products": null | [
+    {
+      "id": "p1",
+      "brand": "Marque",
+      "model": "Modèle exact",
+      "price": 999,
+      "score": 94,
+      "specs": ["Spec clé 1", "Spec clé 2", "Spec clé 3", "Spec clé 4"],
+      "why": "Raison courte et convaincante de recommandation"
+    }
+  ]
 }
 
-// Convert OpenAI-style messages [{role, content}] to Gemini contents format.
-// Gemini roles are "user" and "model"; "assistant" maps to "model".
+IMPORTANT: "products" est null quand action="ask". Quand action="recommend", "products" contient exactement 5 produits réels.`;
+}
+
 function toGeminiContents(messages) {
   return messages.map((m) => ({
     role: m.role === 'assistant' ? 'model' : 'user',
@@ -85,7 +89,6 @@ export default async function handler(req, res) {
   if (!Array.isArray(messages)) {
     return send(res, 400, { error: '"messages" must be an array' });
   }
-  const products = (category && PRODUCTS[category]) || [];
 
   let upstream;
   try {
@@ -93,7 +96,7 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: buildSystemPrompt(category, products) }] },
+        systemInstruction: { parts: [{ text: buildSystemPrompt(category) }] },
         contents: toGeminiContents(messages),
         generationConfig: {
           temperature: 0.5,

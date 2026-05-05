@@ -1,6 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { PRODUCTS } from "../data.js";
-import { rankByPreferences } from "../scoring.js";
+import { useEffect, useRef, useState } from "react";
 import { askAI } from "../lib/askAI.js";
 
 // Which search variant to ship: 'A' = Premium Search, 'B' = Hey-Jordan Hub.
@@ -151,11 +149,12 @@ function Chip({ children, onClick, variant = "soft", icon }) {
 }
 
 function ProductCard({ product }) {
-  const brand = product?.brand || "Sonara Audio";
-  const model = product?.model || "Sonara Hush Pro — Over-Ear ANC";
+  const brand = product?.brand || "";
+  const model = product?.model || "";
   const price = product?.price;
-  const rating = product?.rating ?? 4.8;
-  const reviews = product?.reviews ?? 2300;
+  const rating = product?.rating ?? null;
+  const reviews = product?.reviews ?? null;
+  const why = product?.why;
   return (
     <div
       style={{
@@ -243,8 +242,14 @@ function ProductCard({ product }) {
             color: BB.inkSoft,
           }}
         >
-          <span style={{ color: BB.amber }}>★★★★★</span>
-          <span>{rating.toFixed(1)} · {(reviews / 1000).toFixed(1)}k reviews</span>
+          {rating != null ? (
+            <>
+              <span style={{ color: BB.amber }}>★★★★★</span>
+              <span>{rating.toFixed(1)}{reviews != null ? ` · ${(reviews / 1000).toFixed(1)}k reviews` : ''}</span>
+            </>
+          ) : why ? (
+            <span style={{ fontStyle: "italic", fontSize: 11 }}>{why}</span>
+          ) : null}
         </div>
         <div
           style={{
@@ -295,6 +300,7 @@ function ChatScreen({ query, onBack, accent = BB.coral }) {
   const [done, setDone] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [input, setInput] = useState("");
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
   const scrollRef = useRef(null);
   const initRan = useRef(false);
 
@@ -310,12 +316,15 @@ function ChatScreen({ query, onBack, accent = BB.coral }) {
           ? result.question.choices.map((c) => c.label)
           : undefined;
       const isRecommend = result?.action === "recommend";
+      if (isRecommend && Array.isArray(result.products) && result.products.length) {
+        setRecommendedProducts(result.products.map((p) => ({ ...p, category })));
+      }
       const aiMsg = {
         role: "ai",
         text: reply,
         chips,
         card: isRecommend,
-        actions: isRecommend ? ["Perfect, thanks!", "Keep searching"] : undefined,
+        actions: isRecommend ? ["Parfait, merci !", "Continuer la recherche"] : undefined,
       };
       setMessages((m) => [...m, aiMsg]);
       if (result?.preferences && typeof result.preferences === "object") {
@@ -327,7 +336,7 @@ function ChatScreen({ query, onBack, accent = BB.coral }) {
         ...m,
         {
           role: "ai",
-          text: `Sorry — the recommendation service didn't respond (${e.message}). Try again or restart.`,
+          text: `Désolé — le service de recommandation n'a pas répondu (${e.message}). Réessayez ou redémarrez.`,
         },
       ]);
     } finally {
@@ -373,12 +382,7 @@ function ChatScreen({ query, onBack, accent = BB.coral }) {
 
   const showInputBar = !done;
 
-  const topProduct = useMemo(() => {
-    if (!category) return null;
-    const list = PRODUCTS[category]?.map((p) => ({ ...p, category })) || [];
-    if (!list.length) return null;
-    return rankByPreferences(list, preferences)[0];
-  }, [category, preferences]);
+  const topProduct = recommendedProducts[0] ?? null;
 
   return (
     <div

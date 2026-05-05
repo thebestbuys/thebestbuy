@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { CATEGORIES, PRODUCTS } from './data.js';
-import { rankByPreferences } from './scoring.js';
+import { useEffect, useRef, useState } from 'react';
+import { CATEGORIES } from './data.js';
 import { askAI } from './lib/askAI.js';
 import ChatPanel from './components/ChatPanel.jsx';
 import { HeroCard, ProductImage, ScoreRing, SmallCard, Stars } from './components/ProductCard.jsx';
@@ -23,6 +22,52 @@ function detectCategory(query) {
     if (kws.some((k) => q.includes(k))) return cat;
   }
   return null;
+}
+
+function bgPattern(category, id) {
+  if (category === 'phone') return (
+    <pattern id={id} x="0" y="0" width="80" height="130" patternUnits="userSpaceOnUse">
+      <rect x="18" y="8" width="44" height="84" rx="11" fill="none" stroke="currentColor" strokeWidth="1.6"/>
+      <rect x="24" y="14" width="32" height="68" rx="7" fill="none" stroke="currentColor" strokeWidth="0.8"/>
+      <rect x="30" y="96" width="20" height="3" rx="1.5" fill="currentColor" opacity="0.6"/>
+      <circle cx="40" cy="20" r="3" fill="none" stroke="currentColor" strokeWidth="1.2"/>
+    </pattern>
+  );
+  if (category === 'laptop') return (
+    <pattern id={id} x="0" y="0" width="130" height="100" patternUnits="userSpaceOnUse">
+      <rect x="10" y="5" width="110" height="72" rx="6" fill="none" stroke="currentColor" strokeWidth="1.6"/>
+      <rect x="18" y="13" width="94" height="56" rx="3" fill="none" stroke="currentColor" strokeWidth="0.8"/>
+      <path d="M0 82 Q65 86 130 82" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+    </pattern>
+  );
+  return (
+    <pattern id={id} x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+      <path d="M20 56 Q20 14 50 14 Q80 14 80 56" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+      <rect x="8" y="56" width="22" height="32" rx="9" fill="none" stroke="currentColor" strokeWidth="1.6"/>
+      <rect x="70" y="56" width="22" height="32" rx="9" fill="none" stroke="currentColor" strokeWidth="1.6"/>
+    </pattern>
+  );
+}
+
+function ResultsPlaceholder({ category }) {
+  const patternId = `placeholder-pattern-${category}`;
+  return (
+    <div className="results-placeholder">
+      <svg className="placeholder-wallpaper" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+        <defs>{bgPattern(category, patternId)}</defs>
+        <rect width="100%" height="100%" fill={`url(#${patternId})`} />
+      </svg>
+      <div className="placeholder-message">
+        <div className="placeholder-icon">✦</div>
+        <h3 className="placeholder-title">
+          Vos suggestions<br />apparaîtront ici
+        </h3>
+        <p className="placeholder-sub">
+          Répondez aux questions dans le chat pour que Bestbuys sélectionne les meilleurs produits pour vous.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 function CategoryPicker({ onPick }) {
@@ -135,11 +180,15 @@ function ProductDetail({ product, onClose, onBuy }) {
           <div className="modal-right">
             <div className="modal-brand">{product.brand}</div>
             <h2 className="modal-title">{product.model}</h2>
-            <div className="modal-rating">
-              <Stars rating={product.rating} />
-              <span className="rating-num">{product.rating.toFixed(1)}</span>
-              <span className="rating-count">({product.reviews.toLocaleString('fr-FR')} avis)</span>
-            </div>
+            {product.rating != null && (
+              <div className="modal-rating">
+                <Stars rating={product.rating} />
+                <span className="rating-num">{product.rating.toFixed(1)}</span>
+                {product.reviews != null && (
+                  <span className="rating-count">({product.reviews.toLocaleString('fr-FR')} avis)</span>
+                )}
+              </div>
+            )}
             <div className="modal-score-row">
               <ScoreRing score={product.score} size={56} />
               <div>
@@ -147,6 +196,12 @@ function ProductDetail({ product, onClose, onBuy }) {
                 <div className="modal-score-sub">avec vos critères</div>
               </div>
             </div>
+            {product.why && (
+              <>
+                <div className="modal-section-title">Pourquoi ce produit ?</div>
+                <p className="modal-why">{product.why}</p>
+              </>
+            )}
             <div className="modal-section-title">Caractéristiques principales</div>
             <ul className="modal-specs">
               {product.specs.map((s, i) => <li key={i}>{s}</li>)}
@@ -185,22 +240,12 @@ export default function App() {
   const [initialQuery, setInitialQuery] = useState('');
   const [messages, setMessages] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(null);
-  const [preferences, setPreferences] = useState({ tags: [], budget_max: null, budget_min: null });
   const [isTyping, setIsTyping] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selected, setSelected] = useState(null);
   const [done, setDone] = useState(false);
   const [turnCount, setTurnCount] = useState(0);
-
-  const products = useMemo(
-    () => (category ? PRODUCTS[category].map((p) => ({ ...p, category })) : []),
-    [category],
-  );
-
-  const ranked = useMemo(() => {
-    if (!category) return [];
-    return rankByPreferences(products, preferences).slice(0, 5);
-  }, [category, products, preferences, refreshKey]);
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
 
   const progress = done ? 100 : Math.min(90, turnCount * 22);
 
@@ -211,12 +256,12 @@ export default function App() {
       const result = await askAI({ messages: history, category });
       const reply = result?.reply || '…';
       setMessages((m) => [...m, { role: 'bot', text: reply }]);
-      if (result?.preferences && typeof result.preferences === 'object') {
-        setPreferences(result.preferences);
-      }
       if (result?.action === 'recommend') {
         setDone(true);
         setCurrentQuestion(null);
+        if (Array.isArray(result.products) && result.products.length) {
+          setRecommendedProducts(result.products.map((p) => ({ ...p, category })));
+        }
       } else if (result?.question && Array.isArray(result.question.choices)) {
         setCurrentQuestion(result.question);
       } else {
@@ -258,11 +303,11 @@ export default function App() {
     setInitialQuery('');
     setMessages([]);
     setCurrentQuestion(null);
-    setPreferences({ tags: [], budget_max: null, budget_min: null });
     setIsTyping(false);
     setSelected(null);
     setDone(false);
     setTurnCount(0);
+    setRecommendedProducts([]);
   };
 
   const handleBuy = (p) => {
@@ -274,8 +319,8 @@ export default function App() {
     return <CategoryPicker onPick={(cat, q) => { setCategory(cat); setInitialQuery(q || ''); }} />;
   }
 
-  const top = ranked[0];
-  const rest = ranked.slice(1, 5);
+  const top = recommendedProducts[0];
+  const rest = recommendedProducts.slice(1, 5);
 
   return (
     <div className="app">
@@ -304,16 +349,22 @@ export default function App() {
         </header>
 
         <div className="results-content" key={refreshKey}>
-          {top && (
-            <div className={'hero-wrap variant-' + t.heroVariant}>
-              <HeroCard product={top} density={t.density} onSelect={setSelected} />
-            </div>
+          {recommendedProducts.length > 0 ? (
+            <>
+              {top && (
+                <div className={'hero-wrap variant-' + t.heroVariant}>
+                  <HeroCard product={top} density={t.density} onSelect={setSelected} />
+                </div>
+              )}
+              <div className={'small-grid density-' + t.density}>
+                {rest.map((p, i) => (
+                  <SmallCard key={p.id} product={p} rank={i + 2} density={t.density} onSelect={setSelected} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <ResultsPlaceholder category={category} />
           )}
-          <div className={'small-grid density-' + t.density}>
-            {rest.map((p, i) => (
-              <SmallCard key={p.id} product={p} rank={i + 2} density={t.density} onSelect={setSelected} />
-            ))}
-          </div>
         </div>
       </main>
 

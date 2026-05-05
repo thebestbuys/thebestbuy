@@ -1,6 +1,6 @@
 export function ProductImage({ product, size = 'normal' }) {
   const cat = product.category;
-  const c = product.color;
+  const c = product.color || 'var(--bg-softer)';
 
   if (cat === 'phone') {
     return (
@@ -35,6 +35,7 @@ export function ProductImage({ product, size = 'normal' }) {
 }
 
 export function Stars({ rating }) {
+  if (rating == null) return null;
   const full = Math.floor(rating);
   const half = rating - full >= 0.4;
   return (
@@ -86,11 +87,18 @@ export function HeroCard({ product, density, onSelect }) {
         <div className="hero-meta">
           <div className="hero-brand">{product.brand}</div>
           <h2 className="hero-model">{product.model}</h2>
-          <div className="hero-rating">
-            <Stars rating={product.rating} />
-            <span className="rating-num">{product.rating.toFixed(1)}</span>
-            <span className="rating-count">({product.reviews.toLocaleString('fr-FR')} avis)</span>
-          </div>
+          {product.rating != null && (
+            <div className="hero-rating">
+              <Stars rating={product.rating} />
+              <span className="rating-num">{product.rating.toFixed(1)}</span>
+              {product.reviews != null && (
+                <span className="rating-count">({product.reviews.toLocaleString('fr-FR')} avis)</span>
+              )}
+            </div>
+          )}
+          {product.why && !product.rating && (
+            <div className="hero-why">{product.why}</div>
+          )}
           <ul className="hero-specs">
             {product.specs.map((s, i) => <li key={i}>{s}</li>)}
           </ul>
@@ -122,10 +130,12 @@ export function SmallCard({ product, rank, density, onSelect }) {
       <div className="small-info">
         <div className="small-brand">{product.brand}</div>
         <div className="small-model">{product.model}</div>
-        <div className="small-rating">
-          <Stars rating={product.rating} />
-          <span className="rating-num small">{product.rating.toFixed(1)}</span>
-        </div>
+        {product.rating != null && (
+          <div className="small-rating">
+            <Stars rating={product.rating} />
+            <span className="rating-num small">{product.rating.toFixed(1)}</span>
+          </div>
+        )}
         <ul className="small-specs">
           {product.specs.slice(0, density === 'compact' ? 2 : 3).map((s, i) => <li key={i}>{s}</li>)}
         </ul>
