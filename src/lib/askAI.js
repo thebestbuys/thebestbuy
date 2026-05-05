@@ -19,11 +19,26 @@ export async function askAI({ messages, category }) {
     let detail = '';
     try {
       const errBody = await res.json();
-      detail = errBody.detail || errBody.error || JSON.stringify(errBody);
+      detail = errBody.detail || errBody.error || '';
+      if (typeof detail !== 'string') detail = JSON.stringify(detail);
     } catch {
       detail = await res.text().catch(() => '');
     }
-    throw new Error(`AI request failed (${res.status}): ${detail}`);
+
+    const isQuota =
+      res.status === 429 ||
+      /RESOURCE_EXHAUSTED|insufficient_quota|quota/i.test(detail);
+
+    if (isQuota) {
+      throw new Error("quota IA épuisée, réessayez dans quelques instants");
+    }
+    if (res.status === 401 || res.status === 403) {
+      throw new Error("clé API invalide ou non autorisée");
+    }
+    if (res.status >= 500) {
+      throw new Error("service indisponible, réessayez");
+    }
+    throw new Error(`erreur ${res.status}`);
   }
 
   return res.json();
