@@ -265,20 +265,22 @@ function ProductCard({ product }) {
             </span>
           </div>
           <button
+            onClick={() => product?.amazon_url && window.open(product.amazon_url, '_blank', 'noopener,noreferrer')}
+            disabled={!product?.amazon_url}
             style={{
               appearance: "none",
               border: 0,
-              background: BB.ink,
-              color: "#fff",
+              background: product?.amazon_url ? BB.ink : BB.line,
+              color: product?.amazon_url ? "#fff" : BB.inkMute,
               padding: "8px 14px",
               borderRadius: 999,
               fontWeight: 700,
               fontSize: 12,
               fontFamily: BB.body,
-              cursor: "pointer",
+              cursor: product?.amazon_url ? "pointer" : "default",
             }}
           >
-            View product →
+            Voir sur Amazon →
           </button>
         </div>
       </div>

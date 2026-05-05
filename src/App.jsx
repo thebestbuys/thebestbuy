@@ -215,8 +215,8 @@ function ProductDetail({ product, onClose, onBuy }) {
                 </div>
                 <div className="modal-shipping">Livraison gratuite · 30 jours d'essai</div>
               </div>
-              <button className="btn-primary big" onClick={() => onBuy(product)}>
-                Acheter maintenant
+              <button className="btn-primary big" onClick={() => onBuy(product)} disabled={!product.amazon_url}>
+                Voir sur Amazon
                 <span className="btn-arrow">→</span>
               </button>
             </div>
@@ -312,7 +312,10 @@ export default function App() {
 
   const handleBuy = (p) => {
     setSelected(null);
-    setMessages((m) => [...m, { role: 'bot', text: `Je vous redirige vers le ${p.model} chez notre marchand partenaire ✓` }]);
+    if (p.amazon_url) {
+      window.open(p.amazon_url, '_blank', 'noopener,noreferrer');
+    }
+    setMessages((m) => [...m, { role: 'bot', text: `Je vous redirige vers le ${p.model} sur Amazon ✓` }]);
   };
 
   if (!category) {

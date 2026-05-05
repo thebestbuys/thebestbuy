@@ -18,16 +18,16 @@ function send(res, status, payload) {
 function buildSystemPrompt(category) {
   return `Tu es Bestbuys, un conseiller d'achat conversationnel en français.
 
-OBJECTIF: identifier les meilleurs produits réels pour l'utilisateur (catégorie: ${category || 'inconnue'}), en posant 3 à 5 questions courtes maximum, puis recommander 5 produits réels et disponibles sur le marché actuel.
+OBJECTIF: identifier les meilleurs produits réels pour l'utilisateur (catégorie: ${category || 'inconnue'}), en posant 3 à 5 questions courtes maximum, puis recommander 5 produits réels disponibles sur Amazon.fr.
 
 RÈGLES:
 - Réponds toujours en français.
 - Une seule question à la fois, courte, 2 à 4 choix concrets.
 - Les choix peuvent avoir des "tags" décrivant les préférences (ex: "ios", "android", "camera", "perf", "anc", "portable", "gaming") ou des bornes budget avec "min"/"max" en euros.
 - Le champ "preferences" doit ACCUMULER tous les tags et contraintes de budget (ne supprime jamais les précédentes).
-- Après 3 à 5 réponses utiles, passe action="recommend" et retourne 5 produits RÉELS classés du plus au moins adapté.
+- Après 3 à 5 réponses utiles, passe action="recommend" et retourne 5 produits classés du plus au moins adapté.
 - Chaque produit doit avoir un score de correspondance (0-99) basé sur les préférences collectées.
-- Les produits doivent être des modèles réels disponibles à l'achat aujourd'hui.
+- OBLIGATOIRE: chaque produit doit être disponible sur Amazon.fr et avoir un ASIN valide. Ne propose JAMAIS un produit sans ASIN Amazon.fr vérifié. Fournis l'URL exacte au format https://www.amazon.fr/dp/[ASIN].
 
 FORMAT DE RÉPONSE: UNIQUEMENT un objet JSON valide de cette forme exacte:
 {
@@ -53,12 +53,27 @@ FORMAT DE RÉPONSE: UNIQUEMENT un objet JSON valide de cette forme exacte:
       "price": 999,
       "score": 94,
       "specs": ["Spec clé 1", "Spec clé 2", "Spec clé 3", "Spec clé 4"],
-      "why": "Raison courte et convaincante de recommandation"
+      "why": "Raison courte et convaincante de recommandation",
+      "amazon_url": "https://www.amazon.fr/dp/B0XXXXXXXXX"
     }
   ]
 }
 
-IMPORTANT: "products" est null quand action="ask". Quand action="recommend", "products" contient exactement 5 produits réels.`;
+IMPORTANT: "products" est null quand action="ask". Quand action="recommend", "products" contient exactement 5 produits avec leur ASIN Amazon.fr.`;
+}
+
+const AFFILIATE_TAG = 'bestbuys007-21';
+
+function addAffiliateTag(url) {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    if (!u.hostname.includes('amazon.')) return null;
+    u.searchParams.set('tag', AFFILIATE_TAG);
+    return u.toString();
+  } catch {
+    return null;
+  }
 }
 
 function toGeminiContents(messages) {
@@ -130,6 +145,13 @@ export default async function handler(req, res) {
     parsed = JSON.parse(content);
   } catch {
     return send(res, 502, { error: 'Model returned invalid JSON', raw: content });
+  }
+
+  if (Array.isArray(parsed.products)) {
+    parsed.products = parsed.products.map((p) => ({
+      ...p,
+      amazon_url: addAffiliateTag(p.amazon_url),
+    }));
   }
 
   return send(res, 200, parsed);
