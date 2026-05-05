@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { askAI } from "../lib/askAI.js";
+import { askAI, enrichProduct } from "../lib/askAI.js";
 
 // Which search variant to ship: 'A' = Premium Search, 'B' = Hey-Jordan Hub.
 const VARIANT = "B";
@@ -170,24 +170,24 @@ function ProductCard({ product }) {
         style={{
           height: 130,
           position: "relative",
-          background: `repeating-linear-gradient(135deg, ${BB.cream}, ${BB.cream} 8px, ${BB.chipBg} 8px, ${BB.chipBg} 16px)`,
+          background: `linear-gradient(135deg, ${BB.cream}, ${BB.chipBg})`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          overflow: "hidden",
         }}
       >
-        <div
-          style={{
-            fontFamily: "ui-monospace, monospace",
-            fontSize: 10,
-            color: BB.inkMute,
-            background: "rgba(255,255,255,0.85)",
-            padding: "4px 8px",
-            borderRadius: 6,
-          }}
-        >
-          product image
-        </div>
+        {product?.image_url ? (
+          <img
+            src={product.image_url}
+            alt={model}
+            style={{ maxHeight: 110, maxWidth: "90%", objectFit: "contain", filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.1))" }}
+          />
+        ) : (
+          <div style={{ fontFamily: "ui-monospace, monospace", fontSize: 10, color: BB.inkMute, background: "rgba(255,255,255,0.85)", padding: "4px 8px", borderRadius: 6 }}>
+            chargement…
+          </div>
+        )}
         <div
           style={{
             position: "absolute",
@@ -319,7 +319,17 @@ function ChatScreen({ query, onBack, accent = BB.coral }) {
           : undefined;
       const isRecommend = result?.action === "recommend";
       if (isRecommend && Array.isArray(result.products) && result.products.length) {
-        setRecommendedProducts(result.products.map((p) => ({ ...p, category })));
+        const base = result.products.map((p) => ({ ...p, category }));
+        setRecommendedProducts(base);
+        base.forEach((p, i) => {
+          enrichProduct(p).then((enriched) => {
+            setRecommendedProducts((prev) => {
+              const next = [...prev];
+              next[i] = enriched;
+              return next;
+            });
+          });
+        });
       }
       const aiMsg = {
         role: "ai",

@@ -27,7 +27,7 @@ RÈGLES:
 - Le champ "preferences" doit ACCUMULER tous les tags et contraintes de budget (ne supprime jamais les précédentes).
 - Après 3 à 5 réponses utiles, passe action="recommend" et retourne 5 produits classés du plus au moins adapté.
 - Chaque produit doit avoir un score de correspondance (0-99) basé sur les préférences collectées.
-- OBLIGATOIRE: chaque produit doit être disponible sur Amazon.fr et avoir un ASIN valide. Ne propose JAMAIS un produit sans ASIN Amazon.fr vérifié. Fournis l'URL exacte au format https://www.amazon.fr/dp/[ASIN].
+- Propose uniquement des produits réellement vendus sur Amazon.fr. Ne propose jamais un produit introuvable sur Amazon.fr.
 
 FORMAT DE RÉPONSE: UNIQUEMENT un objet JSON valide de cette forme exacte:
 {
@@ -53,27 +53,12 @@ FORMAT DE RÉPONSE: UNIQUEMENT un objet JSON valide de cette forme exacte:
       "price": 999,
       "score": 94,
       "specs": ["Spec clé 1", "Spec clé 2", "Spec clé 3", "Spec clé 4"],
-      "why": "Raison courte et convaincante de recommandation",
-      "amazon_url": "https://www.amazon.fr/dp/B0XXXXXXXXX"
+      "why": "Raison courte et convaincante de recommandation"
     }
   ]
 }
 
-IMPORTANT: "products" est null quand action="ask". Quand action="recommend", "products" contient exactement 5 produits avec leur ASIN Amazon.fr.`;
-}
-
-const AFFILIATE_TAG = 'bestbuys007-21';
-
-function addAffiliateTag(url) {
-  if (!url) return null;
-  try {
-    const u = new URL(url);
-    if (!u.hostname.includes('amazon.')) return null;
-    u.searchParams.set('tag', AFFILIATE_TAG);
-    return u.toString();
-  } catch {
-    return null;
-  }
+IMPORTANT: "products" est null quand action="ask". Quand action="recommend", "products" contient exactement 5 produits.`;
 }
 
 function toGeminiContents(messages) {
@@ -145,13 +130,6 @@ export default async function handler(req, res) {
     parsed = JSON.parse(content);
   } catch {
     return send(res, 502, { error: 'Model returned invalid JSON', raw: content });
-  }
-
-  if (Array.isArray(parsed.products)) {
-    parsed.products = parsed.products.map((p) => ({
-      ...p,
-      amazon_url: addAffiliateTag(p.amazon_url),
-    }));
   }
 
   return send(res, 200, parsed);

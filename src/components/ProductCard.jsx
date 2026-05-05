@@ -1,4 +1,16 @@
 export function ProductImage({ product, size = 'normal' }) {
+  if (product.image_url) {
+    return (
+      <div className="prod-img-wrap" data-size={size}>
+        <img
+          src={product.image_url}
+          alt={`${product.brand} ${product.model}`}
+          className="prod-img-amazon"
+        />
+      </div>
+    );
+  }
+
   const cat = product.category;
   const c = product.color || 'var(--bg-softer)';
 

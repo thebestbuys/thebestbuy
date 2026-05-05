@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CATEGORIES } from './data.js';
-import { askAI } from './lib/askAI.js';
+import { askAI, enrichProduct } from './lib/askAI.js';
 import ChatPanel from './components/ChatPanel.jsx';
 import { HeroCard, ProductImage, ScoreRing, SmallCard, Stars } from './components/ProductCard.jsx';
 import {
@@ -260,7 +260,18 @@ export default function App() {
         setDone(true);
         setCurrentQuestion(null);
         if (Array.isArray(result.products) && result.products.length) {
-          setRecommendedProducts(result.products.map((p) => ({ ...p, category })));
+          const base = result.products.map((p) => ({ ...p, category }));
+          setRecommendedProducts(base);
+          // Enrich each product with real Amazon data progressively
+          base.forEach((p, i) => {
+            enrichProduct(p).then((enriched) => {
+              setRecommendedProducts((prev) => {
+                const next = [...prev];
+                next[i] = enriched;
+                return next;
+              });
+            });
+          });
         }
       } else if (result?.question && Array.isArray(result.question.choices)) {
         setCurrentQuestion(result.question);

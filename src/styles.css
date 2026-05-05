@@ -1001,6 +1001,16 @@ ul {
   color: transparent;
 }
 
+/* ───────────────────── Real Amazon product image ────────── */
+.prod-img-amazon {
+  max-width: 78%;
+  max-height: 78%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.10));
+  transition: opacity 0.3s ease;
+}
+
 /* ───────────────────── Product image mocks ─────────────── */
 .prod-img-wrap {
   display: grid;

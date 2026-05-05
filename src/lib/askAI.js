@@ -28,3 +28,17 @@ export async function askAI({ messages, category }) {
 
   return res.json();
 }
+
+// Enrich a product with real Amazon data (image, URL, rating, reviews).
+// Returns the same product object with extra fields merged in.
+export async function enrichProduct(product) {
+  try {
+    const q = `${product.brand} ${product.model}`;
+    const res = await fetch(`${API_BASE}/api/amazon?q=${encodeURIComponent(q)}`);
+    if (!res.ok) return product;
+    const data = await res.json();
+    return { ...product, ...data };
+  } catch {
+    return product;
+  }
+}
