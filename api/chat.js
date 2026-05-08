@@ -105,46 +105,69 @@ export default async function handler(req, res) {
     return send(res, 400, { error: '"messages" must be an array' });
   }
 
+  const geminiBody = JSON.stringify({
+    systemInstruction: { parts: [{ text: buildSystemPrompt(category) }] },
+    contents: toGeminiContents(messages),
+    generationConfig: {
+      temperature: 0.5,
+      responseMimeType: 'application/json',
+    },
+  });
+
   let upstream;
-  try {
-    upstream = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: buildSystemPrompt(category) }] },
-        contents: toGeminiContents(messages),
-        generationConfig: {
-          temperature: 0.5,
-          responseMimeType: 'application/json',
-        },
-      }),
-    });
-  } catch (e) {
-    return send(res, 502, { error: 'Network error reaching Gemini', detail: String(e) });
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      upstream = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: geminiBody,
+      });
+    } catch (e) {
+      return send(res, 502, { error: 'Network error reaching Gemini', detail: String(e) });
+    }
+
+    if (upstream.status !== 429 || attempt === maxAttempts) break;
+    await new Promise((r) => setTimeout(r, attempt * 1500));
   }
 
   if (!upstream.ok) {
     const text = await upstream.text().catch(() => '');
-    return send(res, upstream.status, { error: 'Upstream error', detail: text });
+    let geminiError = {};
+    try { geminiError = JSON.parse(text); } catch { /* raw text */ }
+    return send(res, upstream.status, {
+      error: 'Upstream error',
+      gemini_status: upstream.status,
+      gemini_status_text: upstream.statusText,
+      gemini_model: GEMINI_MODEL,
+      gemini_error: geminiError,
+      gemini_raw: text,
+    });
   }
 
   let json;
   try {
     json = await upstream.json();
   } catch {
-    return send(res, 502, { error: 'Upstream returned non-JSON' });
+    return send(res, 502, { error: 'Upstream returned non-JSON', gemini_model: GEMINI_MODEL });
   }
 
   const content = json.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!content) {
-    return send(res, 502, { error: 'No content in Gemini response' });
+    return send(res, 502, {
+      error: 'No content in Gemini response',
+      gemini_model: GEMINI_MODEL,
+      finish_reason: json.candidates?.[0]?.finishReason,
+      prompt_feedback: json.promptFeedback,
+      full_response: json,
+    });
   }
 
   let parsed;
   try {
     parsed = JSON.parse(content);
   } catch {
-    return send(res, 502, { error: 'Model returned invalid JSON', raw: content });
+    return send(res, 502, { error: 'Model returned invalid JSON', gemini_model: GEMINI_MODEL, raw: content });
   }
 
   return send(res, 200, parsed);
