@@ -215,7 +215,7 @@ function ProductDetail({ product, onClose, onBuy }) {
                 </div>
                 <div className="modal-shipping">Livraison gratuite · 30 jours d'essai</div>
               </div>
-              <button className="btn-primary big" onClick={() => onBuy(product)} disabled={!product.amazon_url}>
+              <button className="btn-primary big" onClick={() => onBuy(product)}>
                 Voir sur Amazon
                 <span className="btn-arrow">→</span>
               </button>
@@ -321,11 +321,15 @@ export default function App() {
     setRecommendedProducts([]);
   };
 
+  const getAmazonUrl = (p) => {
+    if (p.amazon_url) return p.amazon_url;
+    const q = encodeURIComponent(`${p.brand} ${p.model}`);
+    return `https://www.amazon.fr/s?k=${q}&tag=bestbuys007-21`;
+  };
+
   const handleBuy = (p) => {
     setSelected(null);
-    if (p.amazon_url) {
-      window.open(p.amazon_url, '_blank', 'noopener,noreferrer');
-    }
+    window.open(getAmazonUrl(p), '_blank', 'noopener,noreferrer');
     setMessages((m) => [...m, { role: 'bot', text: `Je vous redirige vers le ${p.model} sur Amazon ✓` }]);
   };
 
