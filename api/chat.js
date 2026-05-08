@@ -77,7 +77,13 @@ function toGeminiContents(messages) {
   }));
 }
 
+function ms(start) {
+  return Math.round(performance.now() - start);
+}
+
 export default async function handler(req, res) {
+  const t0 = performance.now();
+
   if (req.method === 'OPTIONS') {
     setCors(res);
     res.statusCode = 204;
@@ -93,18 +99,23 @@ export default async function handler(req, res) {
     return send(res, 500, { error: 'GEMINI_API_KEY not configured on server' });
   }
 
+  // 1. Parse body
+  const t1 = performance.now();
   let body;
   try {
     body = await readBody(req);
   } catch {
     return send(res, 400, { error: 'Invalid JSON body' });
   }
+  const t1_ms = ms(t1);
 
   const { messages = [], category } = body;
   if (!Array.isArray(messages)) {
     return send(res, 400, { error: '"messages" must be an array' });
   }
 
+  // 2. Build prompt
+  const t2 = performance.now();
   const geminiBody = JSON.stringify({
     systemInstruction: { parts: [{ text: buildSystemPrompt(category) }] },
     contents: toGeminiContents(messages),
@@ -113,7 +124,10 @@ export default async function handler(req, res) {
       responseMimeType: 'application/json',
     },
   });
+  const t2_ms = ms(t2);
 
+  // 3. Call Gemini
+  const t3 = performance.now();
   let upstream;
   try {
     upstream = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
@@ -124,6 +138,7 @@ export default async function handler(req, res) {
   } catch (e) {
     return send(res, 502, { error: 'Network error reaching Gemini', detail: String(e) });
   }
+  const t3_ms = ms(t3);
 
   if (!upstream.ok) {
     const text = await upstream.text().catch(() => '');
@@ -139,12 +154,15 @@ export default async function handler(req, res) {
     });
   }
 
+  // 4. Read + parse Gemini JSON response
+  const t4 = performance.now();
   let json;
   try {
     json = await upstream.json();
   } catch {
     return send(res, 502, { error: 'Upstream returned non-JSON', gemini_model: GEMINI_MODEL });
   }
+  const t4_ms = ms(t4);
 
   const content = json.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!content) {
@@ -157,12 +175,31 @@ export default async function handler(req, res) {
     });
   }
 
+  // 5. Parse model JSON output
+  const t5 = performance.now();
   let parsed;
   try {
     parsed = JSON.parse(content);
   } catch {
     return send(res, 502, { error: 'Model returned invalid JSON', gemini_model: GEMINI_MODEL, raw: content });
   }
+  const t5_ms = ms(t5);
+
+  const totalMs = ms(t0);
+
+  parsed._debug = {
+    model: GEMINI_MODEL,
+    timings_ms: {
+      parse_body:        t1_ms,
+      build_prompt:      t2_ms,
+      gemini_api_call:   t3_ms,
+      read_response:     t4_ms,
+      parse_json_output: t5_ms,
+      total:             totalMs,
+    },
+    input_tokens:  json.usageMetadata?.promptTokenCount ?? null,
+    output_tokens: json.usageMetadata?.candidatesTokenCount ?? null,
+  };
 
   return send(res, 200, parsed);
 }
