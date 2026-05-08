@@ -32,39 +32,71 @@ function TypingDots({ layout }) {
   );
 }
 
+const BUDGET_MAX = 2000;
+
 function isBudgetQuestion(question) {
   return question?.choices?.some((c) => c.min != null || c.max != null);
 }
 
 function BudgetSlider({ question, onAnswer }) {
-  const mins = question.choices.filter((c) => c.min != null).map((c) => c.min);
-  const maxs = question.choices.filter((c) => c.max != null).map((c) => c.max);
-  const sliderMin = mins.length > 0 ? Math.min(...mins) : 0;
-  const sliderMax = maxs.length > 0 ? Math.max(...maxs) : 2000;
-  const [value, setValue] = useState(Math.round((sliderMin + sliderMax) / 2 / 50) * 50);
+  const [minVal, setMinVal] = useState(0);
+  const [maxVal, setMaxVal] = useState(BUDGET_MAX);
+
+  const minPct = (minVal / BUDGET_MAX) * 100;
+  const maxPct = (maxVal / BUDGET_MAX) * 100;
+
+  const fmtMin = minVal === 0 ? '0 €' : `${minVal.toLocaleString('fr-FR')} €`;
+  const fmtMax = maxVal >= BUDGET_MAX ? '1 000€+' : `${maxVal.toLocaleString('fr-FR')} €`;
 
   const confirm = () => {
-    onAnswer(question.id, { id: 'slider', label: `Mon budget maximum est de ${value}€`, tags: [], min: null, max: value });
+    const maxForAI = maxVal >= BUDGET_MAX ? null : maxVal;
+    let label;
+    if (minVal === 0 && maxForAI === null) label = 'Pas de contrainte de budget';
+    else if (minVal === 0) label = `Mon budget maximum est de ${maxVal}€`;
+    else if (maxForAI === null) label = `Mon budget est d'au moins ${minVal}€`;
+    else label = `Mon budget est entre ${minVal}€ et ${maxVal}€`;
+    onAnswer(question.id, { id: 'slider', label, tags: [], min: minVal || null, max: maxForAI });
   };
-
-  const pct = ((value - sliderMin) / (sliderMax - sliderMin)) * 100;
 
   return (
     <div className="budget-slider">
-      <div className="budget-slider-value">{value.toLocaleString('fr-FR')} €</div>
-      <input
-        type="range"
-        min={sliderMin}
-        max={sliderMax}
-        step={50}
-        value={value}
-        onChange={(e) => setValue(Number(e.target.value))}
-        className="budget-range"
-        style={{ '--pct': `${pct}%` }}
-      />
+      <div className="budget-slider-values">
+        <span className="budget-val">{fmtMin}</span>
+        <span className="budget-dash">—</span>
+        <span className="budget-val budget-val-max">{fmtMax}</span>
+      </div>
+      <div className="budget-range-wrap">
+        <div className="budget-track-bg" />
+        <div
+          className="budget-track-fill"
+          style={{ left: `${minPct}%`, width: `${maxPct - minPct}%` }}
+        />
+        <input
+          type="range"
+          min={0} max={BUDGET_MAX} step={50}
+          value={minVal}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            if (v < maxVal) setMinVal(v);
+          }}
+          className="budget-range budget-range-min"
+          style={{ zIndex: minVal >= maxVal - 50 ? 5 : 3 }}
+        />
+        <input
+          type="range"
+          min={0} max={BUDGET_MAX} step={50}
+          value={maxVal}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            if (v > minVal) setMaxVal(v);
+          }}
+          className="budget-range budget-range-max"
+          style={{ zIndex: 4 }}
+        />
+      </div>
       <div className="budget-slider-labels">
-        <span>{sliderMin.toLocaleString('fr-FR')} €</span>
-        <span>{sliderMax.toLocaleString('fr-FR')} €</span>
+        <span>0 €</span>
+        <span>1 000€+</span>
       </div>
       <button className="budget-confirm" onClick={confirm}>
         Confirmer <span className="btn-arrow">→</span>
