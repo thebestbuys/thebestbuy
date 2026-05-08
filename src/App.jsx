@@ -81,7 +81,7 @@ function CategoryPicker({ onPick }) {
   const submit = (e) => {
     e.preventDefault();
     if (!query.trim()) return;
-    const cat = detectCategory(query) || 'phone';
+    const cat = detectCategory(query) || query.trim();
     onPick(cat, query.trim());
   };
 
@@ -301,7 +301,7 @@ export default function App() {
     if (!category) return;
     const initial = initialQuery
       ? [{ role: 'user', text: initialQuery }]
-      : [{ role: 'user', text: `Je cherche un ${CATEGORIES.find((c) => c.id === category).label.toLowerCase()}.` }];
+      : [{ role: 'user', text: `Je cherche un ${CATEGORIES.find((c) => c.id === category)?.label.toLowerCase() ?? category}.` }];
     setMessages(initial);
     runTurn(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -366,7 +366,7 @@ export default function App() {
           <div>
             <div className="results-eyebrow">Top 5 sélection</div>
             <h2 className="results-title">
-              {CATEGORIES.find((c) => c.id === category).label}s
+              {CATEGORIES.find((c) => c.id === category)?.label ?? category}
             </h2>
           </div>
           <div className="results-meta">
