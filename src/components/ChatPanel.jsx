@@ -32,7 +32,7 @@ function TypingDots({ layout }) {
   );
 }
 
-const BUDGET_MAX = 2000;
+const BUDGET_MAX = 1000;
 
 function isBudgetQuestion(question) {
   return question?.choices?.some((c) => c.min != null || c.max != null);
