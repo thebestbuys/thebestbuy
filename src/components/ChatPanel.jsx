@@ -32,6 +32,47 @@ function TypingDots({ layout }) {
   );
 }
 
+function isBudgetQuestion(question) {
+  return question?.choices?.some((c) => c.min != null || c.max != null);
+}
+
+function BudgetSlider({ question, onAnswer }) {
+  const mins = question.choices.filter((c) => c.min != null).map((c) => c.min);
+  const maxs = question.choices.filter((c) => c.max != null).map((c) => c.max);
+  const sliderMin = mins.length > 0 ? Math.min(...mins) : 0;
+  const sliderMax = maxs.length > 0 ? Math.max(...maxs) : 2000;
+  const [value, setValue] = useState(Math.round((sliderMin + sliderMax) / 2 / 50) * 50);
+
+  const confirm = () => {
+    onAnswer(question.id, { id: 'slider', label: `Mon budget maximum est de ${value}€`, tags: [], min: null, max: value });
+  };
+
+  const pct = ((value - sliderMin) / (sliderMax - sliderMin)) * 100;
+
+  return (
+    <div className="budget-slider">
+      <div className="budget-slider-value">{value.toLocaleString('fr-FR')} €</div>
+      <input
+        type="range"
+        min={sliderMin}
+        max={sliderMax}
+        step={50}
+        value={value}
+        onChange={(e) => setValue(Number(e.target.value))}
+        className="budget-range"
+        style={{ '--pct': `${pct}%` }}
+      />
+      <div className="budget-slider-labels">
+        <span>{sliderMin.toLocaleString('fr-FR')} €</span>
+        <span>{sliderMax.toLocaleString('fr-FR')} €</span>
+      </div>
+      <button className="budget-confirm" onClick={confirm}>
+        Confirmer <span className="btn-arrow">→</span>
+      </button>
+    </div>
+  );
+}
+
 export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, isTyping, layout, progress }) {
   const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
@@ -80,11 +121,15 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
 
         {!isTyping && currentQuestion && (
           <div className="chat-choices">
-            {currentQuestion.choices.map((c) => (
-              <button key={c.id} className="choice-chip" onClick={() => onAnswer(currentQuestion.id, c)}>
-                {c.label}
-              </button>
-            ))}
+            {isBudgetQuestion(currentQuestion) ? (
+              <BudgetSlider question={currentQuestion} onAnswer={onAnswer} />
+            ) : (
+              currentQuestion.choices.map((c) => (
+                <button key={c.id} className="choice-chip" onClick={() => onAnswer(currentQuestion.id, c)}>
+                  {c.label}
+                </button>
+              ))
+            )}
           </div>
         )}
       </div>
