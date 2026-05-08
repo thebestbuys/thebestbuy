@@ -169,6 +169,8 @@ function CategoryPicker({ onPick }) {
 }
 
 function ProductDetail({ product, onClose, onBuy }) {
+  const amazonUrl = product.amazon_url ||
+    `https://www.amazon.fr/s?k=${encodeURIComponent(`${product.brand} ${product.model}`)}&tag=bestbuys007-21`;
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -215,10 +217,16 @@ function ProductDetail({ product, onClose, onBuy }) {
                 </div>
                 <div className="modal-shipping">Livraison gratuite · 30 jours d'essai</div>
               </div>
-              <button className="btn-primary big" onClick={() => onBuy(product)}>
+              <a
+                className="btn-primary big"
+                href={amazonUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => onBuy(product)}
+              >
                 Voir sur Amazon
                 <span className="btn-arrow">→</span>
-              </button>
+              </a>
             </div>
           </div>
         </div>
