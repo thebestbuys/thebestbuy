@@ -114,20 +114,14 @@ export default async function handler(req, res) {
   });
 
   let upstream;
-  const maxAttempts = 3;
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      upstream = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: geminiBody,
-      });
-    } catch (e) {
-      return send(res, 502, { error: 'Network error reaching Gemini', detail: String(e) });
-    }
-
-    if (upstream.status !== 429 || attempt === maxAttempts) break;
-    await new Promise((r) => setTimeout(r, attempt * 1500));
+  try {
+    upstream = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: geminiBody,
+    });
+  } catch (e) {
+    return send(res, 502, { error: 'Network error reaching Gemini', detail: String(e) });
   }
 
   if (!upstream.ok) {
