@@ -81,6 +81,35 @@ function ms(start) {
   return Math.round(performance.now() - start);
 }
 
+// Returns true if at least one search result was found, false if blocked/not found.
+async function checkAmazon(brand, model) {
+  const q = encodeURIComponent(`${brand} ${model}`);
+  try {
+    const res = await fetch(`https://www.amazon.fr/s?k=${q}&language=fr_FR`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept-Language': 'fr-FR,fr;q=0.9',
+      },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) return null; // null = inconclusive (blocked)
+    const html = await res.text();
+    if (html.includes('validateCaptcha') || html.includes('robot check')) return null;
+    return html.includes('data-component-type="s-search-result"');
+  } catch {
+    return null;
+  }
+}
+
+async function callGemini(apiKey, body) {
+  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return res;
+}
+
 export default async function handler(req, res) {
   const t0 = performance.now();
 
@@ -114,27 +143,22 @@ export default async function handler(req, res) {
     return send(res, 400, { error: '"messages" must be an array' });
   }
 
+  const systemPrompt = buildSystemPrompt(category);
+
   // 2. Build prompt
   const t2 = performance.now();
-  const geminiBody = JSON.stringify({
-    systemInstruction: { parts: [{ text: buildSystemPrompt(category) }] },
+  const geminiPayload = {
+    systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: toGeminiContents(messages),
-    generationConfig: {
-      temperature: 0.5,
-      responseMimeType: 'application/json',
-    },
-  });
+    generationConfig: { temperature: 0.5, responseMimeType: 'application/json' },
+  };
   const t2_ms = ms(t2);
 
   // 3. Call Gemini
   const t3 = performance.now();
   let upstream;
   try {
-    upstream = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: geminiBody,
-    });
+    upstream = await callGemini(apiKey, geminiPayload);
   } catch (e) {
     return send(res, 502, { error: 'Network error reaching Gemini', detail: String(e) });
   }
@@ -154,12 +178,10 @@ export default async function handler(req, res) {
     });
   }
 
-  // 4. Read + parse Gemini JSON response
+  // 4. Read + parse Gemini response
   const t4 = performance.now();
   let json;
-  try {
-    json = await upstream.json();
-  } catch {
+  try { json = await upstream.json(); } catch {
     return send(res, 502, { error: 'Upstream returned non-JSON', gemini_model: GEMINI_MODEL });
   }
   const t4_ms = ms(t4);
@@ -178,12 +200,82 @@ export default async function handler(req, res) {
   // 5. Parse model JSON output
   const t5 = performance.now();
   let parsed;
-  try {
-    parsed = JSON.parse(content);
-  } catch {
+  try { parsed = JSON.parse(content); } catch {
     return send(res, 502, { error: 'Model returned invalid JSON', gemini_model: GEMINI_MODEL, raw: content });
   }
   const t5_ms = ms(t5);
+
+  const debugTokens = {
+    input_tokens:  json.usageMetadata?.promptTokenCount ?? null,
+    output_tokens: json.usageMetadata?.candidatesTokenCount ?? null,
+  };
+  let amazonVerifyMs = 0;
+  let replacementMs = 0;
+  let amazonBlocked = false;
+  let replacedCount = 0;
+
+  // 6. If recommend: verify each product exists on Amazon, replace those not found
+  if (parsed.action === 'recommend' && Array.isArray(parsed.products) && parsed.products.length) {
+    const t6 = performance.now();
+
+    const checks = await Promise.all(parsed.products.map((p) => checkAmazon(p.brand, p.model)));
+    amazonVerifyMs = ms(t6);
+
+    // null = Amazon blocked us → skip replacement to avoid false negatives
+    const allInconclusive = checks.every((c) => c === null);
+
+    if (!allInconclusive) {
+      const notFound = parsed.products.filter((_, i) => checks[i] === false);
+
+      if (notFound.length > 0) {
+        const t7 = performance.now();
+        const rejectedList = notFound.map((p) => `${p.brand} ${p.model}`).join(', ');
+        const replacementMessages = [
+          ...toGeminiContents(messages),
+          {
+            role: 'model',
+            parts: [{ text: content }],
+          },
+          {
+            role: 'user',
+            parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${rejectedList}. Remplace-les par d'autres produits similaires qui existent réellement sur Amazon.fr. Retourne la liste complète des 5 produits (conserve ceux qui étaient valides).` }],
+          },
+        ];
+
+        try {
+          const replacementUpstream = await callGemini(apiKey, {
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: replacementMessages,
+            generationConfig: { temperature: 0.5, responseMimeType: 'application/json' },
+          });
+
+          if (replacementUpstream.ok) {
+            const repJson = await replacementUpstream.json();
+            const repContent = repJson.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (repContent) {
+              try {
+                const repParsed = JSON.parse(repContent);
+                if (Array.isArray(repParsed.products)) {
+                  parsed.products = repParsed.products;
+                  replacedCount = notFound.length;
+                }
+              } catch { /* keep original */ }
+            }
+          }
+        } catch { /* keep original */ }
+
+        replacementMs = ms(t7);
+      }
+    } else {
+      amazonBlocked = true;
+    }
+
+    // Tag each product with its verification result
+    parsed.products = parsed.products.map((p, i) => ({
+      ...p,
+      amazon_verified: checks[i] === true ? true : checks[i] === false ? false : null,
+    }));
+  }
 
   const totalMs = ms(t0);
 
@@ -195,10 +287,13 @@ export default async function handler(req, res) {
       gemini_api_call:   t3_ms,
       read_response:     t4_ms,
       parse_json_output: t5_ms,
+      amazon_verify:     amazonVerifyMs,
+      replacement_call:  replacementMs,
       total:             totalMs,
     },
-    input_tokens:  json.usageMetadata?.promptTokenCount ?? null,
-    output_tokens: json.usageMetadata?.candidatesTokenCount ?? null,
+    amazon_blocked:  amazonBlocked,
+    replaced_count:  replacedCount,
+    ...debugTokens,
   };
 
   return send(res, 200, parsed);
