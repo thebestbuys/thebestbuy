@@ -52,7 +52,13 @@ export async function enrichProduct(product) {
     const res = await fetch(`${API_BASE}/api/amazon?q=${encodeURIComponent(q)}`);
     if (!res.ok) return product;
     const data = await res.json();
-    return { ...product, ...data };
+    return {
+      ...product,
+      rating:    data.rating  ?? product.rating,
+      reviews:   data.reviews ?? product.reviews,
+      amazon_url: product.amazon_url || data.amazon_url || null,
+      image_url:  product.image_url  || data.image_url  || null,
+    };
   } catch {
     return product;
   }

@@ -170,7 +170,7 @@ function CategoryPicker({ onPick }) {
 
 function ProductDetail({ product, onClose, onBuy }) {
   const amazonUrl = product.amazon_url ||
-    `https://www.amazon.fr/s?k=${encodeURIComponent(`${product.brand} ${product.model}`)}&tag=bestbuys007-21`;
+    `https://www.amazon.fr/s?k=${encodeURIComponent(`${product.category ? product.category + ' ' : ''}${product.brand} ${product.model}`)}&tag=bestbuys007-21`;
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -334,7 +334,7 @@ export default function App() {
 
   const getAmazonUrl = (p) => {
     if (p.amazon_url) return p.amazon_url;
-    const q = encodeURIComponent(`${p.brand} ${p.model}`);
+    const q = encodeURIComponent(`${p.category ? p.category + ' ' : ''}${p.brand} ${p.model}`);
     return `https://www.amazon.fr/s?k=${q}&tag=bestbuys007-21`;
   };
 

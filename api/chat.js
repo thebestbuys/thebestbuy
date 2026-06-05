@@ -238,46 +238,74 @@ export default async function handler(req, res) {
   let amazonVerifyMs = 0;
   let amazonBlocked = false;
 
-  // 6. If recommend: verify all 10 candidates on Amazon, keep only those found (min 3)
+  // 6. If recommend: verify on Amazon, retry Gemini if < 3 found — never show unverified products
   if (parsed.action === 'recommend' && Array.isArray(parsed.products) && parsed.products.length) {
     const t6 = performance.now();
+    const triedNames = new Set();
+    let verifiedProducts = [];
+    let currentCandidates = parsed.products;
 
-    const checks = await Promise.all(
-      parsed.products.map((p) => checkAmazon(p.brand, p.model, category))
-    );
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const checks = await Promise.all(
+        currentCandidates.map((p) => checkAmazon(p.brand, p.model, category))
+      );
+
+      const allInconclusive = checks.every((c) => c.found === null);
+      if (allInconclusive) { amazonBlocked = true; break; }
+
+      currentCandidates.forEach((p) => triedNames.add(`${p.brand} ${p.model}`));
+
+      const newVerified = currentCandidates
+        .map((p, i) => checks[i].found === true ? {
+          ...p,
+          amazon_verified: true,
+          amazon_url: checks[i].amazon_url,
+          image_url:  checks[i].image_url ?? null,
+        } : null)
+        .filter(Boolean);
+
+      verifiedProducts = [...verifiedProducts, ...newVerified];
+      if (verifiedProducts.length >= 3) break;
+
+      if (attempt === 0) {
+        const triedList = [...triedNames].join(', ');
+        try {
+          const repUpstream = await callGemini(apiKey, {
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: [
+              ...toGeminiContents(messages),
+              { role: 'model', parts: [{ text: content }] },
+              { role: 'user', parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${triedList}. Propose 10 autres produits différents qui existent vraiment sur Amazon.fr pour la même recherche.` }] },
+            ],
+            generationConfig: { temperature: 0.5, responseMimeType: 'application/json' },
+          });
+          if (repUpstream.ok) {
+            const repJson = await repUpstream.json();
+            const repText = repJson.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (repText) {
+              try {
+                const repParsed = JSON.parse(repText);
+                if (Array.isArray(repParsed.products)) {
+                  currentCandidates = repParsed.products.filter(
+                    (p) => !triedNames.has(`${p.brand} ${p.model}`)
+                  );
+                }
+              } catch { break; }
+            }
+          }
+        } catch { break; }
+        if (!currentCandidates.length) break;
+      }
+    }
+
     amazonVerifyMs = ms(t6);
 
-    const allInconclusive = checks.every((c) => c.found === null);
-
-    if (!allInconclusive) {
-      const verified = parsed.products
-        .map((p, i) => ({
-          ...p,
-          amazon_verified: checks[i].found,
-          amazon_url: checks[i].amazon_url ?? null,
-          image_url:  checks[i].image_url  ?? null,
-        }))
-        .filter((p) => p.amazon_verified === true);
-
-      if (verified.length >= 3) {
-        parsed.products = verified.slice(0, 5);
-      } else {
-        // Not enough verified — keep all with status attached
-        parsed.products = parsed.products.map((p, i) => ({
-          ...p,
-          amazon_verified: checks[i].found,
-          amazon_url: checks[i].amazon_url ?? null,
-          image_url:  checks[i].image_url  ?? null,
-        }));
-      }
-    } else {
-      amazonBlocked = true;
+    if (amazonBlocked) {
       parsed.products = parsed.products.map((p) => ({
-        ...p,
-        amazon_verified: null,
-        amazon_url: null,
-        image_url:  null,
+        ...p, amazon_verified: null, amazon_url: null, image_url: null,
       }));
+    } else {
+      parsed.products = verifiedProducts.slice(0, 5);
     }
   }
 
