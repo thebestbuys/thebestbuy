@@ -351,7 +351,7 @@ export default function App() {
   }
 
   const top = recommendedProducts[0];
-  const rest = recommendedProducts.slice(1, 5);
+  const rest = recommendedProducts.slice(1, 3);
 
   return (
     <div className="app">
@@ -369,7 +369,7 @@ export default function App() {
       <main className="results-panel">
         <header className="results-header">
           <div>
-            <div className="results-eyebrow">Top 5 sélection</div>
+            <div className="results-eyebrow">Top 3 sélection</div>
             <h2 className="results-title">
               {CATEGORIES.find((c) => c.id === category)?.label ?? category}
             </h2>

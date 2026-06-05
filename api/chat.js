@@ -89,16 +89,16 @@ function ms(start) {
   return Math.round(performance.now() - start);
 }
 
-// Returns { found: bool|null, amazon_url, image_url } — null = Amazon blocked us.
-async function checkAmazon(brand, model, category) {
-  const q = encodeURIComponent(`${category ? category + ' ' : ''}${brand} ${model}`);
+// Searches Amazon, returns first real result with full data — null = blocked.
+async function checkAmazon(brand, model, searchContext) {
+  const q = encodeURIComponent(`${searchContext ? searchContext + ' ' : ''}${brand} ${model}`);
   try {
     const res = await fetch(`https://www.amazon.fr/s?k=${q}&language=fr_FR`, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept-Language': 'fr-FR,fr;q=0.9',
       },
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(3000),
     });
     if (!res.ok) return { found: null };
     const html = await res.text();
@@ -113,14 +113,44 @@ async function checkAmazon(brand, model, category) {
 
     const asin = asinMatch[1];
     const chunk = html.slice(resultIdx, resultIdx + 12000);
+
+    // Image
     const imgMatch =
       chunk.match(/class="s-image"[^>]*src="(https:\/\/m\.media-amazon\.com[^"]+)"/) ||
       chunk.match(/class="s-image"[^>]*data-src="(https:\/\/m\.media-amazon\.com[^"]+)"/);
+
+    // Title — first matching span class Amazon uses for product titles
+    const titleRaw =
+      chunk.match(/class="a-size-base-plus a-color-base a-text-normal">([^<]+)</)?.at(1)?.trim() ||
+      chunk.match(/class="a-size-medium a-color-base a-text-normal">([^<]+)</)?.at(1)?.trim() ||
+      null;
+
+    // Split "ASUS Zenbook S 13 OLED..." → brand=ASUS, model=Zenbook S 13 OLED...
+    const titleWords = titleRaw ? titleRaw.split(' ') : [];
+    const amazonBrand = titleWords[0] || brand;
+    const amazonModel = titleWords.slice(1).join(' ') || model;
+
+    // Price: digits only, avoids NBSP
+    const priceMatch = chunk.match(/class="a-price-whole">([^<]+)/);
+    const price = priceMatch ? (parseInt(priceMatch[1].replace(/\D/g, ''), 10) || null) : null;
+
+    // Rating: "4,5 sur 5"
+    const ratingMatch = chunk.match(/(\d[,.]\d)\s+sur\s+5/);
+    const rating = ratingMatch ? parseFloat(ratingMatch[1].replace(',', '.')) : null;
+
+    // Reviews
+    const reviewMatch = chunk.match(/aria-label="([\d][\d ]*)\s*évaluation/);
+    const reviews = reviewMatch ? (parseInt(reviewMatch[1].replace(/\D/g, ''), 10) || null) : null;
 
     return {
       found: true,
       amazon_url: `https://www.amazon.fr/dp/${asin}?tag=bestbuys007-21`,
       image_url: imgMatch?.[1] ?? null,
+      brand: amazonBrand,
+      model: amazonModel,
+      price,
+      rating,
+      reviews,
     };
   } catch {
     return { found: null };
@@ -238,64 +268,64 @@ export default async function handler(req, res) {
   let amazonVerifyMs = 0;
   let amazonBlocked = false;
 
-  // 6. If recommend: verify on Amazon, retry Gemini if < 3 found — never show unverified products
+  // 6. If recommend: verify sequentially (avoids Amazon bot detection from parallel requests)
   if (parsed.action === 'recommend' && Array.isArray(parsed.products) && parsed.products.length) {
     const t6 = performance.now();
     const triedNames = new Set();
     let verifiedProducts = [];
-    let currentCandidates = parsed.products;
+    // Use the user's original query text (e.g. "smartphone") instead of internal category ID ("phone")
+    const searchContext = messages[0]?.content || category || '';
 
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const checks = await Promise.all(
-        currentCandidates.map((p) => checkAmazon(p.brand, p.model, category))
-      );
-
-      const allInconclusive = checks.every((c) => c.found === null);
-      if (allInconclusive) { amazonBlocked = true; break; }
-
-      currentCandidates.forEach((p) => triedNames.add(`${p.brand} ${p.model}`));
-
-      const newVerified = currentCandidates
-        .map((p, i) => checks[i].found === true ? {
-          ...p,
-          amazon_verified: true,
-          amazon_url: checks[i].amazon_url,
-          image_url:  checks[i].image_url ?? null,
-        } : null)
-        .filter(Boolean);
-
-      verifiedProducts = [...verifiedProducts, ...newVerified];
-      if (verifiedProducts.length >= 3) break;
-
-      if (attempt === 0) {
-        const triedList = [...triedNames].join(', ');
-        try {
-          const repUpstream = await callGemini(apiKey, {
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents: [
-              ...toGeminiContents(messages),
-              { role: 'model', parts: [{ text: content }] },
-              { role: 'user', parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${triedList}. Propose 10 autres produits différents qui existent vraiment sur Amazon.fr pour la même recherche.` }] },
-            ],
-            generationConfig: { temperature: 0.5, responseMimeType: 'application/json' },
+    const verifyCandidates = async (candidates) => {
+      for (const p of candidates) {
+        if (verifiedProducts.length >= 3) break;
+        triedNames.add(`${p.brand} ${p.model}`);
+        const check = await checkAmazon(p.brand, p.model, searchContext);
+        if (check.found === null) { amazonBlocked = true; break; }
+        if (check.found === true) {
+          verifiedProducts.push({
+            ...p,
+            amazon_verified: true,
+            // Replace Gemini's guessed data with real Amazon first-result data
+            brand:      check.brand      || p.brand,
+            model:      check.model      || p.model,
+            amazon_url: check.amazon_url,
+            image_url:  check.image_url  ?? null,
+            price:      check.price      ?? p.price,
+            rating:     check.rating     ?? null,
+            reviews:    check.reviews    ?? null,
           });
-          if (repUpstream.ok) {
-            const repJson = await repUpstream.json();
-            const repText = repJson.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (repText) {
-              try {
-                const repParsed = JSON.parse(repText);
-                if (Array.isArray(repParsed.products)) {
-                  currentCandidates = repParsed.products.filter(
-                    (p) => !triedNames.has(`${p.brand} ${p.model}`)
-                  );
-                }
-              } catch { break; }
+        }
+      }
+    };
+
+    await verifyCandidates(parsed.products);
+
+    // If not blocked but < 3 found, ask Gemini for replacements
+    if (!amazonBlocked && verifiedProducts.length < 3) {
+      const triedList = [...triedNames].join(', ');
+      try {
+        const repUpstream = await callGemini(apiKey, {
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [
+            ...toGeminiContents(messages),
+            { role: 'model', parts: [{ text: content }] },
+            { role: 'user', parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${triedList}. Propose 10 autres produits différents qui existent vraiment sur Amazon.fr pour la même recherche.` }] },
+          ],
+          generationConfig: { temperature: 0.5, responseMimeType: 'application/json' },
+        });
+        if (repUpstream.ok) {
+          const repJson = await repUpstream.json();
+          const repText = repJson.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (repText) {
+            const repParsed = JSON.parse(repText);
+            if (Array.isArray(repParsed.products)) {
+              const fresh = repParsed.products.filter((p) => !triedNames.has(`${p.brand} ${p.model}`));
+              await verifyCandidates(fresh);
             }
           }
-        } catch { break; }
-        if (!currentCandidates.length) break;
-      }
+        }
+      } catch { /* keep what we have */ }
     }
 
     amazonVerifyMs = ms(t6);
@@ -305,7 +335,7 @@ export default async function handler(req, res) {
         ...p, amazon_verified: null, amazon_url: null, image_url: null,
       }));
     } else {
-      parsed.products = verifiedProducts.slice(0, 5);
+      parsed.products = verifiedProducts.slice(0, 3);
     }
   }
 
