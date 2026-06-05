@@ -257,20 +257,19 @@ export default function App() {
 
   const progress = done ? 100 : Math.min(90, turnCount * 22);
 
-  const runTurn = async (history) => {
+  const runTurn = async (history, hiddenExtra = null) => {
     setIsTyping(true);
     setCurrentQuestion(null);
+    const apiHistory = hiddenExtra ? [...history, hiddenExtra] : history;
     try {
-      const result = await askAI({ messages: history, category });
+      const result = await askAI({ messages: apiHistory, category });
       const reply = result?.reply || '…';
       setMessages((m) => [...m, { role: 'bot', text: reply }]);
       if (result?.action === 'recommend') {
         setDone(true);
-        setCurrentQuestion(null);
         if (Array.isArray(result.products) && result.products.length) {
           const base = result.products.map((p) => ({ ...p, category }));
           setRecommendedProducts(base);
-          // Enrich each product with real Amazon data progressively
           base.forEach((p, i) => {
             enrichProduct(p).then((enriched) => {
               setRecommendedProducts((prev) => {
@@ -281,6 +280,10 @@ export default function App() {
             });
           });
         }
+        // Auto-trigger phase 2: ask Gemini for the first refinement question
+        const withReply = [...history, { role: 'bot', text: reply }];
+        setMessages(withReply);
+        runTurn(withReply, { role: 'user', text: '__refine__' });
       } else if (result?.question && Array.isArray(result.question.choices)) {
         setCurrentQuestion(result.question);
       } else {
@@ -370,7 +373,7 @@ export default function App() {
             </h2>
           </div>
           <div className="results-meta">
-            {done ? 'Sélection finalisée' : 'Affinage en cours…'}
+            {done && !currentQuestion && !isTyping ? 'Sélection finalisée' : 'Affinage en cours…'}
           </div>
         </header>
 
