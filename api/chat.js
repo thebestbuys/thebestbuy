@@ -98,7 +98,7 @@ async function checkAmazon(brand, model, category) {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept-Language': 'fr-FR,fr;q=0.9',
       },
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(3000),
     });
     if (!res.ok) return { found: null };
     const html = await res.text();
@@ -238,64 +238,57 @@ export default async function handler(req, res) {
   let amazonVerifyMs = 0;
   let amazonBlocked = false;
 
-  // 6. If recommend: verify on Amazon, retry Gemini if < 3 found — never show unverified products
+  // 6. If recommend: verify sequentially (avoids Amazon bot detection from parallel requests)
   if (parsed.action === 'recommend' && Array.isArray(parsed.products) && parsed.products.length) {
     const t6 = performance.now();
     const triedNames = new Set();
     let verifiedProducts = [];
-    let currentCandidates = parsed.products;
 
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const checks = await Promise.all(
-        currentCandidates.map((p) => checkAmazon(p.brand, p.model, category))
-      );
-
-      const allInconclusive = checks.every((c) => c.found === null);
-      if (allInconclusive) { amazonBlocked = true; break; }
-
-      currentCandidates.forEach((p) => triedNames.add(`${p.brand} ${p.model}`));
-
-      const newVerified = currentCandidates
-        .map((p, i) => checks[i].found === true ? {
-          ...p,
-          amazon_verified: true,
-          amazon_url: checks[i].amazon_url,
-          image_url:  checks[i].image_url ?? null,
-        } : null)
-        .filter(Boolean);
-
-      verifiedProducts = [...verifiedProducts, ...newVerified];
-      if (verifiedProducts.length >= 3) break;
-
-      if (attempt === 0) {
-        const triedList = [...triedNames].join(', ');
-        try {
-          const repUpstream = await callGemini(apiKey, {
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents: [
-              ...toGeminiContents(messages),
-              { role: 'model', parts: [{ text: content }] },
-              { role: 'user', parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${triedList}. Propose 10 autres produits différents qui existent vraiment sur Amazon.fr pour la même recherche.` }] },
-            ],
-            generationConfig: { temperature: 0.5, responseMimeType: 'application/json' },
+    const verifyCandidates = async (candidates) => {
+      for (const p of candidates) {
+        if (verifiedProducts.length >= 5) break;
+        triedNames.add(`${p.brand} ${p.model}`);
+        const check = await checkAmazon(p.brand, p.model, category);
+        if (check.found === null) { amazonBlocked = true; break; }
+        if (check.found === true) {
+          verifiedProducts.push({
+            ...p,
+            amazon_verified: true,
+            amazon_url: check.amazon_url,
+            image_url:  check.image_url ?? null,
           });
-          if (repUpstream.ok) {
-            const repJson = await repUpstream.json();
-            const repText = repJson.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (repText) {
-              try {
-                const repParsed = JSON.parse(repText);
-                if (Array.isArray(repParsed.products)) {
-                  currentCandidates = repParsed.products.filter(
-                    (p) => !triedNames.has(`${p.brand} ${p.model}`)
-                  );
-                }
-              } catch { break; }
+        }
+      }
+    };
+
+    await verifyCandidates(parsed.products);
+
+    // If not blocked but < 3 found, ask Gemini for more and retry
+    if (!amazonBlocked && verifiedProducts.length < 3) {
+      const triedList = [...triedNames].join(', ');
+      try {
+        const repUpstream = await callGemini(apiKey, {
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [
+            ...toGeminiContents(messages),
+            { role: 'model', parts: [{ text: content }] },
+            { role: 'user', parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${triedList}. Propose 10 autres produits différents qui existent vraiment sur Amazon.fr pour la même recherche.` }] },
+          ],
+          generationConfig: { temperature: 0.5, responseMimeType: 'application/json' },
+        });
+        if (repUpstream.ok) {
+          const repJson = await repUpstream.json();
+          const repText = repJson.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (repText) {
+            const repParsed = JSON.parse(repText);
+            if (Array.isArray(repParsed.products)) {
+              await verifyCandidates(
+                repParsed.products.filter((p) => !triedNames.has(`${p.brand} ${p.model}`))
+              );
             }
           }
-        } catch { break; }
-        if (!currentCandidates.length) break;
-      }
+        }
+      } catch { /* keep what we have */ }
     }
 
     amazonVerifyMs = ms(t6);
