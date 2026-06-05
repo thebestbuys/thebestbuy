@@ -87,7 +87,7 @@ function toGeminiContents(messages) {
 }
 
 function ms(start) {
-  return Math.round(performance.now() - start);
+  return Date.now() - start;
 }
 
 const AMAZON_HEADERS = {
@@ -169,7 +169,7 @@ async function callGemini(apiKey, body) {
 }
 
 export default async function handler(req, res) {
-  const t0 = performance.now();
+  const t0 = Date.now();
 
   if (req.method === 'OPTIONS') {
     setCors(res);
@@ -187,7 +187,7 @@ export default async function handler(req, res) {
   }
 
   // 1. Parse body
-  const t1 = performance.now();
+  const t1 = Date.now();
   let body;
   try { body = await readBody(req); } catch {
     return send(res, 400, { error: 'Invalid JSON body' });
@@ -200,7 +200,7 @@ export default async function handler(req, res) {
   const systemPrompt = buildSystemPrompt(category);
 
   // 2. Build prompt
-  const t2 = performance.now();
+  const t2 = Date.now();
   const geminiPayload = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: toGeminiContents(messages),
@@ -209,7 +209,7 @@ export default async function handler(req, res) {
   const t2_ms = ms(t2);
 
   // 3. Call Gemini
-  const t3 = performance.now();
+  const t3 = Date.now();
   let upstream;
   try { upstream = await callGemini(apiKey, geminiPayload); } catch (e) {
     return send(res, 502, { error: 'Network error reaching Gemini', detail: String(e) });
@@ -228,7 +228,7 @@ export default async function handler(req, res) {
   }
 
   // 4. Read + parse Gemini response
-  const t4 = performance.now();
+  const t4 = Date.now();
   let json;
   try { json = await upstream.json(); } catch {
     return send(res, 502, { error: 'Upstream returned non-JSON', gemini_model: GEMINI_MODEL });
@@ -245,7 +245,7 @@ export default async function handler(req, res) {
   }
 
   // 5. Parse model JSON output
-  const t5 = performance.now();
+  const t5 = Date.now();
   let parsed;
   try { parsed = JSON.parse(content); } catch {
     return send(res, 502, { error: 'Model returned invalid JSON', gemini_model: GEMINI_MODEL, raw: content });
@@ -274,13 +274,13 @@ export default async function handler(req, res) {
     const searchQuery = [firstUserMsg, ...searchableTags].filter(Boolean).join(' ');
 
     // Search Amazon for real products
-    const t6 = performance.now();
+    const t6 = Date.now();
     const amazonProducts = await searchAmazonProducts(searchQuery, budgetMax);
     amazonSearchMs = ms(t6);
 
     if (amazonProducts && amazonProducts.length >= 3) {
       // Ask Gemini to rank the real Amazon products
-      const t7 = performance.now();
+      const t7 = Date.now();
       const productList = amazonProducts
         .map((p, i) => `${i + 1}. "${p.title}" | Prix: ${p.price != null ? p.price + '€' : 'inconnu'} | Note: ${p.rating ?? '?'}/5`)
         .join('\n');
