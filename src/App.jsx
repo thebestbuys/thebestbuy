@@ -340,8 +340,6 @@ export default function App() {
 
   const handleBuy = (p) => {
     setSelected(null);
-    window.open(getAmazonUrl(p), '_blank', 'noopener,noreferrer');
-    setMessages((m) => [...m, { role: 'bot', text: `Je vous redirige vers le ${p.model} sur Amazon ✓` }]);
   };
 
   if (!category) {

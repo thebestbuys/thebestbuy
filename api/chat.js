@@ -89,7 +89,7 @@ function ms(start) {
   return Math.round(performance.now() - start);
 }
 
-// Returns true if at least one search result was found, false if blocked/not found.
+// Returns { found: bool|null, amazon_url, image_url } — null = Amazon blocked us.
 async function checkAmazon(brand, model) {
   const q = encodeURIComponent(`${brand} ${model}`);
   try {
@@ -100,12 +100,30 @@ async function checkAmazon(brand, model) {
       },
       signal: AbortSignal.timeout(6000),
     });
-    if (!res.ok) return null; // null = inconclusive (blocked)
+    if (!res.ok) return { found: null };
     const html = await res.text();
-    if (html.includes('validateCaptcha') || html.includes('robot check')) return null;
-    return html.includes('data-component-type="s-search-result"');
+    if (html.includes('validateCaptcha') || html.includes('robot check')) return { found: null };
+
+    const resultIdx = html.indexOf('data-component-type="s-search-result"');
+    if (resultIdx === -1) return { found: false };
+
+    const ctx = html.slice(Math.max(0, resultIdx - 400), resultIdx + 400);
+    const asinMatch = ctx.match(/data-asin="([A-Z0-9]{10})"/);
+    if (!asinMatch?.[1]) return { found: false };
+
+    const asin = asinMatch[1];
+    const chunk = html.slice(resultIdx, resultIdx + 12000);
+    const imgMatch =
+      chunk.match(/class="s-image"[^>]*src="(https:\/\/m\.media-amazon\.com[^"]+)"/) ||
+      chunk.match(/class="s-image"[^>]*data-src="(https:\/\/m\.media-amazon\.com[^"]+)"/);
+
+    return {
+      found: true,
+      amazon_url: `https://www.amazon.fr/dp/${asin}?tag=bestbuys007-21`,
+      image_url: imgMatch?.[1] ?? null,
+    };
   } catch {
-    return null;
+    return { found: null };
   }
 }
 
@@ -230,24 +248,18 @@ export default async function handler(req, res) {
     amazonVerifyMs = ms(t6);
 
     // null = Amazon blocked us → skip replacement to avoid false negatives
-    const allInconclusive = checks.every((c) => c === null);
+    const allInconclusive = checks.every((c) => c.found === null);
 
     if (!allInconclusive) {
-      const notFound = parsed.products.filter((_, i) => checks[i] === false);
+      const notFound = parsed.products.filter((_, i) => checks[i].found === false);
 
       if (notFound.length > 0) {
         const t7 = performance.now();
         const rejectedList = notFound.map((p) => `${p.brand} ${p.model}`).join(', ');
         const replacementMessages = [
           ...toGeminiContents(messages),
-          {
-            role: 'model',
-            parts: [{ text: content }],
-          },
-          {
-            role: 'user',
-            parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${rejectedList}. Remplace-les par d'autres produits similaires qui existent réellement sur Amazon.fr. Retourne la liste complète des 5 produits (conserve ceux qui étaient valides).` }],
-          },
+          { role: 'model', parts: [{ text: content }] },
+          { role: 'user', parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${rejectedList}. Remplace-les par d'autres produits similaires qui existent réellement sur Amazon.fr. Retourne la liste complète des 5 produits (conserve ceux qui étaient valides).` }] },
         ];
 
         try {
@@ -266,6 +278,11 @@ export default async function handler(req, res) {
                 if (Array.isArray(repParsed.products)) {
                   parsed.products = repParsed.products;
                   replacedCount = notFound.length;
+                  // Re-verify replaced products
+                  const newChecks = await Promise.all(
+                    parsed.products.map((p) => checkAmazon(p.brand, p.model))
+                  );
+                  checks.splice(0, checks.length, ...newChecks);
                 }
               } catch { /* keep original */ }
             }
@@ -278,10 +295,12 @@ export default async function handler(req, res) {
       amazonBlocked = true;
     }
 
-    // Tag each product with its verification result
+    // Attach amazon_url + image_url from verification, tag each product
     parsed.products = parsed.products.map((p, i) => ({
       ...p,
-      amazon_verified: checks[i] === true ? true : checks[i] === false ? false : null,
+      amazon_verified: checks[i].found,
+      amazon_url:      checks[i].amazon_url ?? null,
+      image_url:       checks[i].image_url ?? null,
     }));
   }
 

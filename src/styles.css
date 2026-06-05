@@ -1237,6 +1237,24 @@ ul {
 }
 /* We'll instead: parent passes color via style.background on .prod-img. We need screen to take that color. */
 
+/* Generic initials placeholder */
+.generic-img {
+  width: 70%;
+  height: 70%;
+  border-radius: 16px;
+  background: var(--bg-softer);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.generic-img-initials {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--display);
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+
 /* Headphones mockup */
 .headphones-img {
   width: 64%;

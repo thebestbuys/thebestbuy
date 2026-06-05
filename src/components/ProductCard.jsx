@@ -35,12 +35,11 @@ export function ProductImage({ product, size = 'normal' }) {
       </div>
     );
   }
+  const initials = [product.brand?.[0], product.model?.[0]].filter(Boolean).join('').toUpperCase() || '?';
   return (
     <div className="prod-img-wrap" data-size={size}>
-      <div className="prod-img headphones-img" style={{ '--hp-color': c }}>
-        <div className="hp-band" />
-        <div className="hp-cup hp-cup-l" />
-        <div className="hp-cup hp-cup-r" />
+      <div className="prod-img generic-img">
+        <span className="generic-img-initials">{initials}</span>
       </div>
     </div>
   );
