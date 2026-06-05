@@ -1,5 +1,6 @@
 const GEMINI_MODEL = 'gemini-3.1-flash-lite';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const AFFILIATE_TAG = 'bestbuys007-21';
 
 async function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
@@ -89,41 +90,72 @@ function ms(start) {
   return Math.round(performance.now() - start);
 }
 
-// Returns { found: bool|null, amazon_url, image_url } — null = Amazon blocked us.
-async function checkAmazon(brand, model) {
-  const q = encodeURIComponent(`${brand} ${model}`);
+const AMAZON_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xhtml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'fr-FR,fr;q=0.9',
+};
+
+// Scrape multiple real products from an Amazon search page.
+async function searchAmazonProducts(query, budgetMax, maxResults = 12) {
+  let url = `https://www.amazon.fr/s?k=${encodeURIComponent(query)}&language=fr_FR`;
+  if (budgetMax) url += `&rh=p_36%3A-${budgetMax * 100}`; // price filter in centimes
   try {
-    const res = await fetch(`https://www.amazon.fr/s?k=${q}&language=fr_FR`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept-Language': 'fr-FR,fr;q=0.9',
-      },
-      signal: AbortSignal.timeout(6000),
-    });
-    if (!res.ok) return { found: null };
+    const res = await fetch(url, { headers: AMAZON_HEADERS, signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
     const html = await res.text();
-    if (html.includes('validateCaptcha') || html.includes('robot check')) return { found: null };
+    if (html.includes('validateCaptcha') || html.includes('robot check')) return null;
 
-    const resultIdx = html.indexOf('data-component-type="s-search-result"');
-    if (resultIdx === -1) return { found: false };
+    const products = [];
+    let pos = 0;
 
-    const ctx = html.slice(Math.max(0, resultIdx - 400), resultIdx + 400);
-    const asinMatch = ctx.match(/data-asin="([A-Z0-9]{10})"/);
-    if (!asinMatch?.[1]) return { found: false };
+    while (products.length < maxResults) {
+      const idx = html.indexOf('data-component-type="s-search-result"', pos);
+      if (idx === -1) break;
 
-    const asin = asinMatch[1];
-    const chunk = html.slice(resultIdx, resultIdx + 12000);
-    const imgMatch =
-      chunk.match(/class="s-image"[^>]*src="(https:\/\/m\.media-amazon\.com[^"]+)"/) ||
-      chunk.match(/class="s-image"[^>]*data-src="(https:\/\/m\.media-amazon\.com[^"]+)"/);
+      const headerCtx = html.slice(Math.max(0, idx - 300), idx + 300);
+      const asinMatch = headerCtx.match(/data-asin="([A-Z0-9]{10})"/);
+      if (!asinMatch?.[1]) { pos = idx + 1; continue; }
 
-    return {
-      found: true,
-      amazon_url: `https://www.amazon.fr/dp/${asin}?tag=bestbuys007-21`,
-      image_url: imgMatch?.[1] ?? null,
-    };
+      const asin = asinMatch[1];
+      const chunk = html.slice(idx, idx + 15000);
+
+      // Title — several patterns Amazon uses
+      const titleMatch =
+        chunk.match(/class="[^"]*a-text-normal[^"]*">\s*([^<]{10,200})<\/span>/) ||
+        chunk.match(/class="[^"]*a-size-base-plus[^"]*">\s*([^<]{10,200})<\/span>/) ||
+        chunk.match(/class="[^"]*a-size-medium[^"]*">\s*([^<]{10,200})<\/span>/);
+      const title = titleMatch?.[1]?.trim();
+      if (!title) { pos = idx + 1; continue; }
+
+      // Image
+      const imgMatch =
+        chunk.match(/class="s-image"[^>]*src="(https:\/\/m\.media-amazon\.com[^"]+)"/) ||
+        chunk.match(/class="s-image"[^>]*data-src="(https:\/\/m\.media-amazon\.com[^"]+)"/);
+
+      // Price
+      const priceMatch = chunk.match(/class="a-price-whole">\s*([\d\s ]+)/);
+      const price = priceMatch ? parseInt(priceMatch[1].replace(/[\s ]/g, '')) : null;
+
+      // Rating
+      const ratingMatch = chunk.match(/([\d]+[,.]\d+)\s+sur\s+5/);
+      const rating = ratingMatch ? parseFloat(ratingMatch[1].replace(',', '.')) : null;
+
+      products.push({
+        asin,
+        title,
+        price,
+        rating,
+        image_url: imgMatch?.[1] ?? null,
+        amazon_url: `https://www.amazon.fr/dp/${asin}?tag=${AFFILIATE_TAG}`,
+      });
+
+      pos = idx + 1;
+    }
+
+    return products.length >= 3 ? products : null;
   } catch {
-    return { found: null };
+    return null;
   }
 }
 
@@ -157,17 +189,13 @@ export default async function handler(req, res) {
   // 1. Parse body
   const t1 = performance.now();
   let body;
-  try {
-    body = await readBody(req);
-  } catch {
+  try { body = await readBody(req); } catch {
     return send(res, 400, { error: 'Invalid JSON body' });
   }
   const t1_ms = ms(t1);
 
   const { messages = [], category } = body;
-  if (!Array.isArray(messages)) {
-    return send(res, 400, { error: '"messages" must be an array' });
-  }
+  if (!Array.isArray(messages)) return send(res, 400, { error: '"messages" must be an array' });
 
   const systemPrompt = buildSystemPrompt(category);
 
@@ -183,9 +211,7 @@ export default async function handler(req, res) {
   // 3. Call Gemini
   const t3 = performance.now();
   let upstream;
-  try {
-    upstream = await callGemini(apiKey, geminiPayload);
-  } catch (e) {
+  try { upstream = await callGemini(apiKey, geminiPayload); } catch (e) {
     return send(res, 502, { error: 'Network error reaching Gemini', detail: String(e) });
   }
   const t3_ms = ms(t3);
@@ -193,14 +219,11 @@ export default async function handler(req, res) {
   if (!upstream.ok) {
     const text = await upstream.text().catch(() => '');
     let geminiError = {};
-    try { geminiError = JSON.parse(text); } catch { /* raw text */ }
+    try { geminiError = JSON.parse(text); } catch { /* raw */ }
     return send(res, upstream.status, {
-      error: 'Upstream error',
-      gemini_status: upstream.status,
-      gemini_status_text: upstream.statusText,
-      gemini_model: GEMINI_MODEL,
-      gemini_error: geminiError,
-      gemini_raw: text,
+      error: 'Upstream error', gemini_status: upstream.status,
+      gemini_status_text: upstream.statusText, gemini_model: GEMINI_MODEL,
+      gemini_error: geminiError, gemini_raw: text,
     });
   }
 
@@ -215,11 +238,9 @@ export default async function handler(req, res) {
   const content = json.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!content) {
     return send(res, 502, {
-      error: 'No content in Gemini response',
-      gemini_model: GEMINI_MODEL,
+      error: 'No content in Gemini response', gemini_model: GEMINI_MODEL,
       finish_reason: json.candidates?.[0]?.finishReason,
-      prompt_feedback: json.promptFeedback,
-      full_response: json,
+      prompt_feedback: json.promptFeedback, full_response: json,
     });
   }
 
@@ -235,73 +256,96 @@ export default async function handler(req, res) {
     input_tokens:  json.usageMetadata?.promptTokenCount ?? null,
     output_tokens: json.usageMetadata?.candidatesTokenCount ?? null,
   };
-  let amazonVerifyMs = 0;
-  let replacementMs = 0;
-  let amazonBlocked = false;
-  let replacedCount = 0;
 
-  // 6. If recommend: verify each product exists on Amazon, replace those not found
-  if (parsed.action === 'recommend' && Array.isArray(parsed.products) && parsed.products.length) {
+  let amazonSearchMs = 0;
+  let rankingMs = 0;
+  let usedAmazonSearch = false;
+
+  // 6. If recommend: search Amazon first, then rank with Gemini
+  if (parsed.action === 'recommend') {
+    const prefs = parsed.preferences ?? {};
+    const budgetMax = prefs.budget_max ?? null;
+
+    // Build search query: use the user's first message as base (most natural)
+    const firstUserMsg = messages.find((m) => m.role === 'user')?.text ?? category ?? '';
+    const searchableTags = (prefs.tags ?? []).filter((t) =>
+      !['low', 'mid', 'high', 'budget', 'cheap', 'expensive'].includes(t)
+    ).slice(0, 2);
+    const searchQuery = [firstUserMsg, ...searchableTags].filter(Boolean).join(' ');
+
+    // Search Amazon for real products
     const t6 = performance.now();
+    const amazonProducts = await searchAmazonProducts(searchQuery, budgetMax);
+    amazonSearchMs = ms(t6);
 
-    const checks = await Promise.all(parsed.products.map((p) => checkAmazon(p.brand, p.model)));
-    amazonVerifyMs = ms(t6);
+    if (amazonProducts && amazonProducts.length >= 3) {
+      // Ask Gemini to rank the real Amazon products
+      const t7 = performance.now();
+      const productList = amazonProducts
+        .map((p, i) => `${i + 1}. "${p.title}" | Prix: ${p.price != null ? p.price + '€' : 'inconnu'} | Note: ${p.rating ?? '?'}/5`)
+        .join('\n');
 
-    // null = Amazon blocked us → skip replacement to avoid false negatives
-    const allInconclusive = checks.every((c) => c.found === null);
+      const rankingContents = [
+        ...toGeminiContents(messages),
+        { role: 'model', parts: [{ text: content }] },
+        {
+          role: 'user',
+          parts: [{
+            text: `Voici ${amazonProducts.length} produits RÉELS trouvés sur Amazon.fr. Sélectionne et classe les 5 meilleurs selon les préférences de l'utilisateur. Pour chaque produit retenu, indique son numéro dans la liste (champ "idx", base 1), extrais la marque et le modèle du titre, génère 4 specs clés et une raison courte. Retourne UNIQUEMENT ce JSON:
+{"ranked":[{"idx":3,"brand":"...","model":"...","score":94,"specs":["..."],"why":"..."},...]}\n\nProduits:\n${productList}`,
+          }],
+        },
+      ];
 
-    if (!allInconclusive) {
-      const notFound = parsed.products.filter((_, i) => checks[i].found === false);
+      try {
+        const rankUpstream = await callGemini(apiKey, {
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: rankingContents,
+          generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+        });
 
-      if (notFound.length > 0) {
-        const t7 = performance.now();
-        const rejectedList = notFound.map((p) => `${p.brand} ${p.model}`).join(', ');
-        const replacementMessages = [
-          ...toGeminiContents(messages),
-          { role: 'model', parts: [{ text: content }] },
-          { role: 'user', parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${rejectedList}. Remplace-les par d'autres produits similaires qui existent réellement sur Amazon.fr. Retourne la liste complète des 5 produits (conserve ceux qui étaient valides).` }] },
-        ];
-
-        try {
-          const replacementUpstream = await callGemini(apiKey, {
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents: replacementMessages,
-            generationConfig: { temperature: 0.5, responseMimeType: 'application/json' },
-          });
-
-          if (replacementUpstream.ok) {
-            const repJson = await replacementUpstream.json();
-            const repContent = repJson.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (repContent) {
-              try {
-                const repParsed = JSON.parse(repContent);
-                if (Array.isArray(repParsed.products)) {
-                  parsed.products = repParsed.products;
-                  replacedCount = notFound.length;
-                  // Re-verify replaced products
-                  const newChecks = await Promise.all(
-                    parsed.products.map((p) => checkAmazon(p.brand, p.model))
-                  );
-                  checks.splice(0, checks.length, ...newChecks);
-                }
-              } catch { /* keep original */ }
-            }
+        if (rankUpstream.ok) {
+          const rankJson = await rankUpstream.json();
+          const rankContent = rankJson.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rankContent) {
+            try {
+              const rankParsed = JSON.parse(rankContent);
+              const ranked = rankParsed.ranked ?? rankParsed.products;
+              if (Array.isArray(ranked) && ranked.length > 0) {
+                parsed.products = ranked.slice(0, 5).map((r, i) => {
+                  const ap = amazonProducts[(r.idx ?? i + 1) - 1] ?? amazonProducts[i];
+                  return {
+                    id: `p${i + 1}`,
+                    brand:      r.brand ?? '',
+                    model:      r.model ?? ap.title,
+                    price:      ap.price ?? r.price ?? 0,
+                    score:      r.score ?? 80,
+                    specs:      r.specs ?? [],
+                    why:        r.why ?? '',
+                    amazon_url: ap.amazon_url,
+                    image_url:  ap.image_url,
+                    amazon_verified: true,
+                  };
+                });
+                usedAmazonSearch = true;
+              }
+            } catch { /* fall through to fallback */ }
           }
-        } catch { /* keep original */ }
+        }
+      } catch { /* fall through to fallback */ }
 
-        replacementMs = ms(t7);
-      }
-    } else {
-      amazonBlocked = true;
+      rankingMs = ms(t7);
     }
 
-    // Attach amazon_url + image_url from verification, tag each product
-    parsed.products = parsed.products.map((p, i) => ({
-      ...p,
-      amazon_verified: checks[i].found,
-      amazon_url:      checks[i].amazon_url ?? null,
-      image_url:       checks[i].image_url ?? null,
-    }));
+    // Fallback: if Amazon search failed/blocked, keep Gemini's products as-is
+    if (!usedAmazonSearch && Array.isArray(parsed.products)) {
+      parsed.products = parsed.products.map((p) => ({
+        ...p,
+        amazon_url: `https://www.amazon.fr/s?k=${encodeURIComponent(`${p.brand} ${p.model}`)}&tag=${AFFILIATE_TAG}`,
+        image_url: null,
+        amazon_verified: false,
+      }));
+    }
   }
 
   const totalMs = ms(t0);
@@ -314,12 +358,11 @@ export default async function handler(req, res) {
       gemini_api_call:   t3_ms,
       read_response:     t4_ms,
       parse_json_output: t5_ms,
-      amazon_verify:     amazonVerifyMs,
-      replacement_call:  replacementMs,
+      amazon_search:     amazonSearchMs,
+      ranking_call:      rankingMs,
       total:             totalMs,
     },
-    amazon_blocked:  amazonBlocked,
-    replaced_count:  replacedCount,
+    used_amazon_search: usedAmazonSearch,
     ...debugTokens,
   };
 
