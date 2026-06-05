@@ -3,7 +3,14 @@ import { CATEGORIES } from './data.js';
 import { askAI, enrichProduct } from './lib/askAI.js';
 import AuthMenu from './components/AuthMenu.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
+import HistoryPanel from './components/HistoryPanel.jsx';
 import { HeroCard, ProductImage, ScoreRing, SmallCard, Stars } from './components/ProductCard.jsx';
+import { useAuth } from './lib/auth.jsx';
+import {
+  deriveTitle,
+  newConversationId,
+  saveConversation,
+} from './lib/history.js';
 import {
   TweakRadio,
   TweakSection,
@@ -71,7 +78,7 @@ function ResultsPlaceholder({ category }) {
   );
 }
 
-function CategoryPicker({ onPick }) {
+function CategoryPicker({ onPick, onOpenHistory }) {
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
 
@@ -118,6 +125,19 @@ function CategoryPicker({ onPick }) {
   return (
     <div className="home">
       <div className="home-topbar">
+        <button
+          type="button"
+          className="auth-trigger auth-trigger-home"
+          onClick={onOpenHistory}
+          aria-label="Historique"
+          title="Historique des conversations"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.4" />
+            <path d="M8 4.5V8l2.4 1.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          </svg>
+          Historique
+        </button>
         <AuthMenu variant="home" />
       </div>
       <main className="home-main">
@@ -247,6 +267,7 @@ export default function App() {
   }/*EDITMODE-END*/;
 
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const { user } = useAuth();
 
   const [category, setCategory] = useState(null);
   const [initialQuery, setInitialQuery] = useState('');
@@ -258,6 +279,8 @@ export default function App() {
   const [done, setDone] = useState(false);
   const [turnCount, setTurnCount] = useState(0);
   const [recommendedProducts, setRecommendedProducts] = useState([]);
+  const [convoId, setConvoId] = useState(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const progress = done ? 100 : Math.min(90, turnCount * 22);
 
@@ -306,6 +329,7 @@ export default function App() {
 
   useEffect(() => {
     if (!category) return;
+    if (messages.length > 0) return; // restored from history — skip auto-start
     const initial = initialQuery
       ? [{ role: 'user', text: initialQuery }]
       : [{ role: 'user', text: `Je cherche un ${CATEGORIES.find((c) => c.id === category)?.label.toLowerCase() ?? category}.` }];
@@ -313,6 +337,20 @@ export default function App() {
     runTurn(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
+
+  useEffect(() => {
+    if (!convoId || !category || messages.length === 0) return;
+    saveConversation(user?.sub, {
+      id: convoId,
+      title: deriveTitle({ initialQuery, messages }),
+      category,
+      initialQuery,
+      messages,
+      recommendedProducts,
+      done,
+      turnCount,
+    });
+  }, [convoId, category, messages, recommendedProducts, initialQuery, done, turnCount, user?.sub]);
 
   const sendUserMessage = (text) => {
     const next = [...messages, { role: 'user', text }];
@@ -334,6 +372,24 @@ export default function App() {
     setDone(false);
     setTurnCount(0);
     setRecommendedProducts([]);
+    setConvoId(null);
+  };
+
+  const loadConversation = (convo) => {
+    if (!convo) return;
+    setConvoId(convo.id);
+    setInitialQuery(convo.initialQuery || '');
+    setMessages(Array.isArray(convo.messages) ? convo.messages : []);
+    setRecommendedProducts(
+      Array.isArray(convo.recommendedProducts) ? convo.recommendedProducts : [],
+    );
+    setDone(Boolean(convo.done));
+    setCurrentQuestion(null);
+    setIsTyping(false);
+    setTurnCount(convo.turnCount || convo.messages?.length || 0);
+    setSelected(null);
+    setRefreshKey((k) => k + 1);
+    setCategory(convo.category);
   };
 
   const getAmazonUrl = (p) => {
@@ -347,7 +403,24 @@ export default function App() {
   };
 
   if (!category) {
-    return <CategoryPicker onPick={(cat, q) => { setCategory(cat); setInitialQuery(q || ''); }} />;
+    return (
+      <>
+        <CategoryPicker
+          onPick={(cat, q) => {
+            setConvoId(newConversationId());
+            setCategory(cat);
+            setInitialQuery(q || '');
+          }}
+          onOpenHistory={() => setHistoryOpen(true)}
+        />
+        <HistoryPanel
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          onLoad={loadConversation}
+          currentId={convoId}
+        />
+      </>
+    );
   }
 
   const top = recommendedProducts[0];
@@ -361,6 +434,7 @@ export default function App() {
         onAnswer={handleAnswer}
         onFreeText={handleFreeText}
         onRestart={handleRestart}
+        onOpenHistory={() => setHistoryOpen(true)}
         isTyping={isTyping}
         layout={t.chatLayout}
         progress={progress}
@@ -409,6 +483,13 @@ export default function App() {
           onBuy={handleBuy}
         />
       )}
+
+      <HistoryPanel
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        onLoad={loadConversation}
+        currentId={convoId}
+      />
 
       <TweaksPanel title="Tweaks">
         <TweakSection label="Layout du chat" />

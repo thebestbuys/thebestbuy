@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { askAI, enrichProduct } from "../lib/askAI.js";
 import { useAuth } from "../lib/auth.jsx";
+import {
+  deleteConversation,
+  deriveTitle,
+  formatRelative,
+  listConversations,
+  newConversationId,
+  saveConversation,
+} from "../lib/history.js";
 
 // Which search variant to ship: 'A' = Premium Search, 'B' = Hey-Jordan Hub.
 const VARIANT = "B";
@@ -289,21 +297,28 @@ function ProductCard({ product }) {
   );
 }
 
-function ChatScreen({ query, onBack, accent = BB.coral }) {
-  const category = useMemo(() => detectCategory(query), [query]);
-  const [messages, setMessages] = useState(() =>
-    query ? [{ role: "user", text: query }] : [],
+function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
+  const { user } = useAuth();
+  const category = useMemo(
+    () => restore?.category || detectCategory(query),
+    [query, restore],
   );
+  const [messages, setMessages] = useState(() => {
+    if (restore?.messages?.length) return restore.messages;
+    return query ? [{ role: "user", text: query }] : [];
+  });
   const [preferences, setPreferences] = useState({
     tags: [],
     budget_max: null,
     budget_min: null,
   });
   const [typing, setTyping] = useState(false);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState(Boolean(restore?.done));
   const [feedback, setFeedback] = useState(null);
   const [input, setInput] = useState("");
-  const [recommendedProducts, setRecommendedProducts] = useState([]);
+  const [recommendedProducts, setRecommendedProducts] = useState(
+    Array.isArray(restore?.recommendedProducts) ? restore.recommendedProducts : [],
+  );
   const scrollRef = useRef(null);
   const initRan = useRef(false);
 
@@ -360,12 +375,29 @@ function ChatScreen({ query, onBack, accent = BB.coral }) {
   useEffect(() => {
     if (initRan.current) return;
     initRan.current = true;
+    if (restore?.messages?.length) return; // restored — skip auto-run
     const initial = query
       ? [{ role: "user", text: query }]
       : [{ role: "user", text: "I'm looking for a product, can you help?" }];
     runTurn(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!convoId || messages.length === 0) return;
+    const normalized = messages.map((m) =>
+      m.role === "user" ? m : { ...m, role: "bot" },
+    );
+    saveConversation(user?.sub, {
+      id: convoId,
+      title: deriveTitle({ initialQuery: query, messages: normalized }),
+      category,
+      initialQuery: query,
+      messages: normalized,
+      recommendedProducts,
+      done,
+    });
+  }, [convoId, messages, recommendedProducts, done, category, query, user?.sub]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -1003,6 +1035,221 @@ function AuthSheet({ open, onClose }) {
   );
 }
 
+function HistorySheet({ open, onClose, onLoad }) {
+  const { user } = useAuth();
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    if (!open) return;
+    setItems(listConversations(user?.sub));
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open, onClose, user?.sub]);
+
+  if (!open) return null;
+
+  const remove = (id, e) => {
+    e.stopPropagation();
+    deleteConversation(user?.sub, id);
+    setItems((cur) => cur.filter((c) => c.id !== id));
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(20,12,8,0.45)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        animation: "bb-rise 0.22s ease-out",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: 480,
+          maxHeight: "82vh",
+          background: BB.paper,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          padding: "12px 0 18px",
+          boxShadow: "0 -10px 40px rgba(0,0,0,0.18)",
+          animation: "bb-rise 0.28s ease-out",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <div
+          style={{
+            width: 44,
+            height: 4,
+            borderRadius: 4,
+            background: BB.line,
+            margin: "0 auto 10px",
+          }}
+        />
+        <div
+          style={{
+            padding: "4px 22px 14px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontFamily: BB.display,
+                fontSize: 20,
+                fontWeight: 700,
+                color: BB.ink,
+                letterSpacing: -0.2,
+              }}
+            >
+              Historique
+            </div>
+            <div style={{ fontSize: 12, color: BB.inkSoft, marginTop: 2 }}>
+              {items.length} conversation{items.length > 1 ? "s" : ""}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Fermer"
+            style={{
+              appearance: "none",
+              border: 0,
+              background: BB.cream,
+              color: BB.inkSoft,
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+        <div style={{ overflowY: "auto", padding: "0 14px 6px" }}>
+          {items.length === 0 ? (
+            <div
+              style={{
+                padding: "30px 22px 40px",
+                textAlign: "center",
+                color: BB.inkSoft,
+                fontSize: 13,
+                lineHeight: 1.5,
+              }}
+            >
+              <div style={{ fontSize: 24, color: BB.coral, marginBottom: 8 }}>
+                ✦
+              </div>
+              Aucune conversation sauvegardée.
+              <br />
+              Vos recherches passées apparaîtront ici.
+            </div>
+          ) : (
+            items.map((c) => (
+              <div
+                key={c.id}
+                style={{
+                  display: "flex",
+                  alignItems: "stretch",
+                  gap: 6,
+                  background: "#fff",
+                  border: `1px solid ${BB.line}`,
+                  borderRadius: 14,
+                  marginBottom: 8,
+                  overflow: "hidden",
+                }}
+              >
+                <button
+                  onClick={() => {
+                    onLoad(c);
+                    onClose();
+                  }}
+                  style={{
+                    flex: 1,
+                    appearance: "none",
+                    border: 0,
+                    background: "transparent",
+                    textAlign: "left",
+                    padding: "12px 14px",
+                    fontFamily: BB.body,
+                    cursor: "pointer",
+                    minWidth: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13.5,
+                      fontWeight: 700,
+                      color: BB.ink,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {c.title || "Conversation"}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 4,
+                      fontSize: 11,
+                      color: BB.inkSoft,
+                      display: "flex",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span>{formatRelative(c.updatedAt)}</span>
+                    {Array.isArray(c.messages) && c.messages.length > 0 && (
+                      <span>· {c.messages.length} msgs</span>
+                    )}
+                    {c.done && (
+                      <span style={{ color: "#3CCB7F", fontWeight: 700 }}>
+                        ✓ finalisée
+                      </span>
+                    )}
+                  </div>
+                </button>
+                <button
+                  onClick={(e) => remove(c.id, e)}
+                  aria-label="Supprimer"
+                  style={{
+                    appearance: "none",
+                    border: 0,
+                    background: "transparent",
+                    padding: "0 14px",
+                    color: BB.inkMute,
+                    cursor: "pointer",
+                    fontSize: 14,
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SearchA({ onSubmit, onOpenAuth }) {
   const [q, setQ] = useState("");
   const suggestions = [
@@ -1179,7 +1426,7 @@ function SearchA({ onSubmit, onOpenAuth }) {
   );
 }
 
-function SearchB({ onSubmit, onOpenAuth }) {
+function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onLoadConvo, recents }) {
   const [q, setQ] = useState("");
   const submit = (text) => onSubmit(text || q || "Coffee maker");
 
@@ -1354,69 +1601,115 @@ function SearchB({ onSubmit, onOpenAuth }) {
           }}
         >
           <div style={{ fontSize: 13, fontWeight: 700, color: BB.ink }}>
-            Recent
+            Récents
           </div>
-          <div style={{ fontSize: 11, color: BB.inkMute, fontWeight: 600 }}>
-            see all →
-          </div>
+          {recents.length > 0 && (
+            <button
+              type="button"
+              onClick={onOpenHistory}
+              style={{
+                appearance: "none",
+                border: 0,
+                background: "transparent",
+                padding: 0,
+                fontSize: 11,
+                color: BB.inkMute,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: BB.body,
+              }}
+            >
+              voir tout →
+            </button>
+          )}
         </div>
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: 14,
-            padding: "10px 12px",
-            border: `1px solid ${BB.line}`,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-          }}
-        >
+        {recents.length === 0 ? (
           <div
             style={{
-              width: 30,
-              height: 30,
-              borderRadius: 10,
-              background: BB.chipBg,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 14,
+              background: "#fff",
+              borderRadius: 14,
+              padding: "14px 14px",
+              border: `1px dashed ${BB.line}`,
+              fontSize: 12,
+              color: BB.inkSoft,
+              textAlign: "center",
+              lineHeight: 1.5,
             }}
           >
-            🕓
+            Aucune recherche pour l'instant.
+            <br />
+            Lance une recherche, on la retrouvera ici.
           </div>
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-              fontSize: 13,
-              fontWeight: 700,
-              color: BB.ink,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            "best lightweight running shoes"
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {recents.map((c) => (
+              <div
+                key={c.id}
+                style={{
+                  background: "#fff",
+                  borderRadius: 14,
+                  padding: "10px 12px",
+                  border: `1px solid ${BB.line}`,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <div
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 10,
+                    background: BB.chipBg,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 14,
+                    flexShrink: 0,
+                  }}
+                >
+                  🕓
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: BB.ink,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {c.title || "Conversation"}
+                  </div>
+                  <div style={{ fontSize: 10.5, color: BB.inkMute, marginTop: 2 }}>
+                    {formatRelative(c.updatedAt)}
+                    {c.done ? " · finalisée" : ""}
+                  </div>
+                </div>
+                <button
+                  onClick={() => onLoadConvo(c)}
+                  style={{
+                    appearance: "none",
+                    border: 0,
+                    background: BB.coral,
+                    color: "#fff",
+                    padding: "6px 12px",
+                    borderRadius: 999,
+                    fontWeight: 700,
+                    fontSize: 11,
+                    cursor: "pointer",
+                    fontFamily: BB.body,
+                    flexShrink: 0,
+                  }}
+                >
+                  Reprendre
+                </button>
+              </div>
+            ))}
           </div>
-          <button
-            onClick={() => submit("best lightweight running shoes")}
-            style={{
-              appearance: "none",
-              border: 0,
-              background: BB.coral,
-              color: "#fff",
-              padding: "6px 12px",
-              borderRadius: 999,
-              fontWeight: 700,
-              fontSize: 11,
-              cursor: "pointer",
-              fontFamily: BB.body,
-            }}
-          >
-            Continue
-          </button>
-        </div>
+        )}
       </div>
 
       <div style={{ flex: 1 }} />
@@ -1425,13 +1718,29 @@ function SearchB({ onSubmit, onOpenAuth }) {
 }
 
 export default function MobileApp() {
+  const { user } = useAuth();
   const [view, setView] = useState("search");
   const [query, setQuery] = useState("");
   const [transitioning, setTransitioning] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [convoId, setConvoId] = useState(null);
+  const [restoreData, setRestoreData] = useState(null);
+  const [recents, setRecents] = useState([]);
+
+  const refreshRecents = () => {
+    setRecents(listConversations(user?.sub).slice(0, 3));
+  };
+
+  useEffect(() => {
+    refreshRecents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.sub, view, authOpen, historyOpen]);
 
   const start = (q) => {
+    setConvoId(newConversationId());
     setQuery(q);
+    setRestoreData(null);
     setTransitioning(true);
     setTimeout(() => {
       setView("chat");
@@ -1443,11 +1752,25 @@ export default function MobileApp() {
     setTimeout(() => {
       setView("search");
       setTransitioning(false);
+      setRestoreData(null);
+      setConvoId(null);
     }, 180);
+  };
+  const loadConvo = (convo) => {
+    if (!convo) return;
+    setConvoId(convo.id);
+    setQuery(convo.initialQuery || convo.title || "");
+    setRestoreData(convo);
+    setTransitioning(true);
+    setTimeout(() => {
+      setView("chat");
+      setTransitioning(false);
+    }, 220);
   };
 
   const SearchScreen = VARIANT === "B" ? SearchB : SearchA;
   const openAuth = () => setAuthOpen(true);
+  const openHistory = () => setHistoryOpen(true);
 
   return (
     <div className="bb-mobile-root">
@@ -1462,12 +1785,28 @@ export default function MobileApp() {
         }}
       >
         {view === "search" ? (
-          <SearchScreen onSubmit={start} onOpenAuth={openAuth} />
+          <SearchScreen
+            onSubmit={start}
+            onOpenAuth={openAuth}
+            onOpenHistory={openHistory}
+            onLoadConvo={loadConvo}
+            recents={recents}
+          />
         ) : (
-          <ChatScreen query={query} onBack={back} />
+          <ChatScreen
+            query={query}
+            onBack={back}
+            convoId={convoId}
+            restore={restoreData}
+          />
         )}
       </div>
       <AuthSheet open={authOpen} onClose={() => setAuthOpen(false)} />
+      <HistorySheet
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        onLoad={loadConvo}
+      />
     </div>
   );
 }

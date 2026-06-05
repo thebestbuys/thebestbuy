@@ -105,7 +105,7 @@ function BudgetSlider({ question, onAnswer }) {
   );
 }
 
-export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, isTyping, layout, progress }) {
+export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onOpenHistory, isTyping, layout, progress }) {
   const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
 
@@ -138,7 +138,22 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
             </div>
           </div>
         </div>
-        <button className="chat-restart" onClick={onRestart} title="Recommencer">↻</button>
+        <div className="chat-header-actions">
+          {onOpenHistory && (
+            <button
+              className="chat-restart"
+              onClick={onOpenHistory}
+              title="Historique"
+              aria-label="Historique"
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M8 4.5V8l2.4 1.6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
+          <button className="chat-restart" onClick={onRestart} title="Recommencer" aria-label="Recommencer">↻</button>
+        </div>
       </header>
 
       <div className="chat-progress">
