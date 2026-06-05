@@ -113,14 +113,30 @@ async function checkAmazon(brand, model, category) {
 
     const asin = asinMatch[1];
     const chunk = html.slice(resultIdx, resultIdx + 12000);
+
     const imgMatch =
       chunk.match(/class="s-image"[^>]*src="(https:\/\/m\.media-amazon\.com[^"]+)"/) ||
       chunk.match(/class="s-image"[^>]*data-src="(https:\/\/m\.media-amazon\.com[^"]+)"/);
+
+    // Price: extract digits only to avoid NBSP issues
+    const priceMatch = chunk.match(/class="a-price-whole">([^<]+)/);
+    const price = priceMatch ? (parseInt(priceMatch[1].replace(/\D/g, ''), 10) || null) : null;
+
+    // Rating: "4,5 sur 5"
+    const ratingMatch = chunk.match(/(\d[,.]\d)\s+sur\s+5/);
+    const rating = ratingMatch ? parseFloat(ratingMatch[1].replace(',', '.')) : null;
+
+    // Review count
+    const reviewMatch = chunk.match(/aria-label="([\d][\d ]*)\s*évaluation/);
+    const reviews = reviewMatch ? (parseInt(reviewMatch[1].replace(/\D/g, ''), 10) || null) : null;
 
     return {
       found: true,
       amazon_url: `https://www.amazon.fr/dp/${asin}?tag=bestbuys007-21`,
       image_url: imgMatch?.[1] ?? null,
+      price,
+      rating,
+      reviews,
     };
   } catch {
     return { found: null };
@@ -255,7 +271,10 @@ export default async function handler(req, res) {
             ...p,
             amazon_verified: true,
             amazon_url: check.amazon_url,
-            image_url:  check.image_url ?? null,
+            image_url:  check.image_url  ?? null,
+            price:      check.price      ?? p.price,
+            rating:     check.rating     ?? null,
+            reviews:    check.reviews    ?? null,
           });
         }
       }
