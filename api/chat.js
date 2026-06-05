@@ -30,11 +30,11 @@ OBJECTIF: identifier les meilleurs produits réels pour l'utilisateur (catégori
 
 PHASE 1 — DÉCOUVERTE (5 questions):
 - Pose EXACTEMENT 5 questions, en commençant OBLIGATOIREMENT par le budget (choix avec bornes "min"/"max" en euros).
-- Après la 5e réponse: action="recommend", products=[5 produits], question=null.
+- Après la 5e réponse: action="recommend", products=[10 produits], question=null.
 
 PHASE 2 — RAFFINEMENT CONTINU (après le premier recommend):
 - Pose 3 nouvelles questions de raffinement (action="ask") pour affiner davantage.
-- Après 3 réponses: action="recommend" avec les 5 produits MIS À JOUR selon toutes les préférences accumulées.
+- Après 3 réponses: action="recommend" avec les 10 produits MIS À JOUR selon toutes les préférences accumulées.
 - Répète indéfiniment: 3 questions → recommend mis à jour → 3 questions → recommend mis à jour → ...
 - Si tu reçois le message "__refine__": c'est le signal de démarrage de la phase 2, pose immédiatement la première question de raffinement (action="ask").
 
@@ -75,7 +75,7 @@ FORMAT DE RÉPONSE: UNIQUEMENT un objet JSON valide de cette forme exacte:
   ]
 }
 
-IMPORTANT: "products" est null quand action="ask". Quand action="recommend", "products" contient exactement 5 produits.`;
+IMPORTANT: "products" est null quand action="ask". Quand action="recommend", "products" contient exactement 10 produits.`;
 }
 
 function toGeminiContents(messages) {
@@ -90,8 +90,8 @@ function ms(start) {
 }
 
 // Returns { found: bool|null, amazon_url, image_url } — null = Amazon blocked us.
-async function checkAmazon(brand, model) {
-  const q = encodeURIComponent(`${brand} ${model}`);
+async function checkAmazon(brand, model, category) {
+  const q = encodeURIComponent(`${category ? category + ' ' : ''}${brand} ${model}`);
   try {
     const res = await fetch(`https://www.amazon.fr/s?k=${q}&language=fr_FR`, {
       headers: {
@@ -236,72 +236,49 @@ export default async function handler(req, res) {
     output_tokens: json.usageMetadata?.candidatesTokenCount ?? null,
   };
   let amazonVerifyMs = 0;
-  let replacementMs = 0;
   let amazonBlocked = false;
-  let replacedCount = 0;
 
-  // 6. If recommend: verify each product exists on Amazon, replace those not found
+  // 6. If recommend: verify all 10 candidates on Amazon, keep only those found (min 3)
   if (parsed.action === 'recommend' && Array.isArray(parsed.products) && parsed.products.length) {
     const t6 = performance.now();
 
-    const checks = await Promise.all(parsed.products.map((p) => checkAmazon(p.brand, p.model)));
+    const checks = await Promise.all(
+      parsed.products.map((p) => checkAmazon(p.brand, p.model, category))
+    );
     amazonVerifyMs = ms(t6);
 
-    // null = Amazon blocked us → skip replacement to avoid false negatives
     const allInconclusive = checks.every((c) => c.found === null);
 
     if (!allInconclusive) {
-      const notFound = parsed.products.filter((_, i) => checks[i].found === false);
+      const verified = parsed.products
+        .map((p, i) => ({
+          ...p,
+          amazon_verified: checks[i].found,
+          amazon_url: checks[i].amazon_url ?? null,
+          image_url:  checks[i].image_url  ?? null,
+        }))
+        .filter((p) => p.amazon_verified === true);
 
-      if (notFound.length > 0) {
-        const t7 = performance.now();
-        const rejectedList = notFound.map((p) => `${p.brand} ${p.model}`).join(', ');
-        const replacementMessages = [
-          ...toGeminiContents(messages),
-          { role: 'model', parts: [{ text: content }] },
-          { role: 'user', parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${rejectedList}. Remplace-les par d'autres produits similaires qui existent réellement sur Amazon.fr. Retourne la liste complète des 5 produits (conserve ceux qui étaient valides).` }] },
-        ];
-
-        try {
-          const replacementUpstream = await callGemini(apiKey, {
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents: replacementMessages,
-            generationConfig: { temperature: 0.5, responseMimeType: 'application/json' },
-          });
-
-          if (replacementUpstream.ok) {
-            const repJson = await replacementUpstream.json();
-            const repContent = repJson.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (repContent) {
-              try {
-                const repParsed = JSON.parse(repContent);
-                if (Array.isArray(repParsed.products)) {
-                  parsed.products = repParsed.products;
-                  replacedCount = notFound.length;
-                  // Re-verify replaced products
-                  const newChecks = await Promise.all(
-                    parsed.products.map((p) => checkAmazon(p.brand, p.model))
-                  );
-                  checks.splice(0, checks.length, ...newChecks);
-                }
-              } catch { /* keep original */ }
-            }
-          }
-        } catch { /* keep original */ }
-
-        replacementMs = ms(t7);
+      if (verified.length >= 3) {
+        parsed.products = verified.slice(0, 5);
+      } else {
+        // Not enough verified — keep all with status attached
+        parsed.products = parsed.products.map((p, i) => ({
+          ...p,
+          amazon_verified: checks[i].found,
+          amazon_url: checks[i].amazon_url ?? null,
+          image_url:  checks[i].image_url  ?? null,
+        }));
       }
     } else {
       amazonBlocked = true;
+      parsed.products = parsed.products.map((p) => ({
+        ...p,
+        amazon_verified: null,
+        amazon_url: null,
+        image_url:  null,
+      }));
     }
-
-    // Attach amazon_url + image_url from verification, tag each product
-    parsed.products = parsed.products.map((p, i) => ({
-      ...p,
-      amazon_verified: checks[i].found,
-      amazon_url:      checks[i].amazon_url ?? null,
-      image_url:       checks[i].image_url ?? null,
-    }));
   }
 
   const totalMs = ms(t0);
@@ -315,11 +292,9 @@ export default async function handler(req, res) {
       read_response:     t4_ms,
       parse_json_output: t5_ms,
       amazon_verify:     amazonVerifyMs,
-      replacement_call:  replacementMs,
       total:             totalMs,
     },
-    amazon_blocked:  amazonBlocked,
-    replaced_count:  replacedCount,
+    amazon_blocked: amazonBlocked,
     ...debugTokens,
   };
 
