@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CATEGORIES } from './data.js';
 import { askAI, enrichProduct } from './lib/askAI.js';
+import AuthMenu from './components/AuthMenu.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
 import { HeroCard, ProductImage, ScoreRing, SmallCard, Stars } from './components/ProductCard.jsx';
 import {
@@ -116,6 +117,9 @@ function CategoryPicker({ onPick }) {
 
   return (
     <div className="home">
+      <div className="home-topbar">
+        <AuthMenu variant="home" />
+      </div>
       <main className="home-main">
         <h1 className="home-logo">Bestbuys</h1>
         <form className="home-search" onSubmit={submit}>
@@ -370,8 +374,11 @@ export default function App() {
               {CATEGORIES.find((c) => c.id === category)?.label ?? category}
             </h2>
           </div>
-          <div className="results-meta">
-            {done && !currentQuestion && !isTyping ? 'Sélection finalisée' : 'Affinage en cours…'}
+          <div className="results-header-right">
+            <div className="results-meta">
+              {done && !currentQuestion && !isTyping ? 'Sélection finalisée' : 'Affinage en cours…'}
+            </div>
+            <AuthMenu variant="results" />
           </div>
         </header>
 

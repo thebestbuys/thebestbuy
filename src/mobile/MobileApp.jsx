@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { askAI, enrichProduct } from "../lib/askAI.js";
+import { useAuth } from "../lib/auth.jsx";
 
 // Which search variant to ship: 'A' = Premium Search, 'B' = Hey-Jordan Hub.
 const VARIANT = "B";
@@ -695,7 +696,314 @@ function FeedbackToast({ text }) {
   );
 }
 
-function SearchA({ onSubmit }) {
+function userInitials(user) {
+  const src = (user?.name || user?.email || '').trim();
+  if (!src) return 'JL';
+  const parts = src.split(/[\s._@-]+/).filter(Boolean);
+  const first = parts[0]?.[0] || '';
+  const second = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + second).toUpperCase() || src[0].toUpperCase();
+}
+
+function AccountAvatar({ onClick, size = 32, variant = "B" }) {
+  const { user } = useAuth();
+  const [broken, setBroken] = useState(false);
+  const borderStyle =
+    variant === "A"
+      ? { background: BB.cream, border: 0 }
+      : { background: "#fff", border: `1px solid ${BB.line}` };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={user ? "Compte" : "Se connecter"}
+      style={{
+        appearance: "none",
+        padding: 0,
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: BB.ink,
+        fontSize: size <= 32 ? 11 : 13,
+        fontWeight: 700,
+        fontFamily: BB.display,
+        overflow: "hidden",
+        ...borderStyle,
+      }}
+    >
+      {user?.picture && !broken ? (
+        <img
+          src={user.picture}
+          alt=""
+          onError={() => setBroken(true)}
+          referrerPolicy="no-referrer"
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      ) : (
+        userInitials(user)
+      )}
+    </button>
+  );
+}
+
+function AuthSheet({ open, onClose }) {
+  const { user, ready, clientId, renderButton, signOut } = useAuth();
+  const btnRef = useRef(null);
+  const sheetRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (open && !user && ready && btnRef.current) {
+      renderButton(btnRef.current, { width: 260 });
+    }
+  }, [open, user, ready, renderButton]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(20,12,8,0.45)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        animation: "bb-rise 0.22s ease-out",
+      }}
+    >
+      <div
+        ref={sheetRef}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: 480,
+          background: BB.paper,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          padding: "12px 22px 28px",
+          boxShadow: "0 -10px 40px rgba(0,0,0,0.18)",
+          animation: "bb-rise 0.28s ease-out",
+        }}
+      >
+        <div
+          style={{
+            width: 44,
+            height: 4,
+            borderRadius: 4,
+            background: BB.line,
+            margin: "0 auto 14px",
+          }}
+        />
+
+        {user ? (
+          <>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "4px 0 14px",
+              }}
+            >
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: "50%",
+                  overflow: "hidden",
+                  background: BB.chipBg,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 700,
+                  color: BB.ink,
+                  fontFamily: BB.display,
+                  fontSize: 16,
+                }}
+              >
+                {user.picture ? (
+                  <img
+                    src={user.picture}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  userInitials(user)
+                )}
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: BB.ink,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {user.name || user.email}
+                </div>
+                {user.email && user.name && (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: BB.inkSoft,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {user.email}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled
+              style={{
+                width: "100%",
+                appearance: "none",
+                border: `1px solid ${BB.line}`,
+                background: "#fff",
+                color: BB.inkMute,
+                padding: "12px 14px",
+                borderRadius: 14,
+                fontWeight: 600,
+                fontFamily: BB.body,
+                fontSize: 13,
+                marginBottom: 8,
+                textAlign: "left",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              Mes sélections
+              <span style={{ fontSize: 10, color: BB.inkMute }}>bientôt</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                signOut();
+                onClose();
+              }}
+              style={{
+                width: "100%",
+                appearance: "none",
+                border: 0,
+                background: BB.ink,
+                color: "#fff",
+                padding: "12px 14px",
+                borderRadius: 14,
+                fontWeight: 700,
+                fontFamily: BB.body,
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              Se déconnecter
+            </button>
+          </>
+        ) : (
+          <>
+            <div
+              style={{
+                fontFamily: BB.display,
+                fontSize: 22,
+                fontWeight: 700,
+                color: BB.ink,
+                letterSpacing: -0.3,
+              }}
+            >
+              Bienvenue sur best<span style={{ color: BB.coral }}>buys</span>
+            </div>
+            <div
+              style={{
+                marginTop: 6,
+                fontSize: 13,
+                color: BB.inkSoft,
+                lineHeight: 1.4,
+              }}
+            >
+              Connectez-vous ou créez un compte pour retrouver vos sélections
+              sur tous vos appareils.
+            </div>
+
+            <div
+              style={{
+                marginTop: 22,
+                display: "flex",
+                justifyContent: "center",
+                minHeight: 48,
+              }}
+            >
+              {!clientId ? (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: BB.coralDeep,
+                    textAlign: "center",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  La connexion Google n'est pas configurée.
+                  <br />
+                  Ajoutez <code>VITE_GOOGLE_CLIENT_ID</code> dans le{" "}
+                  <code>.env</code>.
+                </div>
+              ) : !ready ? (
+                <div style={{ fontSize: 12, color: BB.inkMute }}>
+                  Chargement…
+                </div>
+              ) : (
+                <div ref={btnRef} />
+              )}
+            </div>
+
+            <div
+              style={{
+                marginTop: 18,
+                fontSize: 11,
+                color: BB.inkMute,
+                textAlign: "center",
+                lineHeight: 1.4,
+              }}
+            >
+              En continuant vous acceptez nos conditions et notre politique de
+              confidentialité.
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SearchA({ onSubmit, onOpenAuth }) {
   const [q, setQ] = useState("");
   const suggestions = [
     "Wireless headphones",
@@ -744,23 +1052,7 @@ function SearchA({ onSubmit }) {
             />
           </svg>
         </div>
-        <div
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: "50%",
-            background: BB.cream,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: BB.ink,
-            fontSize: 13,
-            fontWeight: 700,
-            fontFamily: BB.display,
-          }}
-        >
-          JL
-        </div>
+        <AccountAvatar size={36} variant="A" onClick={onOpenAuth} />
       </div>
 
       <div style={{ textAlign: "center", marginBottom: 28 }}>
@@ -887,7 +1179,7 @@ function SearchA({ onSubmit }) {
   );
 }
 
-function SearchB({ onSubmit }) {
+function SearchB({ onSubmit, onOpenAuth }) {
   const [q, setQ] = useState("");
   const submit = (text) => onSubmit(text || q || "Coffee maker");
 
@@ -916,24 +1208,7 @@ function SearchB({ onSubmit }) {
         }}
       >
         <Logo size={22} />
-        <div
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: "50%",
-            background: "#fff",
-            border: `1px solid ${BB.line}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: BB.ink,
-            fontSize: 11,
-            fontWeight: 700,
-            fontFamily: BB.display,
-          }}
-        >
-          JL
-        </div>
+        <AccountAvatar size={32} variant="B" onClick={onOpenAuth} />
       </div>
 
       <div style={{ marginTop: 26 }}>
@@ -1153,6 +1428,7 @@ export default function MobileApp() {
   const [view, setView] = useState("search");
   const [query, setQuery] = useState("");
   const [transitioning, setTransitioning] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
 
   const start = (q) => {
     setQuery(q);
@@ -1171,6 +1447,7 @@ export default function MobileApp() {
   };
 
   const SearchScreen = VARIANT === "B" ? SearchB : SearchA;
+  const openAuth = () => setAuthOpen(true);
 
   return (
     <div className="bb-mobile-root">
@@ -1185,11 +1462,12 @@ export default function MobileApp() {
         }}
       >
         {view === "search" ? (
-          <SearchScreen onSubmit={start} />
+          <SearchScreen onSubmit={start} onOpenAuth={openAuth} />
         ) : (
           <ChatScreen query={query} onBack={back} />
         )}
       </div>
+      <AuthSheet open={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
   );
 }
