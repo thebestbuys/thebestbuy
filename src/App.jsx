@@ -349,8 +349,9 @@ export default function App() {
       recommendedProducts,
       done,
       turnCount,
+      currentQuestion,
     });
-  }, [convoId, category, messages, recommendedProducts, initialQuery, done, turnCount, user?.sub]);
+  }, [convoId, category, messages, recommendedProducts, initialQuery, done, turnCount, currentQuestion, user?.sub]);
 
   const sendUserMessage = (text) => {
     const next = [...messages, { role: 'user', text }];
@@ -384,7 +385,11 @@ export default function App() {
       Array.isArray(convo.recommendedProducts) ? convo.recommendedProducts : [],
     );
     setDone(Boolean(convo.done));
-    setCurrentQuestion(null);
+    setCurrentQuestion(
+      convo.currentQuestion && Array.isArray(convo.currentQuestion.choices)
+        ? convo.currentQuestion
+        : null,
+    );
     setIsTyping(false);
     setTurnCount(convo.turnCount || convo.messages?.length || 0);
     setSelected(null);
