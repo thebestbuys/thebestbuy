@@ -363,7 +363,7 @@ export default function App() {
   const handleAnswer = (_qId, choice) => sendUserMessage(choice.label);
   const handleFreeText = (txt) => sendUserMessage(txt);
 
-  const handleRestart = () => {
+  const handleHome = () => {
     setCategory(null);
     setInitialQuery('');
     setMessages([]);
@@ -374,6 +374,23 @@ export default function App() {
     setTurnCount(0);
     setRecommendedProducts([]);
     setConvoId(null);
+  };
+
+  const handleRestart = () => {
+    if (!category) return;
+    const initial = initialQuery
+      ? [{ role: 'user', text: initialQuery }]
+      : [{ role: 'user', text: `Je cherche un ${CATEGORIES.find((c) => c.id === category)?.label.toLowerCase() ?? category}.` }];
+    setConvoId(newConversationId());
+    setMessages(initial);
+    setCurrentQuestion(null);
+    setIsTyping(false);
+    setSelected(null);
+    setDone(false);
+    setTurnCount(0);
+    setRecommendedProducts([]);
+    setRefreshKey((k) => k + 1);
+    runTurn(initial);
   };
 
   const loadConversation = (convo) => {
@@ -439,6 +456,7 @@ export default function App() {
         onAnswer={handleAnswer}
         onFreeText={handleFreeText}
         onRestart={handleRestart}
+        onHome={handleHome}
         onOpenHistory={() => setHistoryOpen(true)}
         isTyping={isTyping}
         layout={t.chatLayout}
