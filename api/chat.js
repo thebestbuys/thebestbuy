@@ -30,11 +30,11 @@ OBJECTIF: identifier les meilleurs produits réels pour l'utilisateur (catégori
 
 PHASE 1 — DÉCOUVERTE (5 questions):
 - Pose EXACTEMENT 5 questions, en commençant OBLIGATOIREMENT par le budget (choix avec bornes "min"/"max" en euros).
-- Après la 5e réponse: action="recommend", products=[7 produits], question=null.
+- Après la 5e réponse: action="recommend", products=[10 produits], question=null.
 
 PHASE 2 — RAFFINEMENT CONTINU (après le premier recommend):
 - Pose 3 nouvelles questions de raffinement (action="ask") pour affiner davantage.
-- Après 3 réponses: action="recommend" avec les 7 produits MIS À JOUR selon toutes les préférences accumulées.
+- Après 3 réponses: action="recommend" avec les 10 produits MIS À JOUR selon toutes les préférences accumulées.
 - Répète indéfiniment: 3 questions → recommend mis à jour → 3 questions → recommend mis à jour → ...
 - Si tu reçois le message "__refine__": c'est le signal de démarrage de la phase 2, pose immédiatement la première question de raffinement (action="ask").
 
@@ -75,7 +75,7 @@ FORMAT DE RÉPONSE: UNIQUEMENT un objet JSON valide de cette forme exacte:
   ]
 }
 
-IMPORTANT: "products" est null quand action="ask". Quand action="recommend", "products" contient exactement 7 produits.`;
+IMPORTANT: "products" est null quand action="ask". Quand action="recommend", "products" contient exactement 10 produits.`;
 }
 
 function toGeminiContents(messages) {
@@ -89,9 +89,9 @@ function ms(start) {
   return Math.round(performance.now() - start);
 }
 
-// Returns { found: bool|null, amazon_url, image_url } — null = Amazon blocked us.
-async function checkAmazon(brand, model, category) {
-  const q = encodeURIComponent(`${category ? category + ' ' : ''}${brand} ${model}`);
+// Searches Amazon, returns first real result with full data — null = blocked.
+async function checkAmazon(brand, model, searchContext) {
+  const q = encodeURIComponent(`${searchContext ? searchContext + ' ' : ''}${brand} ${model}`);
   try {
     const res = await fetch(`https://www.amazon.fr/s?k=${q}&language=fr_FR`, {
       headers: {
@@ -114,11 +114,23 @@ async function checkAmazon(brand, model, category) {
     const asin = asinMatch[1];
     const chunk = html.slice(resultIdx, resultIdx + 12000);
 
+    // Image
     const imgMatch =
       chunk.match(/class="s-image"[^>]*src="(https:\/\/m\.media-amazon\.com[^"]+)"/) ||
       chunk.match(/class="s-image"[^>]*data-src="(https:\/\/m\.media-amazon\.com[^"]+)"/);
 
-    // Price: extract digits only to avoid NBSP issues
+    // Title — first matching span class Amazon uses for product titles
+    const titleRaw =
+      chunk.match(/class="a-size-base-plus a-color-base a-text-normal">([^<]+)</)?.at(1)?.trim() ||
+      chunk.match(/class="a-size-medium a-color-base a-text-normal">([^<]+)</)?.at(1)?.trim() ||
+      null;
+
+    // Split "ASUS Zenbook S 13 OLED..." → brand=ASUS, model=Zenbook S 13 OLED...
+    const titleWords = titleRaw ? titleRaw.split(' ') : [];
+    const amazonBrand = titleWords[0] || brand;
+    const amazonModel = titleWords.slice(1).join(' ') || model;
+
+    // Price: digits only, avoids NBSP
     const priceMatch = chunk.match(/class="a-price-whole">([^<]+)/);
     const price = priceMatch ? (parseInt(priceMatch[1].replace(/\D/g, ''), 10) || null) : null;
 
@@ -126,7 +138,7 @@ async function checkAmazon(brand, model, category) {
     const ratingMatch = chunk.match(/(\d[,.]\d)\s+sur\s+5/);
     const rating = ratingMatch ? parseFloat(ratingMatch[1].replace(',', '.')) : null;
 
-    // Review count
+    // Reviews
     const reviewMatch = chunk.match(/aria-label="([\d][\d ]*)\s*évaluation/);
     const reviews = reviewMatch ? (parseInt(reviewMatch[1].replace(/\D/g, ''), 10) || null) : null;
 
@@ -134,6 +146,8 @@ async function checkAmazon(brand, model, category) {
       found: true,
       amazon_url: `https://www.amazon.fr/dp/${asin}?tag=bestbuys007-21`,
       image_url: imgMatch?.[1] ?? null,
+      brand: amazonBrand,
+      model: amazonModel,
       price,
       rating,
       reviews,
@@ -272,6 +286,9 @@ export default async function handler(req, res) {
           verifiedProducts.push({
             ...p,
             amazon_verified: true,
+            // Replace Gemini's guessed data with real Amazon first-result data
+            brand:      check.brand      || p.brand,
+            model:      check.model      || p.model,
             amazon_url: check.amazon_url,
             image_url:  check.image_url  ?? null,
             price:      check.price      ?? p.price,
