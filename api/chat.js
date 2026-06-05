@@ -30,11 +30,11 @@ OBJECTIF: identifier les meilleurs produits réels pour l'utilisateur (catégori
 
 PHASE 1 — DÉCOUVERTE (5 questions):
 - Pose EXACTEMENT 5 questions, en commençant OBLIGATOIREMENT par le budget (choix avec bornes "min"/"max" en euros).
-- Après la 5e réponse: action="recommend", products=[10 produits], question=null.
+- Après la 5e réponse: action="recommend", products=[7 produits], question=null.
 
 PHASE 2 — RAFFINEMENT CONTINU (après le premier recommend):
 - Pose 3 nouvelles questions de raffinement (action="ask") pour affiner davantage.
-- Après 3 réponses: action="recommend" avec les 10 produits MIS À JOUR selon toutes les préférences accumulées.
+- Après 3 réponses: action="recommend" avec les 7 produits MIS À JOUR selon toutes les préférences accumulées.
 - Répète indéfiniment: 3 questions → recommend mis à jour → 3 questions → recommend mis à jour → ...
 - Si tu reçois le message "__refine__": c'est le signal de démarrage de la phase 2, pose immédiatement la première question de raffinement (action="ask").
 
@@ -75,7 +75,7 @@ FORMAT DE RÉPONSE: UNIQUEMENT un objet JSON valide de cette forme exacte:
   ]
 }
 
-IMPORTANT: "products" est null quand action="ask". Quand action="recommend", "products" contient exactement 10 produits.`;
+IMPORTANT: "products" est null quand action="ask". Quand action="recommend", "products" contient exactement 7 produits.`;
 }
 
 function toGeminiContents(messages) {
@@ -259,12 +259,14 @@ export default async function handler(req, res) {
     const t6 = performance.now();
     const triedNames = new Set();
     let verifiedProducts = [];
+    // Use the user's original query text (e.g. "smartphone") instead of internal category ID ("phone")
+    const searchContext = messages[0]?.content || category || '';
 
     const verifyCandidates = async (candidates) => {
       for (const p of candidates) {
-        if (verifiedProducts.length >= 5) break;
+        if (verifiedProducts.length >= 3) break;
         triedNames.add(`${p.brand} ${p.model}`);
-        const check = await checkAmazon(p.brand, p.model, category);
+        const check = await checkAmazon(p.brand, p.model, searchContext);
         if (check.found === null) { amazonBlocked = true; break; }
         if (check.found === true) {
           verifiedProducts.push({
@@ -282,7 +284,7 @@ export default async function handler(req, res) {
 
     await verifyCandidates(parsed.products);
 
-    // If not blocked but < 3 found, ask Gemini for more and retry
+    // If not blocked but < 3 found, ask Gemini for replacements
     if (!amazonBlocked && verifiedProducts.length < 3) {
       const triedList = [...triedNames].join(', ');
       try {
@@ -301,9 +303,8 @@ export default async function handler(req, res) {
           if (repText) {
             const repParsed = JSON.parse(repText);
             if (Array.isArray(repParsed.products)) {
-              await verifyCandidates(
-                repParsed.products.filter((p) => !triedNames.has(`${p.brand} ${p.model}`))
-              );
+              const fresh = repParsed.products.filter((p) => !triedNames.has(`${p.brand} ${p.model}`));
+              await verifyCandidates(fresh);
             }
           }
         }
@@ -317,7 +318,7 @@ export default async function handler(req, res) {
         ...p, amazon_verified: null, amazon_url: null, image_url: null,
       }));
     } else {
-      parsed.products = verifiedProducts.slice(0, 5);
+      parsed.products = verifiedProducts.slice(0, 3);
     }
   }
 
