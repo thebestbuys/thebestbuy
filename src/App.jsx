@@ -660,7 +660,10 @@ export default function App() {
           </div>
         </header>
 
-        <div className="results-content" key={refreshKey}>
+        <div
+          className="results-content"
+          key={recommendedProducts.length > 0 ? refreshKey : 'placeholder'}
+        >
           {recommendedProducts.length > 0 ? (
             <>
               {top && (
