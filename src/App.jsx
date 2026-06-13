@@ -5,6 +5,8 @@ import AuthMenu from './components/AuthMenu.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
 import LegalNotices from './components/LegalNotices.jsx';
+import GuideArticle from './components/GuideArticle.jsx';
+import { GUIDES } from './data/guides.js';
 import { HeroCard, ProductImage, ScoreRing, SmallCard, Stars } from './components/ProductCard.jsx';
 import { useAuth } from './lib/auth.jsx';
 import {
@@ -79,7 +81,7 @@ function ResultsPlaceholder({ category }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenLegal }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenLegal, onOpenGuide }) {
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
 
@@ -173,6 +175,30 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenLegal }) {
             </button>
           ))}
         </div>
+
+        <section className="home-guides">
+          <div className="home-guides-head">
+            <h2 className="home-guides-title">Nos guides d'achat</h2>
+            <p className="home-guides-sub">
+              Des conseils clairs et indépendants pour choisir le bon produit, sans jargon.
+            </p>
+          </div>
+          <div className="home-guides-grid">
+            {GUIDES.map((g) => (
+              <button
+                key={g.slug}
+                type="button"
+                className="guide-card"
+                onClick={() => onOpenGuide(g.slug)}
+              >
+                <div className="guide-card-eyebrow">Guide · {g.readTime}</div>
+                <h3 className="guide-card-title">{g.title}</h3>
+                <p className="guide-card-sub">{g.subtitle}</p>
+                <span className="guide-card-link">Lire le guide →</span>
+              </button>
+            ))}
+          </div>
+        </section>
       </main>
 
       <footer className="home-footer">
@@ -285,6 +311,7 @@ export default function App() {
   const [convoId, setConvoId] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [legalOpen, setLegalOpen] = useState(false);
+  const [activeGuide, setActiveGuide] = useState(null);
 
   const progress = done ? 100 : Math.min(90, turnCount * 22);
 
@@ -428,6 +455,28 @@ export default function App() {
     setSelected(null);
   };
 
+  const startAdvisorFromGuide = (cat) => {
+    setActiveGuide(null);
+    setConvoId(newConversationId());
+    setInitialQuery('');
+    setCategory(cat);
+  };
+
+  // Guide article view (accessible before choosing a category)
+  if (activeGuide) {
+    const guide = GUIDES.find((g) => g.slug === activeGuide);
+    return (
+      <>
+        <GuideArticle
+          guide={guide}
+          onBack={() => setActiveGuide(null)}
+          onStartAdvisor={startAdvisorFromGuide}
+        />
+        <LegalNotices open={legalOpen} onClose={() => setLegalOpen(false)} />
+      </>
+    );
+  }
+
   if (!category) {
     return (
       <>
@@ -439,6 +488,7 @@ export default function App() {
           }}
           onOpenHistory={() => setHistoryOpen(true)}
           onOpenLegal={() => setLegalOpen(true)}
+          onOpenGuide={(slug) => setActiveGuide(slug)}
         />
         <HistoryPanel
           open={historyOpen}
