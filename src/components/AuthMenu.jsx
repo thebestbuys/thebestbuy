@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
+import { listSelections } from '../lib/selections.js';
 
 function initials(name = '', email = '') {
   const src = (name || email || '').trim();
@@ -100,9 +101,10 @@ function LoginModal({ onClose }) {
   );
 }
 
-function UserDropdown({ user, onClose, onSignOut }) {
+function UserDropdown({ user, onClose, onSignOut, onOpenSelections }) {
   const { t } = useI18n();
   const wrapRef = useRef(null);
+  const count = listSelections(user?.sub).length;
   useEffect(() => {
     const onDoc = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) onClose();
@@ -130,9 +132,16 @@ function UserDropdown({ user, onClose, onSignOut }) {
         </div>
       </div>
       <div className="auth-dropdown-sep" />
-      <button type="button" className="auth-dropdown-item" disabled>
+      <button
+        type="button"
+        className="auth-dropdown-item"
+        onClick={() => {
+          onOpenSelections?.();
+          onClose();
+        }}
+      >
         {t('auth.mySelections')}
-        <span className="auth-dropdown-soon">{t('auth.soon')}</span>
+        {count > 0 && <span className="auth-dropdown-count">{count}</span>}
       </button>
       <button
         type="button"
@@ -148,7 +157,7 @@ function UserDropdown({ user, onClose, onSignOut }) {
   );
 }
 
-export default function AuthMenu({ variant = 'home' }) {
+export default function AuthMenu({ variant = 'home', onOpenSelections }) {
   const { user, signOut } = useAuth();
   const { t } = useI18n();
   const [openLogin, setOpenLogin] = useState(false);
@@ -207,6 +216,7 @@ export default function AuthMenu({ variant = 'home' }) {
           user={user}
           onClose={() => setOpenMenu(false)}
           onSignOut={signOut}
+          onOpenSelections={onOpenSelections}
         />
       )}
     </div>

@@ -4,6 +4,8 @@ import { askAI, enrichProduct } from './lib/askAI.js';
 import AuthMenu from './components/AuthMenu.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
+import SelectionsPanel from './components/SelectionsPanel.jsx';
+import FavoriteButton from './components/FavoriteButton.jsx';
 import LegalNotices from './components/LegalNotices.jsx';
 import GuideArticle from './components/GuideArticle.jsx';
 import LangToggle from './components/LangToggle.jsx';
@@ -83,7 +85,7 @@ function ResultsPlaceholder({ category }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenLegal, onOpenGuide }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenLegal, onOpenGuide }) {
   const { t, lang } = useI18n();
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
@@ -169,8 +171,25 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenLegal, onOpenGuide }) {
           </svg>
           {t('home.history')}
         </button>
+        <button
+          type="button"
+          className="auth-trigger auth-trigger-home"
+          onClick={onOpenSelections}
+          aria-label={t('home.selectionsTitle')}
+          title={t('home.selectionsTitle')}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M8 14S2 10.3 2 6.1A2.9 2.9 0 0 1 8 4.6 2.9 2.9 0 0 1 14 6.1C14 10.3 8 14 8 14Z"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinejoin="round"
+            />
+          </svg>
+          {t('home.selections')}
+        </button>
         <LangToggle />
-        <AuthMenu variant="home" />
+        <AuthMenu variant="home" onOpenSelections={onOpenSelections} />
       </div>
       <main className="home-main">
         <h1 className="home-logo">Oraklia</h1>
@@ -302,16 +321,19 @@ function ProductDetail({ product, onClose, onBuy }) {
                 </div>
                 <div className="modal-shipping">{t('product.shipping')}</div>
               </div>
-              <a
-                className="btn-primary big"
-                href={amazonUrl}
-                target="_blank"
-                rel="noopener noreferrer sponsored"
-                onClick={() => onBuy(product)}
-              >
-                {t('product.viewAmazon')}
-                <span className="btn-arrow">→</span>
-              </a>
+              <div className="modal-buy">
+                <FavoriteButton product={product} variant="inline" />
+                <a
+                  className="btn-primary big"
+                  href={amazonUrl}
+                  target="_blank"
+                  rel="noopener noreferrer sponsored"
+                  onClick={() => onBuy(product)}
+                >
+                  {t('product.viewAmazon')}
+                  <span className="btn-arrow">→</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -343,6 +365,7 @@ export default function App() {
   const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [convoId, setConvoId] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectionsOpen, setSelectionsOpen] = useState(false);
   const [legalOpen, setLegalOpen] = useState(false);
   const [activeGuide, setActiveGuide] = useState(null);
 
@@ -490,6 +513,7 @@ export default function App() {
   const navOpenGuide = (slug) => { pushHistory(); setActiveGuide(slug); };
   const navOpenLegal = () => { pushHistory(); setLegalOpen(true); };
   const navOpenHistory = () => { pushHistory(); setHistoryOpen(true); };
+  const navOpenSelections = () => { pushHistory(); setSelectionsOpen(true); };
   const navOpenProduct = (p) => { pushHistory(); setSelected(p); };
   const navPickCategory = (cat, q) => {
     pushHistory();
@@ -506,6 +530,7 @@ export default function App() {
       // Close the topmost open layer; at home, let the browser navigate away.
       if (selected) { setSelected(null); return; }
       if (legalOpen) { setLegalOpen(false); return; }
+      if (selectionsOpen) { setSelectionsOpen(false); return; }
       if (historyOpen) { setHistoryOpen(false); return; }
       if (activeGuide) { setActiveGuide(null); return; }
       if (category) { handleHome(); return; }
@@ -513,7 +538,7 @@ export default function App() {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, historyOpen, activeGuide, category]);
+  }, [selected, legalOpen, selectionsOpen, historyOpen, activeGuide, category]);
 
   const getAmazonUrl = (p) => {
     if (p.amazon_url) return p.amazon_url;
@@ -553,6 +578,7 @@ export default function App() {
         <CategoryPicker
           onPick={navPickCategory}
           onOpenHistory={navOpenHistory}
+          onOpenSelections={navOpenSelections}
           onOpenLegal={navOpenLegal}
           onOpenGuide={navOpenGuide}
         />
@@ -561,6 +587,12 @@ export default function App() {
           onClose={navBack}
           onLoad={loadConversation}
           currentId={convoId}
+        />
+        <SelectionsPanel
+          open={selectionsOpen}
+          onClose={navBack}
+          getAmazonUrl={getAmazonUrl}
+          onBuy={handleBuy}
         />
         <LegalNotices open={legalOpen} onClose={navBack} />
       </>
@@ -598,7 +630,7 @@ export default function App() {
               {done && !currentQuestion && !isTyping ? tr('results.finalized') : tr('results.refining')}
             </div>
             <LangToggle />
-            <AuthMenu variant="results" />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} />
           </div>
         </header>
 
@@ -645,6 +677,13 @@ export default function App() {
         onClose={navBack}
         onLoad={loadConversation}
         currentId={convoId}
+      />
+
+      <SelectionsPanel
+        open={selectionsOpen}
+        onClose={navBack}
+        getAmazonUrl={getAmazonUrl}
+        onBuy={handleBuy}
       />
 
       <LegalNotices open={legalOpen} onClose={navBack} />

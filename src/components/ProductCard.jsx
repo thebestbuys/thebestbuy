@@ -1,4 +1,5 @@
 import { useI18n } from '../lib/i18n.jsx';
+import FavoriteButton from './FavoriteButton.jsx';
 
 export function ProductImage({ product, size = 'normal' }) {
   if (product.image_url) {
@@ -97,6 +98,7 @@ export function HeroCard({ product, density, onSelect }) {
         <span className="hero-badge-dot" />
         {t('product.bestMatch')}
       </div>
+      <FavoriteButton product={product} />
       <div className="hero-grid">
         <ProductImage product={product} size="large" />
         <div className="hero-meta">
@@ -143,6 +145,7 @@ export function SmallCard({ product, rank, density, onSelect }) {
   return (
     <article className={'small-card density-' + density} onClick={() => onSelect(product)}>
       <div className="small-rank">#{rank}</div>
+      <FavoriteButton product={product} />
       <ProductImage product={product} size="small" />
       <div className="small-info">
         <div className="small-brand">{product.brand}</div>
