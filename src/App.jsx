@@ -100,6 +100,8 @@ function ResultsPlaceholder({ category }) {
 
 function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenLegal, onOpenGuide }) {
   const { t, lang } = useI18n();
+  const { user } = useAuth();
+  const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
 
@@ -206,6 +208,10 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenLegal, 
       </div>
       <main className="home-main">
         <h1 className="home-logo">Oraklia</h1>
+        <p className="home-greeting">
+          {firstName ? t('m.greetingLead', { name: firstName }) : t('m.greetingLeadAnon')}{' '}
+          <span className="home-greeting-hl">{t('m.greetingHighlight')}</span>
+        </p>
         <form className="home-search" onSubmit={submit}>
           <span className="home-search-icon" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">

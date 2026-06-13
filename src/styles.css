@@ -97,6 +97,18 @@ ul {
   line-height: 0.95;
   user-select: none;
 }
+.home-greeting {
+  margin: -10px 0 0;
+  font-family: var(--display);
+  font-size: 27px;
+  line-height: 1.25;
+  color: var(--text);
+  text-align: center;
+}
+.home-greeting-hl {
+  color: var(--accent);
+  font-style: italic;
+}
 .home-search {
   width: 100%;
   max-width: 580px;

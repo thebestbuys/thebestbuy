@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { askAI, enrichProduct } from "../lib/askAI.js";
 import { useAuth } from "../lib/auth.jsx";
+import { LANGS, useI18n } from "../lib/i18n.jsx";
 import {
   deleteConversation,
   deriveTitle,
@@ -9,6 +10,7 @@ import {
   newConversationId,
   saveConversation,
 } from "../lib/history.js";
+import { listSelections, removeSelection } from "../lib/selections.js";
 
 // Which search variant to ship: 'A' = Premium Search, 'B' = Hey-Jordan Hub.
 const VARIANT = "B";
@@ -44,35 +46,83 @@ const BB = {
   body: '"Nunito", "Quicksand", system-ui, sans-serif',
 };
 
+// Oraklia wordmark — same font (Outfit) and accent colour as the desktop logo
+// (defined as the global --accent CSS variable in styles.css).
 function Logo({ size = 30, weight = 700 }) {
   return (
     <div
       style={{
-        fontFamily: BB.display,
+        fontFamily: '"Outfit", system-ui, sans-serif',
         fontWeight: weight,
         fontSize: size,
-        letterSpacing: -0.5,
-        color: BB.ink,
+        letterSpacing: -size * 0.02,
+        color: "var(--accent)",
         lineHeight: 1,
-        display: "flex",
-        alignItems: "baseline",
-        gap: 0,
       }}
     >
-      <span>best</span>
-      <span style={{ color: BB.coral }}>buys</span>
-      <span
-        style={{
-          display: "inline-block",
-          width: size * 0.18,
-          height: size * 0.18,
-          borderRadius: "50%",
-          background: BB.amber,
-          marginLeft: 2,
-          alignSelf: "center",
-          transform: `translateY(${-size * 0.05}px)`,
-        }}
-      />
+      Oraklia
+    </div>
+  );
+}
+
+function firstNameOf(user) {
+  return user?.given_name || user?.name?.split(/\s+/)[0] || "";
+}
+
+const HeartIcon = ({ size = 18, color = BB.ink, filled = false }) => (
+  <svg width={size} height={size} viewBox="0 0 18 18" fill="none">
+    <path
+      d="M9 15.4S2.4 11.3 2.4 6.8A3.35 3.35 0 0 1 9 5.1 3.35 3.35 0 0 1 15.6 6.8C15.6 11.3 9 15.4 9 15.4Z"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+      fill={filled ? color : "none"}
+    />
+  </svg>
+);
+
+// Compact FR | EN toggle for the mobile header.
+function LangPill() {
+  const { lang, setLang } = useI18n();
+  return (
+    <div
+      role="group"
+      aria-label="Langue"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        background: "#fff",
+        border: `1px solid ${BB.line}`,
+        borderRadius: 999,
+        padding: 2,
+        gap: 2,
+      }}
+    >
+      {LANGS.map((l) => {
+        const active = l === lang;
+        return (
+          <button
+            key={l}
+            type="button"
+            onClick={() => setLang(l)}
+            aria-pressed={active}
+            style={{
+              appearance: "none",
+              border: 0,
+              cursor: "pointer",
+              borderRadius: 999,
+              padding: "3px 8px",
+              fontFamily: BB.body,
+              fontSize: 11,
+              fontWeight: 700,
+              background: active ? BB.coral : "transparent",
+              color: active ? "#fff" : BB.inkMute,
+            }}
+          >
+            {l.toUpperCase()}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -299,6 +349,7 @@ function ProductCard({ product }) {
 
 function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
   const { user } = useAuth();
+  const { t } = useI18n();
   const category = useMemo(
     () => restore?.category || detectCategory(query),
     [query, restore],
@@ -501,22 +552,13 @@ function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
               lineHeight: 1.1,
             }}
           >
-            AI Assistant
+            {t('chat.assistant')}
           </div>
           <div style={{ fontSize: 11, color: "#3CCB7F", fontWeight: 600 }}>
-            ● Online · usually replies instantly
+            {t('m.assistantStatus')}
           </div>
         </div>
-        <div
-          style={{
-            fontFamily: BB.display,
-            fontWeight: 700,
-            fontSize: 13,
-            color: BB.ink,
-          }}
-        >
-          best<span style={{ color: BB.coral }}>buys</span>
-        </div>
+        <Logo size={16} />
       </div>
 
       <div
@@ -560,7 +602,7 @@ function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={typing ? "Thinking…" : "Type a message…"}
+            placeholder={typing ? t('m.thinking') : t('m.typeMessage')}
             disabled={typing}
             style={{
               flex: 1,
@@ -782,8 +824,9 @@ function AccountAvatar({ onClick, size = 32, variant = "B" }) {
   );
 }
 
-function AuthSheet({ open, onClose }) {
+function AuthSheet({ open, onClose, onOpenSelections }) {
   const { user, ready, clientId, isNative, signInNative, renderButton, signOut, lastError } = useAuth();
+  const { t } = useI18n();
   const btnRef = useRef(null);
   const sheetRef = useRef(null);
 
@@ -914,13 +957,16 @@ function AuthSheet({ open, onClose }) {
 
             <button
               type="button"
-              disabled
+              onClick={() => {
+                onClose();
+                onOpenSelections?.();
+              }}
               style={{
                 width: "100%",
                 appearance: "none",
                 border: `1px solid ${BB.line}`,
                 background: "#fff",
-                color: BB.inkMute,
+                color: BB.ink,
                 padding: "12px 14px",
                 borderRadius: 14,
                 fontWeight: 600,
@@ -931,10 +977,11 @@ function AuthSheet({ open, onClose }) {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                cursor: "pointer",
               }}
             >
-              Mes sélections
-              <span style={{ fontSize: 10, color: BB.inkMute }}>bientôt</span>
+              {t('auth.mySelections')}
+              <span aria-hidden="true" style={{ color: BB.inkMute }}>→</span>
             </button>
 
             <button
@@ -957,7 +1004,7 @@ function AuthSheet({ open, onClose }) {
                 cursor: "pointer",
               }}
             >
-              Se déconnecter
+              {t('auth.signOut')}
             </button>
           </>
         ) : (
@@ -971,7 +1018,7 @@ function AuthSheet({ open, onClose }) {
                 letterSpacing: -0.3,
               }}
             >
-              Bienvenue sur best<span style={{ color: BB.coral }}>buys</span>
+              {t('auth.welcome')}
             </div>
             <div
               style={{
@@ -981,8 +1028,7 @@ function AuthSheet({ open, onClose }) {
                 lineHeight: 1.4,
               }}
             >
-              Connectez-vous ou créez un compte pour retrouver vos sélections
-              sur tous vos appareils.
+              {t('auth.sub')}
             </div>
 
             <div
@@ -1100,6 +1146,7 @@ function AuthSheet({ open, onClose }) {
 
 function HistorySheet({ open, onClose, onLoad }) {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [items, setItems] = useState([]);
 
   useEffect(() => {
@@ -1182,15 +1229,15 @@ function HistorySheet({ open, onClose, onLoad }) {
                 letterSpacing: -0.2,
               }}
             >
-              Historique
+              {t("history.title")}
             </div>
             <div style={{ fontSize: 12, color: BB.inkSoft, marginTop: 2 }}>
-              {items.length} conversation{items.length > 1 ? "s" : ""}
+              {user ? t("history.subUser") : t("history.subGuest")}
             </div>
           </div>
           <button
             onClick={onClose}
-            aria-label="Fermer"
+            aria-label={t("auth.close")}
             style={{
               appearance: "none",
               border: 0,
@@ -1220,9 +1267,9 @@ function HistorySheet({ open, onClose, onLoad }) {
               <div style={{ fontSize: 24, color: BB.coral, marginBottom: 8 }}>
                 ✦
               </div>
-              Aucune conversation sauvegardée.
+              {t("history.emptyText")}
               <br />
-              Vos recherches passées apparaîtront ici.
+              {t("history.emptySub")}
             </div>
           ) : (
             items.map((c) => (
@@ -1266,7 +1313,7 @@ function HistorySheet({ open, onClose, onLoad }) {
                       textOverflow: "ellipsis",
                     }}
                   >
-                    {c.title || "Conversation"}
+                    {c.title || t("history.conversation")}
                   </div>
                   <div
                     style={{
@@ -1280,18 +1327,18 @@ function HistorySheet({ open, onClose, onLoad }) {
                   >
                     <span>{formatRelative(c.updatedAt)}</span>
                     {Array.isArray(c.messages) && c.messages.length > 0 && (
-                      <span>· {c.messages.length} msgs</span>
+                      <span>{t("history.messages", { n: c.messages.length })}</span>
                     )}
                     {c.done && (
                       <span style={{ color: "#3CCB7F", fontWeight: 700 }}>
-                        ✓ finalisée
+                        {t("history.done")}
                       </span>
                     )}
                   </div>
                 </button>
                 <button
                   onClick={(e) => remove(c.id, e)}
-                  aria-label="Supprimer"
+                  aria-label={t("history.delete")}
                   style={{
                     appearance: "none",
                     border: 0,
@@ -1304,6 +1351,247 @@ function HistorySheet({ open, onClose, onLoad }) {
                 >
                   ✕
                 </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SelectionsSheet({ open, onClose }) {
+  const { user } = useAuth();
+  const { t, lang } = useI18n();
+  const locale = lang === "en" ? "en-GB" : "fr-FR";
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    if (!open) return;
+    setItems(listSelections(user?.sub));
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open, onClose, user?.sub]);
+
+  if (!open) return null;
+
+  const remove = (id, e) => {
+    e.stopPropagation();
+    removeSelection(user?.sub, id);
+    setItems((cur) => cur.filter((p) => p.id !== id));
+  };
+
+  const amazonUrl = (p) =>
+    p.amazon_url ||
+    `https://www.amazon.fr/s?k=${encodeURIComponent(`${p.brand} ${p.model}`)}&tag=oraklia123-21`;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(20,12,8,0.45)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        animation: "bb-rise 0.22s ease-out",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: 480,
+          maxHeight: "82vh",
+          background: BB.paper,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          padding: "12px 0 18px",
+          boxShadow: "0 -10px 40px rgba(0,0,0,0.18)",
+          animation: "bb-rise 0.28s ease-out",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <div
+          style={{
+            width: 44,
+            height: 4,
+            borderRadius: 4,
+            background: BB.line,
+            margin: "0 auto 10px",
+          }}
+        />
+        <div
+          style={{
+            padding: "4px 22px 14px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontFamily: BB.display,
+                fontSize: 20,
+                fontWeight: 700,
+                color: BB.ink,
+                letterSpacing: -0.2,
+              }}
+            >
+              {t("selections.title")}
+            </div>
+            <div style={{ fontSize: 12, color: BB.inkSoft, marginTop: 2 }}>
+              {user ? t("selections.subUser") : t("selections.subGuest")}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label={t("auth.close")}
+            style={{
+              appearance: "none",
+              border: 0,
+              background: BB.cream,
+              color: BB.inkSoft,
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+        <div style={{ overflowY: "auto", padding: "0 14px 6px" }}>
+          {items.length === 0 ? (
+            <div
+              style={{
+                padding: "30px 22px 40px",
+                textAlign: "center",
+                color: BB.inkSoft,
+                fontSize: 13,
+                lineHeight: 1.5,
+              }}
+            >
+              <div style={{ fontSize: 24, color: BB.coral, marginBottom: 8 }}>♡</div>
+              {t("selections.emptyText")}
+              <br />
+              {t("selections.emptySub")}
+            </div>
+          ) : (
+            items.map((p) => (
+              <div
+                key={p.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  background: "#fff",
+                  border: `1px solid ${BB.line}`,
+                  borderRadius: 14,
+                  marginBottom: 8,
+                  padding: "10px 12px",
+                }}
+              >
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 10,
+                    background: BB.cream,
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
+                  }}
+                >
+                  {p.image_url ? (
+                    <img
+                      src={p.image_url}
+                      alt=""
+                      style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 16 }}>🛍️</span>
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 10.5,
+                      color: BB.inkMute,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.3,
+                    }}
+                  >
+                    {p.brand}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13.5,
+                      fontWeight: 700,
+                      color: BB.ink,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {p.model}
+                  </div>
+                  {p.price != null && (
+                    <div style={{ fontSize: 13, fontWeight: 800, color: BB.ink, marginTop: 2 }}>
+                      {p.price.toLocaleString(locale)} €
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+                  <button
+                    onClick={() => window.open(amazonUrl(p), "_blank", "noopener,noreferrer")}
+                    style={{
+                      appearance: "none",
+                      border: 0,
+                      background: BB.coral,
+                      color: "#fff",
+                      padding: "6px 12px",
+                      borderRadius: 999,
+                      fontWeight: 700,
+                      fontSize: 11,
+                      cursor: "pointer",
+                      fontFamily: BB.body,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {t("product.viewAmazon")}
+                  </button>
+                  <button
+                    onClick={(e) => remove(p.id, e)}
+                    aria-label={t("selections.remove")}
+                    style={{
+                      appearance: "none",
+                      border: 0,
+                      background: "transparent",
+                      color: BB.inkMute,
+                      cursor: "pointer",
+                      fontSize: 13,
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             ))
           )}
@@ -1489,15 +1777,23 @@ function SearchA({ onSubmit, onOpenAuth }) {
   );
 }
 
-function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onLoadConvo, recents }) {
+function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onOpenSelections, onLoadConvo, recents }) {
+  const { t } = useI18n();
+  const { user } = useAuth();
   const [q, setQ] = useState("");
-  const submit = (text) => onSubmit(text || q || "Coffee maker");
+  const submit = (text) => onSubmit(text || q || t("suggestion.phone"));
+  const name = firstNameOf(user);
 
-  const categories = [
-    { label: "Headphones", emoji: "🎧", tone: BB.chipBg },
-    { label: "Laptops", emoji: "💻", tone: "#E8F1E8" },
-    { label: "Coffee", emoji: "☕", tone: "#F1E4D2" },
-    { label: "Watches", emoji: "⌚", tone: "#EFE6F1" },
+  // Same 8 categories as the desktop home, localized via i18n.
+  const suggestions = [
+    { key: "suggestion.phone", emoji: "📱" },
+    { key: "suggestion.laptop", emoji: "💻" },
+    { key: "suggestion.tv", emoji: "📺" },
+    { key: "suggestion.earbuds", emoji: "🎧" },
+    { key: "suggestion.watch", emoji: "⌚" },
+    { key: "suggestion.vacuum", emoji: "🧹" },
+    { key: "suggestion.coffee", emoji: "☕" },
+    { key: "suggestion.speaker", emoji: "🔊" },
   ];
 
   return (
@@ -1508,6 +1804,7 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onLoadConvo, recents }) 
         flexDirection: "column",
         background: `linear-gradient(180deg, ${BB.cream} 0%, ${BB.paper} 40%)`,
         padding: "20px 18px 18px",
+        overflowY: "auto",
       }}
     >
       <div
@@ -1515,10 +1812,34 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onLoadConvo, recents }) 
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          gap: 10,
         }}
       >
-        <Logo size={22} />
-        <AccountAvatar size={32} variant="B" onClick={onOpenAuth} />
+        <Logo size={24} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LangPill />
+          <button
+            type="button"
+            onClick={onOpenSelections}
+            aria-label={t("auth.mySelections")}
+            title={t("auth.mySelections")}
+            style={{
+              appearance: "none",
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              border: `1px solid ${BB.line}`,
+              background: "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+            }}
+          >
+            <HeartIcon size={16} color={BB.coral} />
+          </button>
+          <AccountAvatar size={32} variant="B" onClick={onOpenAuth} />
+        </div>
       </div>
 
       <div style={{ marginTop: 26 }}>
@@ -1527,16 +1848,14 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onLoadConvo, recents }) 
             fontFamily: BB.display,
             fontSize: 30,
             fontWeight: 700,
-            lineHeight: 1.1,
+            lineHeight: 1.15,
             color: BB.ink,
             letterSpacing: -0.6,
           }}
         >
-          Hey Jordan,
+          {name ? t("m.greetingLead", { name }) : t("m.greetingLeadAnon")}
           <br />
-          what shall we
-          <br />
-          <span style={{ color: BB.coral }}>find today?</span>
+          <span style={{ color: BB.coral }}>{t("m.greetingHighlight")}</span>
         </div>
       </div>
 
@@ -1566,10 +1885,9 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onLoadConvo, recents }) 
         >
           <SearchIcon size={16} color={BB.inkSoft} />
           <input
-            autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="What are you looking for?"
+            placeholder={t("home.searchPlaceholder")}
             style={{
               flex: 1,
               border: 0,
@@ -1596,7 +1914,28 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onLoadConvo, recents }) 
           }}
         >
           <SparkleIcon size={11} />
-          Ask in plain words — "a quiet keyboard under $80"
+          {t("m.searchHint")}
+        </div>
+      </div>
+
+      <div style={{ marginTop: 22 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: BB.ink, marginBottom: 10 }}>
+          {t("m.suggestions")}
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {suggestions.map((s) => {
+            const label = t(s.key);
+            return (
+              <Chip
+                key={s.key}
+                variant="soft"
+                icon={<span style={{ fontSize: 14 }}>{s.emoji}</span>}
+                onClick={() => submit(label)}
+              >
+                {label}
+              </Chip>
+            );
+          })}
         </div>
       </div>
 
@@ -1610,61 +1949,7 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onLoadConvo, recents }) 
           }}
         >
           <div style={{ fontSize: 13, fontWeight: 700, color: BB.ink }}>
-            Browse
-          </div>
-          <div style={{ fontSize: 11, color: BB.inkMute, fontWeight: 600 }}>
-            see all →
-          </div>
-        </div>
-        <div
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
-        >
-          {categories.map((c) => (
-            <button
-              key={c.label}
-              onClick={() => submit(c.label.toLowerCase())}
-              style={{
-                appearance: "none",
-                border: `1px solid ${BB.line}`,
-                background: c.tone,
-                padding: "14px 12px",
-                borderRadius: 16,
-                textAlign: "left",
-                cursor: "pointer",
-                fontFamily: BB.body,
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-                transition: "transform 0.12s",
-              }}
-              onMouseDown={(e) =>
-                (e.currentTarget.style.transform = "scale(0.98)")
-              }
-              onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.transform = "scale(1)")
-              }
-            >
-              <div style={{ fontSize: 22 }}>{c.emoji}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: BB.ink }}>
-                {c.label}
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ marginTop: 22 }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "baseline",
-            marginBottom: 10,
-          }}
-        >
-          <div style={{ fontSize: 13, fontWeight: 700, color: BB.ink }}>
-            Récents
+            {t("home.history")}
           </div>
           {recents.length > 0 && (
             <button
@@ -1682,7 +1967,7 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onLoadConvo, recents }) 
                 fontFamily: BB.body,
               }}
             >
-              voir tout →
+              {t("m.seeAll")}
             </button>
           )}
         </div>
@@ -1699,56 +1984,68 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onLoadConvo, recents }) 
               lineHeight: 1.5,
             }}
           >
-            Aucune recherche pour l'instant.
-            <br />
-            Lance une recherche, on la retrouvera ici.
+            {t("m.noRecents")}
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              overflowX: "auto",
+              WebkitOverflowScrolling: "touch",
+              margin: "0 -18px",
+              padding: "2px 18px 8px",
+              scrollbarWidth: "none",
+            }}
+          >
             {recents.map((c) => (
               <div
                 key={c.id}
                 style={{
+                  width: 210,
+                  flexShrink: 0,
                   background: "#fff",
                   borderRadius: 14,
-                  padding: "10px 12px",
+                  padding: 12,
                   border: `1px solid ${BB.line}`,
                   display: "flex",
-                  alignItems: "center",
+                  flexDirection: "column",
                   gap: 10,
                 }}
               >
-                <div
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 10,
-                    background: BB.chipBg,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 14,
-                    flexShrink: 0,
-                  }}
-                >
-                  🕓
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div
                     style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: BB.ink,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      width: 30,
+                      height: 30,
+                      borderRadius: 10,
+                      background: BB.chipBg,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 14,
+                      flexShrink: 0,
                     }}
                   >
-                    {c.title || "Conversation"}
+                    🕓
                   </div>
-                  <div style={{ fontSize: 10.5, color: BB.inkMute, marginTop: 2 }}>
-                    {formatRelative(c.updatedAt)}
-                    {c.done ? " · finalisée" : ""}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: BB.ink,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {c.title || "Conversation"}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: BB.inkMute, marginTop: 2 }}>
+                      {formatRelative(c.updatedAt)}
+                      {c.done ? " · ✓" : ""}
+                    </div>
                   </div>
                 </div>
                 <button
@@ -1758,16 +2055,16 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onLoadConvo, recents }) 
                     border: 0,
                     background: BB.coral,
                     color: "#fff",
-                    padding: "6px 12px",
+                    padding: "8px 12px",
                     borderRadius: 999,
                     fontWeight: 700,
                     fontSize: 11,
                     cursor: "pointer",
                     fontFamily: BB.body,
-                    flexShrink: 0,
+                    width: "100%",
                   }}
                 >
-                  Reprendre
+                  {t("m.resume")}
                 </button>
               </div>
             ))}
@@ -1787,18 +2084,19 @@ export default function MobileApp() {
   const [transitioning, setTransitioning] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectionsOpen, setSelectionsOpen] = useState(false);
   const [convoId, setConvoId] = useState(null);
   const [restoreData, setRestoreData] = useState(null);
   const [recents, setRecents] = useState([]);
 
   const refreshRecents = () => {
-    setRecents(listConversations(user?.sub).slice(0, 3));
+    setRecents(listConversations(user?.sub).slice(0, 12));
   };
 
   useEffect(() => {
     refreshRecents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.sub, view, authOpen, historyOpen]);
+  }, [user?.sub, view, authOpen, historyOpen, selectionsOpen]);
 
   const start = (q) => {
     setConvoId(newConversationId());
@@ -1834,6 +2132,7 @@ export default function MobileApp() {
   const SearchScreen = VARIANT === "B" ? SearchB : SearchA;
   const openAuth = () => setAuthOpen(true);
   const openHistory = () => setHistoryOpen(true);
+  const openSelections = () => setSelectionsOpen(true);
 
   return (
     <div className="bb-mobile-root">
@@ -1852,6 +2151,7 @@ export default function MobileApp() {
             onSubmit={start}
             onOpenAuth={openAuth}
             onOpenHistory={openHistory}
+            onOpenSelections={openSelections}
             onLoadConvo={loadConvo}
             recents={recents}
           />
@@ -1864,11 +2164,19 @@ export default function MobileApp() {
           />
         )}
       </div>
-      <AuthSheet open={authOpen} onClose={() => setAuthOpen(false)} />
+      <AuthSheet
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
+        onOpenSelections={openSelections}
+      />
       <HistorySheet
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
         onLoad={loadConvo}
+      />
+      <SelectionsSheet
+        open={selectionsOpen}
+        onClose={() => setSelectionsOpen(false)}
       />
     </div>
   );

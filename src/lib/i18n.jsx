@@ -129,6 +129,20 @@ const TRANSLATIONS = {
     'guide.advisorText': 'Répondez à quelques questions et notre conseiller intelligent sélectionne les produits les plus adaptés à vos besoins.',
     'guide.advisorCta': 'Lancer le conseiller',
 
+    // Mobile
+    'm.suggestions': 'Suggestions',
+    'm.searchHint': 'Demandez en langage naturel — « un clavier silencieux à moins de 80 € »',
+    'm.greetingLead': 'Coucou {name},',
+    'm.greetingLeadAnon': 'Coucou,',
+    'm.greetingHighlight': "on cherche quoi aujourd'hui ?",
+    'm.seeAll': 'voir tout →',
+    'm.resume': 'Reprendre',
+    'm.noRecents': "Aucune recherche pour l'instant. Lance une recherche, on la retrouvera ici.",
+    'm.assistantStatus': '● En ligne · répond tout de suite',
+    'm.typeMessage': 'Écrivez un message…',
+    'm.thinking': 'Réflexion…',
+    'm.poweredBy': 'Propulsé par un assistant shopping IA',
+
     // Lang toggle
     'lang.label': 'Langue',
   },
@@ -257,6 +271,20 @@ const TRANSLATIONS = {
     'guide.advisorTitle': 'Need personalized advice?',
     'guide.advisorText': 'Answer a few questions and our smart advisor selects the products best suited to your needs.',
     'guide.advisorCta': 'Launch the advisor',
+
+    // Mobile
+    'm.suggestions': 'Suggestions',
+    'm.searchHint': 'Ask in plain words — "a quiet keyboard under €80"',
+    'm.greetingLead': 'Hey {name},',
+    'm.greetingLeadAnon': 'Hey there,',
+    'm.greetingHighlight': 'what shall we find today?',
+    'm.seeAll': 'see all →',
+    'm.resume': 'Resume',
+    'm.noRecents': "No search yet. Start one and you'll find it here.",
+    'm.assistantStatus': '● Online · usually replies instantly',
+    'm.typeMessage': 'Type a message…',
+    'm.thinking': 'Thinking…',
+    'm.poweredBy': 'Powered by AI shopping assistant',
 
     // Lang toggle
     'lang.label': 'Language',
