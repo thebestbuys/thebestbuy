@@ -42,7 +42,9 @@ LANGUE DE RÉPONSE / OUTPUT LANGUAGE: ${langLine}
 OBJECTIF: identifier les meilleurs produits réels pour l'utilisateur (catégorie: ${category || 'inconnue'}), via un dialogue en deux phases.
 
 PHASE 1 — DÉCOUVERTE (5 questions):
-- Pose EXACTEMENT 5 questions, en commençant OBLIGATOIREMENT par le budget (choix avec bornes "min"/"max" en euros).
+- Pose EXACTEMENT 5 questions, en commençant OBLIGATOIREMENT par le budget.
+- La question budget DOIT contenir EXACTEMENT 4 choix avec des bornes "min"/"max" en euros ADAPTÉES au prix réel typique de l'objet recherché. Exemples d'ordres de grandeur: un biberon ~5–50 €, des écouteurs ~20–400 €, un téléphone ~150–1500 €, un téléviseur ~200–3000 €. Adapte toujours au produit concerné.
+- Libellés de budget courts: "Moins de X €", "X – Y €", "Plus de Z €". Le 1er choix a "min"=null, le dernier a "max"=null (pas de plafond).
 - Après la 5e réponse: action="recommend", products=[10 produits], question=null.
 
 PHASE 2 — RAFFINEMENT CONTINU (après le premier recommend):
@@ -122,11 +124,23 @@ async function checkAmazon(brand, model, searchContext) {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept-Language': 'fr-FR,fr;q=0.9',
       },
-      signal: AbortSignal.timeout(3000),
+      signal: AbortSignal.timeout(2500),
     });
     if (!res.ok) return { found: null };
     const html = await res.text();
-    if (html.includes('validateCaptcha') || html.includes('robot check')) return { found: null };
+    // Amazon's AWS WAF bot challenge answers with HTTP 202 (still 2xx) and a tiny
+    // JS-challenge page. Detect it (and CAPTCHA pages) and treat as BLOCKED so we
+    // bail immediately instead of probing every candidate for 3s each.
+    if (
+      res.status !== 200 ||
+      html.length < 10000 ||
+      html.includes('awsWaf') ||
+      html.includes('AwsWafIntegration') ||
+      html.includes('validateCaptcha') ||
+      html.includes('robot check')
+    ) {
+      return { found: null };
+    }
 
     const resultIdx = html.indexOf('data-component-type="s-search-result"');
     if (resultIdx === -1) return { found: false };

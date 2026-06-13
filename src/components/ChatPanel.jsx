@@ -39,35 +39,19 @@ function isBudgetQuestion(question) {
   return question?.choices?.some((c) => c.min != null || c.max != null);
 }
 
-// Fixed budget brackets shown as chips — faster and clearer than a slider.
-const BUDGET_BRACKETS = [
-  { id: 'b1', labelKey: 'budget.bracket1', min: null, max: 300 },
-  { id: 'b2', labelKey: 'budget.bracket2', min: 300, max: 600 },
-  { id: 'b3', labelKey: 'budget.bracket3', min: 600, max: 1000 },
-  { id: 'b4', labelKey: 'budget.bracket4', min: 1000, max: null },
-];
-
+// Budget brackets shown as a 2-column chip grid. The ranges come from the AI,
+// so they're adapted to the product (a baby bottle vs a phone vs a TV).
 function BudgetBrackets({ question, onAnswer }) {
-  const { t } = useI18n();
-
-  const send = (b) => {
-    let label;
-    if (b.min == null) label = t('budget.maxOnly', { max: b.max });
-    else if (b.max == null) label = t('budget.minOnly', { min: b.min });
-    else label = t('budget.range', { min: b.min, max: b.max });
-    onAnswer(question.id, { id: b.id, label, tags: [], min: b.min, max: b.max });
-  };
-
   return (
     <div className="budget-brackets">
-      {BUDGET_BRACKETS.map((b) => (
+      {question.choices.map((c) => (
         <button
-          key={b.id}
+          key={c.id}
           type="button"
           className="choice-chip budget-bracket"
-          onClick={() => send(b)}
+          onClick={() => onAnswer(question.id, c)}
         >
-          {t(b.labelKey)}
+          {c.label}
         </button>
       ))}
     </div>
