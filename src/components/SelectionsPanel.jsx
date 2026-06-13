@@ -48,6 +48,9 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
   };
 
   // Amazon-style price: large integer part, superscript cents, then €.
+  // The decimal separator follows the locale ("," in FR, "." in EN) so it
+  // never clashes with the thousands separator (e.g. EN "1,299.99").
+  const decimalSep = (1.1).toLocaleString(locale).replace(/[0-9\s]/g, '') || '.';
   const splitPrice = (price) => {
     const whole = Math.floor(price);
     const frac = Math.round((price - whole) * 100);
@@ -137,12 +140,12 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
                         <div className="amz-card-price">
                           <span className="a-price">
                             <span className="a-offscreen">
-                              {price.whole},{price.frac} €
+                              {price.whole}{decimalSep}{price.frac} €
                             </span>
                             <span aria-hidden="true">
                               <span className="a-price-whole">
                                 {price.whole}
-                                <span className="a-price-decimal">,</span>
+                                <span className="a-price-decimal">{decimalSep}</span>
                               </span>
                               <span className="a-price-fraction">{price.frac}</span>
                               <span className="a-price-symbol">€</span>
