@@ -4,6 +4,7 @@ import { askAI, enrichProduct } from './lib/askAI.js';
 import AuthMenu from './components/AuthMenu.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
+import LegalNotices from './components/LegalNotices.jsx';
 import { HeroCard, ProductImage, ScoreRing, SmallCard, Stars } from './components/ProductCard.jsx';
 import { useAuth } from './lib/auth.jsx';
 import {
@@ -78,7 +79,7 @@ function ResultsPlaceholder({ category }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenLegal }) {
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
 
@@ -175,16 +176,18 @@ function CategoryPicker({ onPick, onOpenHistory }) {
       </main>
 
       <footer className="home-footer">
+        <p className="home-footer-affiliate">
+          En tant que Partenaire Amazon, Bestbuys réalise un bénéfice sur les
+          achats remplissant les conditions requises.
+        </p>
         <div className="home-footer-inner">
           <div className="home-footer-left">
-            <a href="#">À propos</a>
-            <a href="#">Comment ça marche</a>
-            <a href="#">Marchands partenaires</a>
+            © {new Date().getFullYear()} Bestbuys. Tous droits réservés.
           </div>
           <div className="home-footer-right">
-            <a href="#">Aide</a>
-            <a href="#">Confidentialité</a>
-            <a href="#">Conditions</a>
+            <button type="button" className="home-footer-link" onClick={onOpenLegal}>
+              Mentions légales
+            </button>
           </div>
         </div>
       </footer>
@@ -281,6 +284,7 @@ export default function App() {
   const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [convoId, setConvoId] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [legalOpen, setLegalOpen] = useState(false);
 
   const progress = done ? 100 : Math.min(90, turnCount * 22);
 
@@ -434,6 +438,7 @@ export default function App() {
             setInitialQuery(q || '');
           }}
           onOpenHistory={() => setHistoryOpen(true)}
+          onOpenLegal={() => setLegalOpen(true)}
         />
         <HistoryPanel
           open={historyOpen}
@@ -441,6 +446,7 @@ export default function App() {
           onLoad={loadConversation}
           currentId={convoId}
         />
+        <LegalNotices open={legalOpen} onClose={() => setLegalOpen(false)} />
       </>
     );
   }
@@ -497,6 +503,19 @@ export default function App() {
             <ResultsPlaceholder category={category} />
           )}
         </div>
+
+        <footer className="results-footer">
+          <span className="results-footer-affiliate">
+            En tant que Partenaire Amazon, Bestbuys réalise un bénéfice sur les
+            achats remplissant les conditions requises.
+          </span>
+          <span className="results-footer-meta">
+            © {new Date().getFullYear()} Bestbuys ·{' '}
+            <button type="button" className="home-footer-link" onClick={() => setLegalOpen(true)}>
+              Mentions légales
+            </button>
+          </span>
+        </footer>
       </main>
 
       {selected && (
@@ -513,6 +532,8 @@ export default function App() {
         onLoad={loadConversation}
         currentId={convoId}
       />
+
+      <LegalNotices open={legalOpen} onClose={() => setLegalOpen(false)} />
 
       <TweaksPanel title="Tweaks">
         <TweakSection label="Layout du chat" />
