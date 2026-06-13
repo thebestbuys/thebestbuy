@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
-import { ProductImage, Stars } from './ProductCard.jsx';
+import { AmazonPrice, ProductImage, Stars } from './ProductCard.jsx';
 import { formatRelative } from '../lib/history.js';
 import {
   getSelectionsRevision,
@@ -47,15 +47,6 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
     loadedSig.current = `${user?.sub || '_anon'}:${getSelectionsRevision(user?.sub)}`;
   };
 
-  // Amazon-style price: large integer part, superscript cents, then €.
-  // The decimal separator follows the locale ("," in FR, "." in EN) so it
-  // never clashes with the thousands separator (e.g. EN "1,299.99").
-  const decimalSep = (1.1).toLocaleString(locale).replace(/[0-9\s]/g, '') || '.';
-  const splitPrice = (price) => {
-    const whole = Math.floor(price);
-    const frac = Math.round((price - whole) * 100);
-    return { whole: whole.toLocaleString(locale), frac: String(frac).padStart(2, '0') };
-  };
 
   return (
     <div className="auth-modal-bg" onClick={onClose}>
@@ -95,7 +86,6 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
             <ul className="selections-grid">
               {items.map((p) => {
                 const url = getAmazonUrl ? getAmazonUrl(p) : p.amazon_url;
-                const price = p.price != null ? splitPrice(p.price) : null;
                 return (
                   <li key={p.id} className="amz-card">
                     <button
@@ -136,21 +126,9 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
                           )}
                         </div>
                       )}
-                      {price && (
+                      {p.price != null && (
                         <div className="amz-card-price">
-                          <span className="a-price">
-                            <span className="a-offscreen">
-                              {price.whole}{decimalSep}{price.frac} €
-                            </span>
-                            <span aria-hidden="true">
-                              <span className="a-price-whole">
-                                {price.whole}
-                                <span className="a-price-decimal">{decimalSep}</span>
-                              </span>
-                              <span className="a-price-fraction">{price.frac}</span>
-                              <span className="a-price-symbol">€</span>
-                            </span>
-                          </span>
+                          <AmazonPrice price={p.price} />
                         </div>
                       )}
                       <div className="amz-card-added">

@@ -10,7 +10,7 @@ import LegalNotices from './components/LegalNotices.jsx';
 import GuideArticle from './components/GuideArticle.jsx';
 import LangToggle from './components/LangToggle.jsx';
 import { GUIDES, localizeGuide } from './data/guides.js';
-import { HeroCard, ProductImage, ScoreRing, SmallCard, Stars } from './components/ProductCard.jsx';
+import { AmazonPrice, HeroCard, ProductImage, ScoreRing, SmallCard, Stars } from './components/ProductCard.jsx';
 import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './lib/i18n.jsx';
 import {
@@ -316,8 +316,7 @@ function ProductDetail({ product, onClose, onBuy }) {
               <div>
                 <div className="modal-price-label">{t('product.price')}</div>
                 <div className="modal-price">
-                  <span>{product.price.toLocaleString(locale)}</span>
-                  <span className="price-currency">€</span>
+                  <AmazonPrice price={product.price} />
                 </div>
                 <div className="modal-shipping">{t('product.shipping')}</div>
               </div>

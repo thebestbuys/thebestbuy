@@ -48,6 +48,32 @@ export function ProductImage({ product, size = 'normal' }) {
   );
 }
 
+// Price rendered with Amazon's exact markup: whole + decimal separator on the
+// baseline, fraction and currency raised as superscript. The decimal separator
+// follows the locale ("," in FR, "." in EN). Size scales from the parent's
+// `.a-price` font-size, so each context can resize via a container override.
+export function AmazonPrice({ price }) {
+  const { lang } = useI18n();
+  if (price == null) return null;
+  const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
+  const decimalSep = (1.1).toLocaleString(locale).replace(/[0-9\s]/g, '') || '.';
+  const whole = Math.floor(price).toLocaleString(locale);
+  const frac = String(Math.round((price - Math.floor(price)) * 100)).padStart(2, '0');
+  return (
+    <span className="a-price">
+      <span className="a-offscreen">{whole}{decimalSep}{frac} €</span>
+      <span aria-hidden="true">
+        <span className="a-price-whole">
+          {whole}
+          <span className="a-price-decimal">{decimalSep}</span>
+        </span>
+        <span className="a-price-fraction">{frac}</span>
+        <span className="a-price-symbol">€</span>
+      </span>
+    </span>
+  );
+}
+
 export function Stars({ rating }) {
   if (rating == null) return null;
   const full = Math.floor(rating);
@@ -121,8 +147,7 @@ export function HeroCard({ product, density, onSelect }) {
           </ul>
           <div className="hero-bottom">
             <div className="hero-price">
-              <span className="price-num">{product.price.toLocaleString(locale)}</span>
-              <span className="price-currency">€</span>
+              <AmazonPrice price={product.price} />
             </div>
             <button className="btn-primary" onClick={(e) => { e.stopPropagation(); onSelect(product); }}>
               {t('product.viewDetails')}
@@ -140,8 +165,6 @@ export function HeroCard({ product, density, onSelect }) {
 }
 
 export function SmallCard({ product, rank, density, onSelect }) {
-  const { lang } = useI18n();
-  const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   return (
     <article className={'small-card density-' + density} onClick={() => onSelect(product)}>
       <div className="small-rank">#{rank}</div>
@@ -160,7 +183,7 @@ export function SmallCard({ product, rank, density, onSelect }) {
           {product.specs.slice(0, density === 'compact' ? 2 : 3).map((s, i) => <li key={i}>{s}</li>)}
         </ul>
         <div className="small-bottom">
-          <div className="small-price">{product.price.toLocaleString(locale)} €</div>
+          <div className="small-price"><AmazonPrice price={product.price} /></div>
           <div className="small-score">
             <span className="small-score-num">{product.score}</span>
             <span className="small-score-pct">% match</span>

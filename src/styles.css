@@ -11,6 +11,7 @@
   --border: rgba(26, 24, 20, 0.09);
   --border-soft: rgba(26, 24, 20, 0.05);
   --accent: oklch(0.62 0.14 38); /* terracotta */
+  --accent-light: oklch(0.72 0.15 48); /* lighter orange — CTAs & chips */
   --accent-soft: oklch(0.94 0.04 50);
   --accent-good: oklch(0.62 0.13 155); /* vert */
   --accent-warn: oklch(0.7 0.14 70);
@@ -174,7 +175,7 @@ ul {
 }
 .suggestion-chip {
   appearance: none;
-  background: var(--accent);
+  background: var(--accent-light);
   border: 0.5px solid transparent;
   color: #fff;
   font: inherit;
@@ -883,21 +884,21 @@ ul {
 .btn-primary {
   appearance: none;
   border: 0;
-  background: var(--text);
-  color: var(--bg);
+  background: var(--accent-light);
+  color: #fff;
   padding: 12px 22px;
   border-radius: 999px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   transition:
-    background 0.15s ease,
+    filter 0.15s ease,
     transform 0.15s ease;
 }
 .btn-primary:hover {
-  background: var(--accent);
+  filter: brightness(0.94);
   transform: translateY(-1px);
 }
 .btn-primary.big {
@@ -2171,8 +2172,10 @@ ul {
 .amz-card-price {
   margin-top: 2px;
 }
-/* Amazon price markup: whole + decimal comma on the baseline, fraction and
-   symbol raised as superscript — mirrors amazon.fr's .a-price block. */
+/* Amazon price markup: whole + decimal separator on the baseline, fraction and
+   symbol raised as superscript — mirrors amazon.fr's .a-price block.
+   Sizes are em-based off `.a-price` font-size, so any context can resize the
+   whole block by overriding `.a-price { font-size }`. Base = 22px. */
 .a-price {
   display: inline-flex;
   align-items: flex-start;
@@ -2180,23 +2183,34 @@ ul {
   font-family: 'Amazon Ember', var(--display), sans-serif;
   line-height: 1;
   white-space: nowrap;
+  font-size: 22px;
 }
 .a-price-whole {
-  font-size: 22px;
+  font-size: 1em;
   font-weight: 400;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.025em;
 }
 .a-price-decimal {
   font-weight: 400;
 }
 .a-price-fraction,
 .a-price-symbol {
-  font-size: 11px;
+  font-size: 0.5em;
   font-weight: 400;
-  margin-top: 1px;
+  margin-top: 0.07em;
 }
 .a-price-symbol {
-  margin-left: 1px;
+  margin-left: 0.06em;
+}
+/* Per-context sizing on the recommendations ("chat suggestions") screen */
+.hero-price .a-price {
+  font-size: 42px;
+}
+.modal-price .a-price {
+  font-size: 38px;
+}
+.small-price .a-price {
+  font-size: 22px;
 }
 .a-offscreen {
   position: absolute;
@@ -2218,7 +2232,7 @@ ul {
   display: block;
   text-align: center;
   text-decoration: none;
-  background: var(--accent);
+  background: var(--accent-light);
   color: #fff;
   font-size: 12.5px;
   font-weight: 600;
