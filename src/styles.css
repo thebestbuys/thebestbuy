@@ -1657,6 +1657,23 @@ ul {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: calc(100% - 48px);
+}
+/* Tablet: the absolute top bar can sit over the vertically-centered logo when
+   the content is tall — reserve clearance and shrink the wordmark a touch. */
+@media (max-width: 920px) {
+  .home-main {
+    padding-top: 92px;
+    justify-content: flex-start;
+  }
+  .home-logo {
+    font-size: 64px;
+  }
+  .home-greeting {
+    font-size: 22px;
+  }
 }
 .results-header-right {
   display: flex;
