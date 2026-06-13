@@ -478,14 +478,51 @@ export default function App() {
     setCategory(convo.category);
   };
 
+  // ─── Browser back-button integration ──────────────────────────────────
+  // The app is state-driven (no router). We push a history entry on each
+  // forward navigation so the browser Back button steps back through in-app
+  // views and overlays instead of leaving the site. UI close buttons call
+  // window.history.back(), so both paths converge on the popstate handler.
+  const pushHistory = () => {
+    try { window.history.pushState({ oraklia: true }, ''); } catch { /* noop */ }
+  };
+
+  const navOpenGuide = (slug) => { pushHistory(); setActiveGuide(slug); };
+  const navOpenLegal = () => { pushHistory(); setLegalOpen(true); };
+  const navOpenHistory = () => { pushHistory(); setHistoryOpen(true); };
+  const navOpenProduct = (p) => { pushHistory(); setSelected(p); };
+  const navPickCategory = (cat, q) => {
+    pushHistory();
+    setConvoId(newConversationId());
+    setCategory(cat);
+    setInitialQuery(q || '');
+  };
+  const navBack = () => {
+    try { window.history.back(); } catch { /* noop */ }
+  };
+
+  useEffect(() => {
+    const onPop = () => {
+      // Close the topmost open layer; at home, let the browser navigate away.
+      if (selected) { setSelected(null); return; }
+      if (legalOpen) { setLegalOpen(false); return; }
+      if (historyOpen) { setHistoryOpen(false); return; }
+      if (activeGuide) { setActiveGuide(null); return; }
+      if (category) { handleHome(); return; }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, legalOpen, historyOpen, activeGuide, category]);
+
   const getAmazonUrl = (p) => {
     if (p.amazon_url) return p.amazon_url;
     const q = encodeURIComponent(`${p.brand} ${p.model}`);
     return `https://www.amazon.fr/s?k=${q}&tag=oraklia123-21`;
   };
 
-  const handleBuy = (p) => {
-    setSelected(null);
+  const handleBuy = () => {
+    navBack();
   };
 
   const startAdvisorFromGuide = (cat) => {
@@ -502,10 +539,10 @@ export default function App() {
       <>
         <GuideArticle
           guide={guide}
-          onBack={() => setActiveGuide(null)}
+          onBack={navBack}
           onStartAdvisor={startAdvisorFromGuide}
         />
-        <LegalNotices open={legalOpen} onClose={() => setLegalOpen(false)} />
+        <LegalNotices open={legalOpen} onClose={navBack} />
       </>
     );
   }
@@ -514,22 +551,18 @@ export default function App() {
     return (
       <>
         <CategoryPicker
-          onPick={(cat, q) => {
-            setConvoId(newConversationId());
-            setCategory(cat);
-            setInitialQuery(q || '');
-          }}
-          onOpenHistory={() => setHistoryOpen(true)}
-          onOpenLegal={() => setLegalOpen(true)}
-          onOpenGuide={(slug) => setActiveGuide(slug)}
+          onPick={navPickCategory}
+          onOpenHistory={navOpenHistory}
+          onOpenLegal={navOpenLegal}
+          onOpenGuide={navOpenGuide}
         />
         <HistoryPanel
           open={historyOpen}
-          onClose={() => setHistoryOpen(false)}
+          onClose={navBack}
           onLoad={loadConversation}
           currentId={convoId}
         />
-        <LegalNotices open={legalOpen} onClose={() => setLegalOpen(false)} />
+        <LegalNotices open={legalOpen} onClose={navBack} />
       </>
     );
   }
@@ -545,8 +578,8 @@ export default function App() {
         onAnswer={handleAnswer}
         onFreeText={handleFreeText}
         onRestart={handleRestart}
-        onHome={handleHome}
-        onOpenHistory={() => setHistoryOpen(true)}
+        onHome={navBack}
+        onOpenHistory={navOpenHistory}
         isTyping={isTyping}
         layout={t.chatLayout}
         progress={progress}
@@ -574,12 +607,12 @@ export default function App() {
             <>
               {top && (
                 <div className={'hero-wrap variant-' + t.heroVariant}>
-                  <HeroCard product={top} density={t.density} onSelect={setSelected} />
+                  <HeroCard product={top} density={t.density} onSelect={navOpenProduct} />
                 </div>
               )}
               <div className={'small-grid density-' + t.density}>
                 {rest.map((p, i) => (
-                  <SmallCard key={p.id} product={p} rank={i + 2} density={t.density} onSelect={setSelected} />
+                  <SmallCard key={p.id} product={p} rank={i + 2} density={t.density} onSelect={navOpenProduct} />
                 ))}
               </div>
             </>
@@ -592,7 +625,7 @@ export default function App() {
           <span className="results-footer-affiliate">{tr('footer.affiliate')}</span>
           <span className="results-footer-meta">
             {tr('footer.copyrightShort', { year: new Date().getFullYear() })} ·{' '}
-            <button type="button" className="home-footer-link" onClick={() => setLegalOpen(true)}>
+            <button type="button" className="home-footer-link" onClick={navOpenLegal}>
               {tr('footer.legal')}
             </button>
           </span>
@@ -602,19 +635,19 @@ export default function App() {
       {selected && (
         <ProductDetail
           product={selected}
-          onClose={() => setSelected(null)}
+          onClose={navBack}
           onBuy={handleBuy}
         />
       )}
 
       <HistoryPanel
         open={historyOpen}
-        onClose={() => setHistoryOpen(false)}
+        onClose={navBack}
         onLoad={loadConversation}
         currentId={convoId}
       />
 
-      <LegalNotices open={legalOpen} onClose={() => setLegalOpen(false)} />
+      <LegalNotices open={legalOpen} onClose={navBack} />
 
       <TweaksPanel title="Tweaks">
         <TweakSection label="Layout du chat" />
