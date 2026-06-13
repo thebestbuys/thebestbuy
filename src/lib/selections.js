@@ -3,10 +3,31 @@
 // snapshot of each product — including the price/url at the moment it was saved,
 // since Amazon prices drift over time.
 const ROOT_KEY = 'bb_selections';
+const REV_KEY = 'bb_selections_rev';
 const MAX_SELECTIONS = 100;
 
 function keyFor(userId) {
   return userId ? `${ROOT_KEY}:${userId}` : `${ROOT_KEY}:_anon`;
+}
+
+function revKeyFor(userId) {
+  return userId ? `${REV_KEY}:${userId}` : `${REV_KEY}:_anon`;
+}
+
+// Monotonic counter bumped on every write, so readers (e.g. SelectionsPanel)
+// can skip reloading when nothing has changed since their last read.
+export function getSelectionsRevision(userId) {
+  try {
+    return Number(localStorage.getItem(revKeyFor(userId))) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function bumpRevision(userId) {
+  try {
+    localStorage.setItem(revKeyFor(userId), String(getSelectionsRevision(userId) + 1));
+  } catch {}
 }
 
 export function listSelections(userId) {
@@ -23,6 +44,7 @@ export function listSelections(userId) {
 function write(userId, list) {
   try {
     localStorage.setItem(keyFor(userId), JSON.stringify(list));
+    bumpRevision(userId);
   } catch {}
 }
 
@@ -40,6 +62,7 @@ function snapshot(product) {
     image_url: product.image_url || null,
     color: product.color || null,
     rating: product.rating ?? null,
+    reviews: product.reviews ?? null,
     score: product.score ?? null,
     amazon_url: product.amazon_url || null,
     category: product.category || null,
@@ -71,5 +94,6 @@ export function removeSelection(userId, id) {
 export function clearSelections(userId) {
   try {
     localStorage.removeItem(keyFor(userId));
+    bumpRevision(userId);
   } catch {}
 }

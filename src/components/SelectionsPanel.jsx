@@ -1,9 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
-import { ProductImage } from './ProductCard.jsx';
+import { ProductImage, Stars } from './ProductCard.jsx';
 import { formatRelative } from '../lib/history.js';
-import { listSelections, removeSelection } from '../lib/selections.js';
+import {
+  getSelectionsRevision,
+  listSelections,
+  removeSelection,
+} from '../lib/selections.js';
 
 // Mirror of HistoryPanel, for saved products. Reads fresh on open.
 export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) {
@@ -11,9 +15,16 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
   const { t, lang } = useI18n();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   const [items, setItems] = useState([]);
+  // Signature of the data currently held in `items` (user + store revision).
+  // We only reload when it changes, so reopening with no edits is a no-op.
+  const loadedSig = useRef(null);
 
   useEffect(() => {
-    if (open) setItems(listSelections(user?.sub));
+    if (!open) return;
+    const sig = `${user?.sub || '_anon'}:${getSelectionsRevision(user?.sub)}`;
+    if (sig === loadedSig.current) return;
+    setItems(listSelections(user?.sub));
+    loadedSig.current = sig;
   }, [open, user?.sub]);
 
   useEffect(() => {
@@ -31,6 +42,16 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
     e.stopPropagation();
     removeSelection(user?.sub, id);
     setItems((cur) => cur.filter((p) => p.id !== id));
+    // Stay in sync with the bump removeSelection just made, so reopening
+    // doesn't see a "changed" revision and reload.
+    loadedSig.current = `${user?.sub || '_anon'}:${getSelectionsRevision(user?.sub)}`;
+  };
+
+  // Amazon-style price: large integer part, superscript cents, then €.
+  const splitPrice = (price) => {
+    const whole = Math.floor(price);
+    const frac = Math.round((price - whole) * 100);
+    return { whole: whole.toLocaleString(locale), frac: String(frac).padStart(2, '0') };
   };
 
   return (
@@ -68,40 +89,62 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
           </div>
         ) : (
           <>
-            <ul className="selections-list">
+            <ul className="selections-grid">
               {items.map((p) => {
-                const catLabel = ['phone', 'laptop', 'headphones'].includes(p.category)
-                  ? t('cat.' + p.category)
-                  : p.category;
                 const url = getAmazonUrl ? getAmazonUrl(p) : p.amazon_url;
+                const price = p.price != null ? splitPrice(p.price) : null;
                 return (
-                  <li key={p.id} className="selection-item">
-                    <div className="selection-thumb">
+                  <li key={p.id} className="amz-card">
+                    <button
+                      type="button"
+                      className="amz-card-remove"
+                      aria-label={t('selections.remove')}
+                      title={t('selections.remove')}
+                      onClick={(e) => remove(p.id, e)}
+                    >
+                      ✕
+                    </button>
+                    <a
+                      className="amz-card-img"
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer sponsored"
+                      onClick={() => onBuy?.(p)}
+                    >
                       <ProductImage product={p} size="small" />
-                    </div>
-                    <div className="selection-info">
-                      <div className="selection-brand">{p.brand}</div>
-                      <div className="selection-model">{p.model}</div>
-                      <div className="selection-meta">
-                        {catLabel && (
-                          <span className="history-item-cat">{catLabel}</span>
-                        )}
-                        {p.score != null && (
-                          <span className="selection-score">
-                            {t('product.matchPct', { score: p.score })}
-                          </span>
-                        )}
-                        <span>{t('selections.added', { when: formatRelative(p.addedAt) })}</span>
-                      </div>
-                    </div>
-                    <div className="selection-actions">
-                      {p.price != null && (
-                        <div className="selection-price">
-                          {p.price.toLocaleString(locale)} €
+                    </a>
+                    <div className="amz-card-body">
+                      <a
+                        className="amz-card-title"
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer sponsored"
+                        onClick={() => onBuy?.(p)}
+                      >
+                        {[p.brand, p.model].filter(Boolean).join(' ')}
+                      </a>
+                      {p.rating != null && (
+                        <div className="amz-card-rating">
+                          <Stars rating={p.rating} />
+                          {p.reviews != null && (
+                            <span className="amz-card-reviews">
+                              {p.reviews.toLocaleString(locale)}
+                            </span>
+                          )}
                         </div>
                       )}
+                      {price && (
+                        <div className="amz-card-price">
+                          <span className="amz-price-whole">{price.whole}</span>
+                          <span className="amz-price-frac">{price.frac}</span>
+                          <span className="amz-price-cur">€</span>
+                        </div>
+                      )}
+                      <div className="amz-card-added">
+                        {t('selections.added', { when: formatRelative(p.addedAt) })}
+                      </div>
                       <a
-                        className="btn-primary small"
+                        className="amz-buy-btn"
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer sponsored"
@@ -109,23 +152,6 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
                       >
                         {t('product.viewAmazon')}
                       </a>
-                      <button
-                        type="button"
-                        className="history-item-del selection-del"
-                        aria-label={t('selections.remove')}
-                        title={t('selections.remove')}
-                        onClick={(e) => remove(p.id, e)}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                          <path
-                            d="M3 5h8m-6.5 0V3.5h5V5M5 7v4m4-4v4M4 5l.5 7h5L10 5"
-                            stroke="currentColor"
-                            strokeWidth="1.3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </button>
                     </div>
                   </li>
                 );

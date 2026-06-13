@@ -2073,83 +2073,141 @@ ul {
   gap: 12px;
 }
 
-/* ───────────────────── Selections panel ────────────────────────────── */
-.selections-list {
+/* ───────────────────── Selections panel (Amazon-style cards) ────────── */
+.selections-panel {
+  max-width: 720px;
+}
+.selections-grid {
   overflow-y: auto;
-  padding-right: 4px;
-  margin: 0 -6px;
-}
-.selection-item {
   display: grid;
-  grid-template-columns: 60px 1fr auto;
-  gap: 14px;
-  align-items: center;
-  background: var(--bg-soft);
-  border: 0.5px solid var(--border);
-  border-radius: 12px;
-  margin: 0 6px 8px;
-  padding: 10px 12px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 2px 4px 2px 0;
 }
-.selection-thumb {
-  width: 60px;
-}
-.selection-thumb .prod-img-wrap {
-  width: 60px;
-  height: 60px;
-  border-radius: 10px;
-}
-.selection-info {
-  min-width: 0;
-}
-.selection-brand {
-  font-size: 11px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.selection-model {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.selection-meta {
-  margin-top: 5px;
-  font-size: 11.5px;
-  color: var(--text-muted);
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.selection-score {
-  color: var(--accent);
-  font-weight: 600;
-}
-.selection-actions {
+.amz-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
+  background: var(--bg-elev);
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.15s, border-color 0.15s;
 }
-.selection-price {
-  font-family: var(--display);
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text);
+.amz-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: rgba(26, 24, 20, 0.18);
 }
-.btn-primary.small {
-  padding: 7px 12px;
+.amz-card-remove {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  z-index: 2;
+  appearance: none;
+  border: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  transition: color 0.12s, background 0.12s;
+}
+.amz-card-remove:hover {
+  color: #e0245e;
+  background: #fff;
+}
+.amz-card-img {
+  display: block;
+  padding: 10px 10px 0;
+}
+.amz-card-img .prod-img-wrap {
+  background: #fff;
+  border-radius: 8px;
+}
+.amz-card-body {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 11px 11px;
+  gap: 5px;
+  flex: 1;
+}
+.amz-card-title {
   font-size: 12.5px;
+  line-height: 1.35;
+  color: #007185;
+  text-decoration: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.selection-del {
-  border-radius: 8px !important;
-  padding: 4px 8px !important;
+.amz-card-title:hover {
+  color: #c45500;
+  text-decoration: underline;
+}
+.amz-card-rating {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.amz-card-rating .stars {
+  font-size: 12px;
+}
+.amz-card-reviews {
+  font-size: 11.5px;
+  color: #007185;
+}
+.amz-card-price {
+  display: flex;
+  align-items: flex-start;
+  color: var(--text);
+  font-family: var(--display);
+  line-height: 1;
+  margin-top: 2px;
+}
+.amz-price-whole {
+  font-size: 21px;
+  font-weight: 500;
+}
+.amz-price-frac,
+.amz-price-cur {
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+.amz-price-frac {
+  margin-left: 1px;
+}
+.amz-price-cur {
+  margin-left: 2px;
+}
+.amz-card-added {
+  font-size: 10.5px;
+  color: var(--text-faint);
+}
+.amz-buy-btn {
+  margin-top: auto;
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  background: #ffd814;
+  color: #0f1111;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 0.5px solid #fcd200;
+  transition: background 0.12s;
+}
+.amz-buy-btn:hover {
+  background: #f7ca00;
 }
 .selections-note {
-  margin: 8px 6px 0;
+  margin: 10px 6px 0;
   font-size: 11px;
   color: var(--text-faint);
   text-align: center;
