@@ -135,9 +135,19 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
                       )}
                       {price && (
                         <div className="amz-card-price">
-                          <span className="amz-price-whole">{price.whole}</span>
-                          <span className="amz-price-frac">{price.frac}</span>
-                          <span className="amz-price-cur">€</span>
+                          <span className="a-price">
+                            <span className="a-offscreen">
+                              {price.whole},{price.frac} €
+                            </span>
+                            <span aria-hidden="true">
+                              <span className="a-price-whole">
+                                {price.whole}
+                                <span className="a-price-decimal">,</span>
+                              </span>
+                              <span className="a-price-fraction">{price.frac}</span>
+                              <span className="a-price-symbol">€</span>
+                            </span>
+                          </span>
                         </div>
                       )}
                       <div className="amz-card-added">
