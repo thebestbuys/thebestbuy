@@ -100,32 +100,57 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenLegal, onOpenGuide }) {
   };
 
   const suggestions = [
-    { key: 'suggestion.phonePhoto', cat: 'phone' },
-    { key: 'suggestion.lightLaptop', cat: 'laptop' },
-    { key: 'suggestion.ancHeadphones', cat: 'headphones' },
-    { key: 'suggestion.gamingPc', cat: 'laptop' },
+    { key: 'suggestion.phone', icon: 'phone' },
+    { key: 'suggestion.laptop', icon: 'laptop' },
+    { key: 'suggestion.tv', icon: 'tv' },
+    { key: 'suggestion.earbuds', icon: 'earbuds' },
+    { key: 'suggestion.watch', icon: 'watch' },
+    { key: 'suggestion.vacuum', icon: 'vacuum' },
+    { key: 'suggestion.coffee', icon: 'coffee' },
+    { key: 'suggestion.speaker', icon: 'speaker' },
   ];
 
-  const SuggestionIcon = ({ cat }) => {
-    if (cat === 'phone') return (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <rect x="3.5" y="1.5" width="7" height="11" rx="1.6" stroke="currentColor" strokeWidth="1.2"/>
-        <line x1="6" y1="10.5" x2="8" y2="10.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-      </svg>
-    );
-    if (cat === 'laptop') return (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <rect x="2.5" y="2.5" width="9" height="6.5" rx="1" stroke="currentColor" strokeWidth="1.2"/>
-        <line x1="1" y1="11" x2="13" y2="11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-      </svg>
-    );
-    return (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d="M2 8 V7 a5 5 0 0 1 10 0 V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-        <rect x="1.5" y="8" width="2.5" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/>
-        <rect x="10" y="8" width="2.5" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/>
-      </svg>
-    );
+  const SuggestionIcon = ({ icon }) => {
+    const p = { width: 14, height: 14, viewBox: '0 0 14 14', fill: 'none', 'aria-hidden': true };
+    const sw = { stroke: 'currentColor', strokeWidth: 1.2, strokeLinecap: 'round', strokeLinejoin: 'round' };
+    switch (icon) {
+      case 'phone':
+        return (
+          <svg {...p}><rect x="3.5" y="1.5" width="7" height="11" rx="1.6" {...sw} /><line x1="6" y1="10.5" x2="8" y2="10.5" {...sw} /></svg>
+        );
+      case 'laptop':
+        return (
+          <svg {...p}><rect x="2.5" y="2.5" width="9" height="6.5" rx="1" {...sw} /><line x1="1" y1="11" x2="13" y2="11" {...sw} /></svg>
+        );
+      case 'tv':
+        return (
+          <svg {...p}><rect x="1.5" y="2.5" width="11" height="7.5" rx="1" {...sw} /><line x1="5" y1="12.5" x2="9" y2="12.5" {...sw} /></svg>
+        );
+      case 'earbuds':
+        return (
+          <svg {...p}><path d="M4.5 2.5C3 2.5 2.5 4 2.5 5.5S3 8.5 4.5 8.5 5 7 5 5.5 6 2.5 4.5 2.5Z" {...sw} /><path d="M9.5 2.5C11 2.5 11.5 4 11.5 5.5S11 8.5 9.5 8.5 9 7 9 5.5 8 2.5 9.5 2.5Z" {...sw} /></svg>
+        );
+      case 'watch':
+        return (
+          <svg {...p}><rect x="4" y="4" width="6" height="6" rx="1.6" {...sw} /><path d="M5.5 4 6 1.5h2L8.5 4M5.5 10 6 12.5h2L8.5 10" {...sw} /><path d="M7 5.5V7l1 .8" {...sw} /></svg>
+        );
+      case 'vacuum':
+        return (
+          <svg {...p}><circle cx="7" cy="7.5" r="5" {...sw} /><circle cx="7" cy="7.5" r="1.5" {...sw} /><line x1="7" y1="2.5" x2="7" y2="4" {...sw} /></svg>
+        );
+      case 'coffee':
+        return (
+          <svg {...p}><path d="M2.5 5.5h8v3a3 3 0 0 1-3 3h-2a3 3 0 0 1-3-3v-3Z" {...sw} /><path d="M10.5 6.5h1.5a1.3 1.3 0 0 1 0 2.6h-1.5" {...sw} /><line x1="4" y1="2" x2="4" y2="3.5" {...sw} /><line x1="7" y1="2" x2="7" y2="3.5" {...sw} /></svg>
+        );
+      case 'speaker':
+        return (
+          <svg {...p}><rect x="3.5" y="1.5" width="7" height="11" rx="1.4" {...sw} /><circle cx="7" cy="8.5" r="2.2" {...sw} /><circle cx="7" cy="3.8" r="0.6" fill="currentColor" stroke="none" /></svg>
+        );
+      default:
+        return (
+          <svg {...p}><circle cx="7" cy="7" r="5" {...sw} /></svg>
+        );
+    }
   };
 
   return (
@@ -175,8 +200,8 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenLegal, onOpenGuide }) {
             const label = t(s.key);
             return (
               <button key={s.key} type="button" className="suggestion-chip"
-                onClick={() => onPick(s.cat, label)}>
-                <span className="suggestion-chip-icon"><SuggestionIcon cat={s.cat} /></span>
+                onClick={() => onPick(detectCategory(label) || label, label)}>
+                <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
                 {label}
               </button>
             );
