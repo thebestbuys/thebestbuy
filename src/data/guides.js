@@ -65,9 +65,9 @@ export const GUIDES = [
           '128 Go de stockage minimum (256 Go si vous filmez beaucoup)',
         ],
         picks: [
-          { budget: 'Petit budget (~250 €)', query: 'smartphone milieu de gamme oled 120hz', note: 'Le meilleur rapport qualité-prix actuel.' },
-          { budget: 'Polyvalent (~500 €)', query: 'smartphone photo oled 120hz 256go', note: "L'équilibre idéal photo / autonomie / fluidité." },
-          { budget: 'Premium photo (~1000 €+)', query: 'smartphone premium teleobjectif appareil photo', note: 'Pour qui la photo passe avant tout.' },
+          { budget: 'Petit budget · ~250 €', name: 'Samsung Galaxy A35 5G (128 Go)', note: 'Excellent rapport qualité-prix, écran AMOLED 120 Hz.', url: 'https://amzn.to/4vQYVx0' },
+          { budget: 'Polyvalent · ~500 €', name: 'Google Pixel 8a (128 Go)', note: 'La photo de référence à ce prix, 7 ans de mises à jour.', url: 'https://amzn.to/43tSfIX' },
+          { budget: 'Premium · ~885 €', name: 'Apple iPhone 17 (256 Go)', note: "Le meilleur de l'écosystème Apple : photo et longévité au top.", url: 'https://amzn.to/4ousimb' },
         ],
       },
       en: {
@@ -122,9 +122,9 @@ export const GUIDES = [
           '128 GB of storage minimum (256 GB if you shoot a lot of video)',
         ],
         picks: [
-          { budget: 'Small budget (~€250)', query: 'smartphone mid range oled 120hz', note: 'The best value for money right now.' },
-          { budget: 'All-rounder (~€500)', query: 'smartphone camera oled 120hz 256gb', note: 'The ideal balance of camera, battery and fluidity.' },
-          { budget: 'Camera premium (~€1000+)', query: 'premium smartphone telephoto camera', note: 'For those who put photography first.' },
+          { budget: 'Small budget · ~€250', name: 'Samsung Galaxy A35 5G (128 GB)', note: 'Great value, 120 Hz AMOLED display.', url: 'https://amzn.to/4vQYVx0' },
+          { budget: 'All-rounder · ~€500', name: 'Google Pixel 8a (128 GB)', note: 'Benchmark camera at this price, 7 years of updates.', url: 'https://amzn.to/43tSfIX' },
+          { budget: 'Premium · ~€885', name: 'Apple iPhone 17 (256 GB)', note: 'The best of the Apple ecosystem: top camera and longevity.', url: 'https://amzn.to/4ousimb' },
         ],
       },
     },
@@ -186,9 +186,9 @@ export const GUIDES = [
           'Poids et autonomie adaptés à votre mobilité',
         ],
         picks: [
-          { budget: 'Étudiant / bureautique (~600 €)', query: 'ordinateur portable 16go ssd 512 ips', note: 'Fluide pour le quotidien, sans superflu.' },
-          { budget: 'Polyvalent / création (~1000 €)', query: 'ordinateur portable i7 16go ssd 1to', note: 'Assez puissant pour le montage léger.' },
-          { budget: 'Ultraportable premium (~1500 €+)', query: 'ultraportable leger autonomie oled', note: 'Léger, endurant, silencieux.' },
+          { budget: 'Étudiant / bureautique · ~600 €', name: 'Lenovo IdeaPad Slim 5 14" (i7, 16 Go, 512 Go SSD)', note: 'Fluide pour le quotidien : Core i7, 16 Go, SSD rapide.', url: 'https://amzn.to/4vL0Gvm' },
+          { budget: 'Polyvalent / création · ~1000 €', name: 'Apple MacBook Air M2 13" (256 Go)', note: 'Silencieux, endurant, idéal pour la création légère.', url: 'https://amzn.to/4v52pf5' },
+          { budget: 'Premium · ~1500 €', name: 'Apple MacBook Air 15" M5 (16 Go, 512 Go)', note: 'Grand écran Liquid Retina, puce M5, autonomie exceptionnelle.', url: 'https://amzn.to/4eqv7Qx' },
         ],
       },
       en: {
@@ -243,9 +243,9 @@ export const GUIDES = [
           'Weight and battery life suited to your mobility',
         ],
         picks: [
-          { budget: 'Student / office (~€600)', query: 'laptop 16gb ssd 512 ips', note: 'Smooth for daily use, no fluff.' },
-          { budget: 'All-round / creation (~€1000)', query: 'laptop i7 16gb ssd 1tb', note: 'Powerful enough for light editing.' },
-          { budget: 'Premium ultraportable (~€1500+)', query: 'lightweight ultrabook long battery oled', note: 'Light, enduring, silent.' },
+          { budget: 'Student / office · ~€600', name: 'Lenovo IdeaPad Slim 5 14" (i7, 16 GB, 512 GB SSD)', note: 'Smooth daily driver: Core i7, 16 GB, fast SSD.', url: 'https://amzn.to/4vL0Gvm' },
+          { budget: 'All-round / creation · ~€1000', name: 'Apple MacBook Air M2 13" (256 GB)', note: 'Silent, enduring, ideal for light creative work.', url: 'https://amzn.to/4v52pf5' },
+          { budget: 'Premium · ~€1500', name: 'Apple MacBook Air 15" M5 (16 GB, 512 GB)', note: 'Large Liquid Retina screen, M5 chip, exceptional battery.', url: 'https://amzn.to/4eqv7Qx' },
         ],
       },
     },
@@ -300,9 +300,9 @@ export const GUIDES = [
           'Signature sonore équilibrée, codecs AAC / aptX / LDAC',
         ],
         picks: [
-          { budget: 'Petit budget (~80 €)', query: 'casque bluetooth reduction de bruit', note: "L'ANC accessible, l'essentiel bien fait." },
-          { budget: 'Écouteurs sport (~150 €)', query: 'ecouteurs sans fil sport reduction bruit', note: 'Discrets et endurants pour bouger.' },
-          { budget: 'Casque premium (~350 €+)', query: 'casque premium reduction de bruit hifi', note: 'Le top du confort et du silence.' },
+          { budget: 'Petit budget · ~80 €', name: 'Soundcore Liberty 5 by Anker', note: 'Écouteurs ANC abordables au son équilibré.', url: 'https://amzn.to/4e6zNfx' },
+          { budget: 'Polyvalent · ~150 €', name: 'Apple AirPods 4', note: 'Confort et intégration Apple, parfaits au quotidien.', url: 'https://amzn.to/3Qft9um' },
+          { budget: 'Premium · ~575 €', name: 'Apple AirPods Max', note: 'Casque haut de gamme : réduction de bruit et son immersif.', url: 'https://amzn.to/4xq3TCn' },
         ],
       },
       en: {
@@ -350,9 +350,9 @@ export const GUIDES = [
           'Balanced sound signature, AAC / aptX / LDAC codecs',
         ],
         picks: [
-          { budget: 'Small budget (~€80)', query: 'bluetooth headphones noise cancelling', note: 'Affordable ANC, the essentials done well.' },
-          { budget: 'Sport earbuds (~€150)', query: 'wireless earbuds sport noise cancelling', note: 'Discreet and enduring for moving around.' },
-          { budget: 'Premium headphones (~€350+)', query: 'premium noise cancelling headphones hifi', note: 'The peak of comfort and silence.' },
+          { budget: 'Small budget · ~€80', name: 'Soundcore Liberty 5 by Anker', note: 'Affordable ANC earbuds with balanced sound.', url: 'https://amzn.to/4e6zNfx' },
+          { budget: 'All-round · ~€150', name: 'Apple AirPods 4', note: 'Comfort and Apple integration, great everyday earbuds.', url: 'https://amzn.to/3Qft9um' },
+          { budget: 'Premium · ~€575', name: 'Apple AirPods Max', note: 'High-end headphones: noise cancellation and immersive sound.', url: 'https://amzn.to/4xq3TCn' },
         ],
       },
     },

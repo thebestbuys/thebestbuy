@@ -51,11 +51,12 @@ export default function GuideArticle({ guide, onBack, onStartAdvisor }) {
               <a
                 key={i}
                 className="guide-pick"
-                href={affiliateSearch(p.query)}
+                href={p.url || affiliateSearch(p.query)}
                 target="_blank"
                 rel="noopener noreferrer sponsored"
               >
                 <div className="guide-pick-budget">{p.budget}</div>
+                {p.name && <div className="guide-pick-name">{p.name}</div>}
                 <div className="guide-pick-note">{p.note}</div>
                 <div className="guide-pick-cta">{t('guide.pickCta')}</div>
               </a>
