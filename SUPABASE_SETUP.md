@@ -9,8 +9,10 @@ vars are absent, the app runs exactly as before (localStorage only).
 
 1. Go to https://supabase.com, create a new project. Pick a region close to
    your users (e.g. EU).
-2. Note the **Project URL** and **anon public key** under
-   *Project Settings → API*.
+2. Note the **Project URL** and the client key under *Project Settings → API*.
+   On newer projects the client key is called **Publishable key**
+   (`sb_publishable_...`) — it replaces the old "anon public" key; use it.
+   Never put the **Secret key** (`sb_secret_...`) in the front-end.
 
 ## 2. Create the tables
 
