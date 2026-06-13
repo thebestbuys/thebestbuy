@@ -89,6 +89,17 @@ function ms(start) {
   return Math.round(performance.now() - start);
 }
 
+// Check that the Amazon result title is related to what we searched for.
+// Accepts if brand matches + ≥1 model word, OR brand absent but ≥2 model words match.
+function isCoherent(geminiBrand, geminiModel, amazonTitle) {
+  if (!amazonTitle) return false;
+  const title = amazonTitle.toLowerCase();
+  const brandMatch = title.includes(geminiBrand.toLowerCase());
+  const modelWords = geminiModel.toLowerCase().split(/\s+/).filter(w => w.length >= 3).slice(0, 5);
+  const matched = modelWords.filter(w => title.includes(w)).length;
+  return (brandMatch && matched >= 1) || (!brandMatch && matched >= 2);
+}
+
 // Searches Amazon, returns first real result with full data — null = blocked.
 async function checkAmazon(brand, model, searchContext) {
   const q = encodeURIComponent(`${searchContext ? searchContext + ' ' : ''}${brand} ${model}`);
@@ -144,6 +155,7 @@ async function checkAmazon(brand, model, searchContext) {
 
     return {
       found: true,
+      title: titleRaw,
       amazon_url: `https://www.amazon.fr/dp/${asin}?tag=bestbuys007-21`,
       image_url: imgMatch?.[1] ?? null,
       brand: amazonBrand,
@@ -282,7 +294,7 @@ export default async function handler(req, res) {
         triedNames.add(`${p.brand} ${p.model}`);
         const check = await checkAmazon(p.brand, p.model, searchContext);
         if (check.found === null) { amazonBlocked = true; break; }
-        if (check.found === true) {
+        if (check.found === true && isCoherent(p.brand, p.model, check.title)) {
           verifiedProducts.push({
             ...p,
             amazon_verified: true,
