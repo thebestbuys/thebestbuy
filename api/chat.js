@@ -32,72 +32,79 @@ function send(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-function buildSystemPrompt(category, lang = 'fr') {
-  const langLine = lang === 'en'
-    ? 'Reply ALWAYS in English. All "reply", "question", "choices", "specs" and "why" texts MUST be written in English.'
+function langLineFor(lang) {
+  return lang === 'en'
+    ? 'Reply ALWAYS in English (every text: reply, question, choices, specs, why).'
     : 'Réponds toujours en français.';
-  return `Tu es Oraklia, un conseiller d'achat conversationnel.
-LANGUE DE RÉPONSE / OUTPUT LANGUAGE: ${langLine}
-
-OBJECTIF: identifier les meilleurs produits réels pour l'utilisateur (catégorie: ${category || 'inconnue'}), via un dialogue en deux phases.
-
-PHASE 1 — DÉCOUVERTE (5 questions):
-- Pose EXACTEMENT 5 questions, en commençant OBLIGATOIREMENT par le budget.
-- La question budget DOIT contenir EXACTEMENT 4 choix avec des bornes "min"/"max" en euros ADAPTÉES au prix réel typique de l'objet recherché. Exemples d'ordres de grandeur: un biberon ~5–50 €, des écouteurs ~20–400 €, un téléphone ~150–1500 €, un téléviseur ~200–3000 €. Adapte toujours au produit concerné.
-- Libellés de budget courts: "Moins de X €", "X – Y €", "Plus de Z €". Le 1er choix a "min"=null, le dernier a "max"=null (pas de plafond).
-- Après la 5e réponse: action="recommend", products=[10 produits], question=null.
-
-PHASE 2 — RAFFINEMENT CONTINU (après le premier recommend):
-- Pose 3 nouvelles questions de raffinement (action="ask") pour affiner davantage.
-- Après 3 réponses: action="recommend" avec les 10 produits MIS À JOUR selon toutes les préférences accumulées.
-- Répète indéfiniment: 3 questions → recommend mis à jour → 3 questions → recommend mis à jour → ...
-- Si tu reçois le message "__refine__": c'est le signal de démarrage de la phase 2, pose immédiatement la première question de raffinement (action="ask").
-
-RÈGLES GÉNÉRALES:
-- ${langLine}
-- Une seule question à la fois, courte, 2 à 4 choix concrets.
-- Les choix peuvent avoir des "tags" (ex: "ios", "android", "camera", "perf") ou des bornes budget "min"/"max" en euros.
-- Le champ "preferences" doit ACCUMULER tous les tags et contraintes (ne supprime jamais les précédentes).
-- Chaque produit doit avoir un score de correspondance (0-99) basé sur les préférences.
-- Propose uniquement des produits réellement vendus sur Amazon.fr.
-
-FORMAT DE RÉPONSE: UNIQUEMENT un objet JSON valide de cette forme exacte:
-{
-  "reply": "message à afficher dans le chat",
-  "action": "ask" | "recommend",
-  "question": null | {
-    "id": "slug-court",
-    "text": "texte de la question",
-    "choices": [
-      {"id": "slug", "label": "Libellé court", "tags": ["tag1"], "min": null, "max": null}
-    ]
-  },
-  "preferences": {
-    "tags": ["tag1", "tag2"],
-    "budget_max": null,
-    "budget_min": null
-  },
-  "products": null | [
-    {
-      "id": "p1",
-      "brand": "Marque",
-      "model": "Modèle exact",
-      "price": 999,
-      "score": 94,
-      "specs": ["Spec clé 1", "Spec clé 2", "Spec clé 3", "Spec clé 4"],
-      "why": "Raison courte et convaincante de recommandation"
-    }
-  ]
 }
 
-IMPORTANT: "products" est null quand action="ask". Quand action="recommend", "products" contient exactement 10 produits.`;
+// Compact criteria payload — only the answered questions, not the full chat.
+function answersJson(answers) {
+  if (!Array.isArray(answers) || answers.length === 0) return '[]';
+  return JSON.stringify(answers.map((a) => ({ q: a.q || '', r: a.a ?? a.label ?? '' })));
 }
 
+// Prompt to generate ONE next question, adapted to the criteria gathered so far.
+function buildAskPrompt(objet, answers, lang) {
+  const first = !Array.isArray(answers) || answers.length === 0;
+  return `Tu es Oraklia, un conseiller d'achat. ${langLineFor(lang)}
+L'utilisateur cherche à acheter : "${objet || 'un produit'}".
+Réponses déjà recueillies (JSON — ne repose JAMAIS une dimension déjà couverte): ${answersJson(answers)}
+
+Pose UNE SEULE nouvelle question, pertinente, pour affiner le besoin sur une dimension PAS ENCORE couverte.
+${first
+  ? `C'est la 1re question : commence OBLIGATOIREMENT par le BUDGET, avec EXACTEMENT 4 choix dont les bornes "min"/"max" en euros sont ADAPTÉES au prix réel typique de "${objet}" (ex: biberon ~5–50 €, écouteurs ~20–400 €, téléphone ~150–1500 €, téléviseur ~200–3000 €). Libellés courts "Moins de X €", "X – Y €", "Plus de Z €". 1er choix "min"=null, dernier choix "max"=null.`
+  : `Question courte, 2 à 4 choix concrets. Les choix peuvent porter des "tags" courts (ex: "ios", "anc", "gaming").`}
+
+Réponds UNIQUEMENT par un objet JSON valide de cette forme:
+{"reply":"<la question à afficher>","question":{"id":"slug-court","text":"<la question>","choices":[{"id":"slug","label":"Libellé court","tags":[],"min":null,"max":null}]}}`;
+}
+
+// Prompt to generate 10 real product candidates from the criteria JSON.
+function buildRecommendPrompt(objet, answers, lang, exclude = []) {
+  const excludeLine = exclude.length
+    ? `\nNE propose AUCUN de ces produits (déjà testés, introuvables sur Amazon.fr) : ${exclude.join(', ')}. Propose-en 10 AUTRES, différents.`
+    : '';
+  return `Tu es Oraklia, un conseiller d'achat. ${langLineFor(lang)}
+L'utilisateur cherche à acheter : "${objet || 'un produit'}".
+Critères recueillis (JSON): ${answersJson(answers)}
+
+Propose EXACTEMENT 10 produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, correspondant au mieux à ces critères. Donne des marques et modèles PRÉCIS. Chaque produit a un score de correspondance 0-99 selon les critères.${excludeLine}
+
+Réponds UNIQUEMENT par un objet JSON valide de cette forme:
+{"reply":"<courte phrase d'introduction>","products":[{"id":"p1","brand":"Marque","model":"Modèle exact","price":999,"score":94,"specs":["Spec 1","Spec 2","Spec 3","Spec 4"],"why":"Raison courte"}]}`;
+}
+
+// ── Legacy transcript-based prompt (still used by the mobile app) ──────────
 function toGeminiContents(messages) {
   return messages.map((m) => ({
     role: m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: m.content }],
   }));
+}
+
+function buildSystemPrompt(category, lang = 'fr') {
+  const langLine = langLineFor(lang);
+  return `Tu es Oraklia, un conseiller d'achat conversationnel.
+LANGUE DE RÉPONSE / OUTPUT LANGUAGE: ${langLine}
+
+OBJECTIF: identifier les meilleurs produits réels (catégorie: ${category || 'inconnue'}), via un dialogue en deux phases.
+
+PHASE 1 — DÉCOUVERTE (5 questions):
+- Pose EXACTEMENT 5 questions, en commençant OBLIGATOIREMENT par le budget.
+- La question budget DOIT contenir 4 choix avec bornes "min"/"max" en euros ADAPTÉES au prix réel typique de l'objet (biberon ~5–50 €, écouteurs ~20–400 €, téléphone ~150–1500 €, télé ~200–3000 €).
+- Après la 5e réponse: action="recommend", products=[10 produits], question=null.
+
+PHASE 2 — RAFFINEMENT CONTINU:
+- Pose 3 questions de raffinement (action="ask"), puis action="recommend" avec 10 produits mis à jour. Répète.
+- Si tu reçois "__refine__": démarre la phase 2 (action="ask").
+
+RÈGLES: ${langLine} Une seule question à la fois (2-4 choix). Les choix peuvent avoir des "tags" ou bornes "min"/"max". "preferences" accumule tags/contraintes. Score 0-99. Uniquement des produits réels d'Amazon.fr.
+
+FORMAT (JSON uniquement):
+{"reply":"...","action":"ask"|"recommend","question":null|{"id":"slug","text":"...","choices":[{"id":"slug","label":"...","tags":[],"min":null,"max":null}]},"preferences":{"tags":[],"budget_max":null,"budget_min":null},"products":null|[{"id":"p1","brand":"...","model":"...","price":999,"score":94,"specs":["..."],"why":"..."}]}
+
+IMPORTANT: "products" null quand action="ask"; 10 produits quand action="recommend".`;
 }
 
 function ms(start) {
@@ -243,19 +250,30 @@ export default async function handler(req, res) {
   }
   const t1_ms = ms(t1);
 
-  const { messages = [], category, lang = 'fr' } = body;
-  if (!Array.isArray(messages)) {
-    return send(res, 400, { error: '"messages" must be an array' });
-  }
+  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr' } = body;
+  // Legacy clients (mobile) send a full transcript in "messages" with no "mode".
+  const legacy = Array.isArray(messages) && messages.length > 0 && body.mode == null;
+  const isRecommend = mode === 'recommend';
+  const searchTerm = objet || category || (legacy ? (messages[0]?.content || '') : '');
 
-  const systemPrompt = buildSystemPrompt(category, lang);
-
-  // 2. Build prompt
+  // 2. Build prompt — new path sends a compact criteria JSON; legacy sends the transcript.
   const t2 = performance.now();
+  let systemPrompt, contents, temperature;
+  if (legacy) {
+    systemPrompt = buildSystemPrompt(category, lang);
+    contents = toGeminiContents(messages);
+    temperature = 0.5;
+  } else {
+    systemPrompt = isRecommend
+      ? buildRecommendPrompt(searchTerm, answers, lang)
+      : buildAskPrompt(searchTerm, answers, lang);
+    contents = [{ role: 'user', parts: [{ text: isRecommend ? 'Donne les recommandations.' : 'Pose la prochaine question.' }] }];
+    temperature = isRecommend ? 0.5 : 0.4;
+  }
   const geminiPayload = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
-    contents: toGeminiContents(messages),
-    generationConfig: { temperature: 0.5, responseMimeType: 'application/json' },
+    contents,
+    generationConfig: { temperature, responseMimeType: 'application/json' },
   };
   const t2_ms = ms(t2);
 
@@ -318,13 +336,15 @@ export default async function handler(req, res) {
   let amazonBlocked = false;
   let directCount = 0;
 
+  // New path: recommend decided by mode. Legacy path: decided by parsed.action.
+  const doRecommend = legacy ? (parsed.action === 'recommend') : isRecommend;
+
   // 6. If recommend: verify sequentially (avoids Amazon bot detection from parallel requests)
-  if (parsed.action === 'recommend' && Array.isArray(parsed.products) && parsed.products.length) {
+  if (doRecommend && Array.isArray(parsed.products) && parsed.products.length) {
     const t6 = performance.now();
     const triedNames = new Set();
     let verifiedProducts = [];
-    // Use the user's original query text (e.g. "smartphone") instead of internal category ID ("phone")
-    const searchContext = messages[0]?.content || category || '';
+    const searchContext = searchTerm;
 
     const verifyCandidates = async (candidates) => {
       for (const p of candidates) {
@@ -351,19 +371,26 @@ export default async function handler(req, res) {
 
     await verifyCandidates(parsed.products);
 
-    // If not blocked but < 3 found, ask Gemini for replacements
+    // If not blocked but < 3 found, ask Gemini for replacements (excluding tried)
     if (!amazonBlocked && verifiedProducts.length < 3) {
       const triedList = [...triedNames].join(', ');
+      const retryPayload = legacy
+        ? {
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: [
+              ...toGeminiContents(messages),
+              { role: 'model', parts: [{ text: content }] },
+              { role: 'user', parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${triedList}. Propose 10 autres produits différents qui existent vraiment sur Amazon.fr pour la même recherche.` }] },
+            ],
+            generationConfig: { temperature: 0.6, responseMimeType: 'application/json' },
+          }
+        : {
+            systemInstruction: { parts: [{ text: buildRecommendPrompt(searchTerm, answers, lang, [...triedNames]) }] },
+            contents: [{ role: 'user', parts: [{ text: 'Donne 10 autres recommandations.' }] }],
+            generationConfig: { temperature: 0.6, responseMimeType: 'application/json' },
+          };
       try {
-        const repUpstream = await callGemini(apiKey, {
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: [
-            ...toGeminiContents(messages),
-            { role: 'model', parts: [{ text: content }] },
-            { role: 'user', parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${triedList}. Propose 10 autres produits différents qui existent vraiment sur Amazon.fr pour la même recherche.` }] },
-          ],
-          generationConfig: { temperature: 0.5, responseMimeType: 'application/json' },
-        });
+        const repUpstream = await callGemini(apiKey, retryPayload);
         if (repUpstream.ok) {
           const repJson = await repUpstream.json();
           const repText = repJson.candidates?.[0]?.content?.parts?.[0]?.text;

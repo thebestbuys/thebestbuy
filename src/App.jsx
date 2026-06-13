@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CATEGORIES } from './data.js';
-import { askAI, enrichProduct } from './lib/askAI.js';
+import { askQuestion, recommend, enrichProduct } from './lib/askAI.js';
 import AuthMenu from './components/AuthMenu.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
@@ -368,62 +368,62 @@ export default function App() {
   const [selectionsOpen, setSelectionsOpen] = useState(false);
   const [legalOpen, setLegalOpen] = useState(false);
   const [activeGuide, setActiveGuide] = useState(null);
+  const [objet, setObjet] = useState('');      // human search term sent to the AI
+  const [answers, setAnswers] = useState([]);  // compact criteria JSON [{id,q,a,tags,min,max}]
 
   const progress = done ? 100 : Math.min(90, turnCount * 22);
 
-  const runTurn = async (history, hiddenExtra = null) => {
+  // Recommend after the first 5 answers, then every 3 more (8, 11, …).
+  const shouldRecommendAt = (n) => n >= 5 && (n - 5) % 3 === 0;
+
+  const loadProducts = (products) => {
+    if (!Array.isArray(products) || !products.length) return;
+    setDone(true);
+    const base = products.map((p) => ({ ...p, category }));
+    setRecommendedProducts(base);
+    base.forEach((p, i) => {
+      enrichProduct(p).then((enriched) => {
+        setRecommendedProducts((prev) => {
+          const next = [...prev];
+          next[i] = enriched;
+          return next;
+        });
+      });
+    });
+  };
+
+  // Advance from the current criteria: fetch recommendations (every 5 then +3
+  // answers) and/or ask the next question. Sends only the compact criteria JSON.
+  const advance = async (currentAnswers, searchObjet = objet) => {
     setIsTyping(true);
     setCurrentQuestion(null);
-    const apiHistory = hiddenExtra ? [...history, hiddenExtra] : history;
     try {
-      const result = await askAI({ messages: apiHistory, category, lang });
-      const reply = result?.reply || '…';
-      setMessages((m) => [...m, { role: 'bot', text: reply }]);
-      if (result?.action === 'recommend') {
-        setDone(true);
-        if (Array.isArray(result.products) && result.products.length) {
-          const base = result.products.map((p) => ({ ...p, category }));
-          setRecommendedProducts(base);
-          base.forEach((p, i) => {
-            enrichProduct(p).then((enriched) => {
-              setRecommendedProducts((prev) => {
-                const next = [...prev];
-                next[i] = enriched;
-                return next;
-              });
-            });
-          });
-        }
-        // Auto-trigger phase 2: ask Gemini for the first refinement question
-        const withReply = [...history, { role: 'bot', text: reply }];
-        setMessages(withReply);
-        runTurn(withReply, { role: 'user', text: '__refine__' });
-      } else if (result?.question && Array.isArray(result.question.choices)) {
-        setCurrentQuestion(result.question);
-      } else {
-        setCurrentQuestion(null);
+      if (shouldRecommendAt(currentAnswers.length)) {
+        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang });
+        if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
+        loadProducts(rec?.products);
       }
+      // Always queue the next refinement question.
+      const q = await askQuestion({ objet: searchObjet, answers: currentAnswers, lang });
+      if (q?.reply) setMessages((m) => [...m, { role: 'bot', text: q.reply }]);
+      setCurrentQuestion(q?.question?.choices ? q.question : null);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      setMessages((m) => [...m, {
-        role: 'bot',
-        text: tr('chat.error', { msg: e.message }),
-      }]);
+      setMessages((m) => [...m, { role: 'bot', text: tr('chat.error', { msg: e.message }) }]);
     } finally {
       setIsTyping(false);
     }
   };
 
+  // Auto-start: ask the first question (budget) when a fresh advisor session
+  // begins. Keyed on convoId so it fires for every new session, even when the
+  // category is unchanged; skipped when restoring a saved conversation.
   useEffect(() => {
-    if (!category) return;
-    if (messages.length > 0) return; // restored from history — skip auto-start
-    const initial = initialQuery
-      ? [{ role: 'user', text: initialQuery }]
-      : [{ role: 'user', text: `Je cherche un ${CATEGORIES.find((c) => c.id === category)?.label.toLowerCase() ?? category}.` }];
-    setMessages(initial);
-    runTurn(initial);
+    if (!category || !convoId) return;
+    if (messages.length > 0 || answers.length > 0) return; // restored from history
+    advance([], objet);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category]);
+  }, [convoId, category]);
 
   useEffect(() => {
     if (!convoId || !category || messages.length === 0) return;
@@ -432,27 +432,39 @@ export default function App() {
       title: deriveTitle({ initialQuery, messages }),
       category,
       initialQuery,
+      objet,
+      answers,
       messages,
       recommendedProducts,
       done,
       turnCount,
       currentQuestion,
     });
-  }, [convoId, category, messages, recommendedProducts, initialQuery, done, turnCount, currentQuestion, user?.sub]);
+  }, [convoId, category, objet, answers, messages, recommendedProducts, initialQuery, done, turnCount, currentQuestion, user?.sub]);
 
-  const sendUserMessage = (text) => {
-    const next = [...messages, { role: 'user', text }];
-    setMessages(next);
+  const recordAnswer = (label, choice = {}) => {
+    const next = [...answers, {
+      id: choice.id || 'free',
+      q: currentQuestion?.text || '',
+      a: label,
+      tags: choice.tags || [],
+      min: choice.min ?? null,
+      max: choice.max ?? null,
+    }];
+    setMessages((m) => [...m, { role: 'user', text: label }]);
+    setAnswers(next);
     setTurnCount((c) => c + 1);
-    runTurn(next);
+    advance(next);
   };
 
-  const handleAnswer = (_qId, choice) => sendUserMessage(choice.label);
-  const handleFreeText = (txt) => sendUserMessage(txt);
+  const handleAnswer = (_qId, choice) => recordAnswer(choice.label, choice);
+  const handleFreeText = (txt) => recordAnswer(txt);
 
   const handleHome = () => {
     setCategory(null);
     setInitialQuery('');
+    setObjet('');
+    setAnswers([]);
     setMessages([]);
     setCurrentQuestion(null);
     setIsTyping(false);
@@ -465,11 +477,10 @@ export default function App() {
 
   const handleRestart = () => {
     if (!category) return;
-    const initial = initialQuery
-      ? [{ role: 'user', text: initialQuery }]
-      : [{ role: 'user', text: `Je cherche un ${CATEGORIES.find((c) => c.id === category)?.label.toLowerCase() ?? category}.` }];
-    setConvoId(newConversationId());
-    setMessages(initial);
+    // Reset to an empty session; the auto-start effect (keyed on convoId) will
+    // re-ask the first question.
+    setAnswers([]);
+    setMessages([]);
     setCurrentQuestion(null);
     setIsTyping(false);
     setSelected(null);
@@ -477,13 +488,15 @@ export default function App() {
     setTurnCount(0);
     setRecommendedProducts([]);
     setRefreshKey((k) => k + 1);
-    runTurn(initial);
+    setConvoId(newConversationId());
   };
 
   const loadConversation = (convo) => {
     if (!convo) return;
     setConvoId(convo.id);
     setInitialQuery(convo.initialQuery || '');
+    setObjet(convo.objet || convo.initialQuery || '');
+    setAnswers(Array.isArray(convo.answers) ? convo.answers : []);
     setMessages(Array.isArray(convo.messages) ? convo.messages : []);
     setRecommendedProducts(
       Array.isArray(convo.recommendedProducts) ? convo.recommendedProducts : [],
@@ -518,6 +531,13 @@ export default function App() {
   const navPickCategory = (cat, q) => {
     pushHistory();
     setConvoId(newConversationId());
+    setObjet(q || CATEGORIES.find((c) => c.id === cat)?.label || cat);
+    setAnswers([]);
+    setMessages([]);
+    setRecommendedProducts([]);
+    setDone(false);
+    setTurnCount(0);
+    setCurrentQuestion(null);
     setCategory(cat);
     setInitialQuery(q || '');
   };
@@ -553,6 +573,13 @@ export default function App() {
   const startAdvisorFromGuide = (cat) => {
     setActiveGuide(null);
     setConvoId(newConversationId());
+    setObjet(CATEGORIES.find((c) => c.id === cat)?.label || cat);
+    setAnswers([]);
+    setMessages([]);
+    setRecommendedProducts([]);
+    setDone(false);
+    setTurnCount(0);
+    setCurrentQuestion(null);
     setInitialQuery('');
     setCategory(cat);
   };

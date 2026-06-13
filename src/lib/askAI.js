@@ -2,18 +2,11 @@
 // Set VITE_API_BASE_URL=https://your-app.vercel.app for the native APK build.
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
-export async function askAI({ messages, category, lang = 'fr' }) {
+async function postChat(payload) {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      category,
-      lang,
-      messages: messages.map((m) => ({
-        role: m.role === 'bot' || m.role === 'ai' ? 'assistant' : 'user',
-        content: m.text,
-      })),
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
@@ -43,6 +36,28 @@ export async function askAI({ messages, category, lang = 'fr' }) {
   }
 
   return res.json();
+}
+
+// Legacy transcript-based API — still used by the mobile app.
+export function askAI({ messages, category, lang = 'fr' }) {
+  return postChat({
+    category,
+    lang,
+    messages: messages.map((m) => ({
+      role: m.role === 'bot' || m.role === 'ai' ? 'assistant' : 'user',
+      content: m.text,
+    })),
+  });
+}
+
+// Ask for the next question, given the compact criteria gathered so far.
+export function askQuestion({ objet, answers, lang = 'fr' }) {
+  return postChat({ mode: 'ask', objet, answers, lang });
+}
+
+// Ask for product recommendations from the accumulated criteria.
+export function recommend({ objet, answers, lang = 'fr' }) {
+  return postChat({ mode: 'recommend', objet, answers, lang });
 }
 
 // Enrich a product with real Amazon data (image, URL, rating, reviews).
