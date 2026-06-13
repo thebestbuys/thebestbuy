@@ -53,12 +53,19 @@ export async function enrichProduct(product) {
     const res = await fetch(`${API_BASE}/api/amazon?q=${encodeURIComponent(q)}`);
     if (!res.ok) return product;
     const data = await res.json();
+    // Prefer a direct product link (/dp/ASIN) over a search link: if the
+    // product currently only has a search link but /api/amazon found a real
+    // product page, upgrade to that direct link (better conversion + tracking).
+    const isDirect = (u) => typeof u === 'string' && u.includes('/dp/');
+    const amazon_url = isDirect(product.amazon_url)
+      ? product.amazon_url
+      : (isDirect(data.amazon_url) ? data.amazon_url : (product.amazon_url || data.amazon_url || null));
     return {
       ...product,
       rating:    data.rating  ?? product.rating,
       reviews:   data.reviews ?? product.reviews,
-      amazon_url: product.amazon_url || data.amazon_url || null,
-      image_url:  product.image_url  || data.image_url  || null,
+      amazon_url,
+      image_url: product.image_url || data.image_url || null,
     };
   } catch {
     return product;

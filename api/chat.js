@@ -1,5 +1,14 @@
 const GEMINI_MODEL = 'gemini-3.1-flash-lite';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const AFFILIATE_TAG = 'oraklia123-21';
+
+// Precise brand+model affiliate search link — used as a last resort when we
+// can't scrape a direct product (ASIN) link. Tight query so Amazon's first
+// result is almost always the exact product.
+function searchLink(brand, model) {
+  const q = `${brand || ''} ${model || ''}`.trim();
+  return `https://www.amazon.fr/s?k=${encodeURIComponent(q)}&tag=${AFFILIATE_TAG}`;
+}
 
 async function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
@@ -160,7 +169,7 @@ async function checkAmazon(brand, model, searchContext) {
     return {
       found: true,
       title: titleRaw,
-      amazon_url: `https://www.amazon.fr/dp/${asin}?tag=oraklia123-21`,
+      amazon_url: `https://www.amazon.fr/dp/${asin}?tag=${AFFILIATE_TAG}`,
       image_url: imgMatch?.[1] ?? null,
       brand: amazonBrand,
       model: amazonModel,
@@ -283,6 +292,7 @@ export default async function handler(req, res) {
   };
   let amazonVerifyMs = 0;
   let amazonBlocked = false;
+  let directCount = 0;
 
   // 6. If recommend: verify sequentially (avoids Amazon bot detection from parallel requests)
   if (parsed.action === 'recommend' && Array.isArray(parsed.products) && parsed.products.length) {
@@ -346,13 +356,28 @@ export default async function handler(req, res) {
 
     amazonVerifyMs = ms(t6);
 
-    if (amazonBlocked) {
-      parsed.products = parsed.products.map((p) => ({
-        ...p, amazon_verified: null, amazon_url: null, image_url: null,
-      }));
-    } else {
-      parsed.products = verifiedProducts.slice(0, 3);
+    // Assemble final list. Direct /dp/ASIN links (scraped, with real data) come
+    // first — these are the best for conversion + commission attribution. If we
+    // have fewer than 3 (Amazon blocked our scraping or too few coherent hits),
+    // top up with Gemini candidates using PRECISE brand+model affiliate search
+    // links as a last resort, so every link still carries our tag and lands as
+    // close as possible to the exact product.
+    const finalProducts = [...verifiedProducts];
+    const used = new Set(finalProducts.map((p) => `${p.brand} ${p.model}`.toLowerCase()));
+    for (const p of parsed.products) {
+      if (finalProducts.length >= 3) break;
+      const key = `${p.brand} ${p.model}`.toLowerCase();
+      if (used.has(key)) continue;
+      used.add(key);
+      finalProducts.push({
+        ...p,
+        amazon_verified: false,
+        amazon_url: searchLink(p.brand, p.model),
+        image_url: null,
+      });
     }
+    parsed.products = finalProducts.slice(0, 3);
+    directCount = verifiedProducts.length;
   }
 
   const totalMs = ms(t0);
@@ -369,6 +394,7 @@ export default async function handler(req, res) {
       total:             totalMs,
     },
     amazon_blocked: amazonBlocked,
+    direct_links: directCount,
     ...debugTokens,
   };
 
