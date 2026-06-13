@@ -1,3 +1,12 @@
+// Saved chat conversations. localStorage is the offline cache / synchronous
+// read source; when signed in to the cloud, mutations mirror to Supabase and
+// cloudSync pulls server state on login / app open. See cloud.js / cloudSync.js.
+import {
+  cloudClearConversations,
+  cloudDeleteConversation,
+  cloudUpsertConversation,
+} from './cloud.js';
+
 const ROOT_KEY = 'bb_conversations';
 const MAX_CONVOS = 50;
 
@@ -33,6 +42,7 @@ export function saveConversation(userId, convo) {
   try {
     localStorage.setItem(keyFor(userId), JSON.stringify(list));
   } catch {}
+  cloudUpsertConversation(merged).catch(() => {});
 }
 
 export function deleteConversation(userId, id) {
@@ -40,11 +50,21 @@ export function deleteConversation(userId, id) {
   try {
     localStorage.setItem(keyFor(userId), JSON.stringify(list));
   } catch {}
+  cloudDeleteConversation(id).catch(() => {});
 }
 
 export function clearAllConversations(userId) {
   try {
     localStorage.removeItem(keyFor(userId));
+  } catch {}
+  cloudClearConversations().catch(() => {});
+}
+
+// Local-only overwrite used by cloudSync after pulling the server state.
+// Does NOT push back to the cloud (avoids echo loops).
+export function replaceConversations(userId, list) {
+  try {
+    localStorage.setItem(keyFor(userId), JSON.stringify(Array.isArray(list) ? list : []));
   } catch {}
 }
 

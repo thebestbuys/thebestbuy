@@ -2,6 +2,17 @@
 // keyed per user (falls back to an anonymous bucket for guests). Stores a light
 // snapshot of each product — including the price/url at the moment it was saved,
 // since Amazon prices drift over time.
+//
+// localStorage is the offline cache and source for synchronous reads. When the
+// user is signed in to the cloud (Supabase), every mutation is also mirrored
+// to the server best-effort; cloudSync pulls the server state back on login /
+// app open. See cloud.js / cloudSync.js.
+import {
+  cloudClearSelections,
+  cloudDeleteSelection,
+  cloudUpsertSelection,
+} from './cloud.js';
+
 const ROOT_KEY = 'bb_selections';
 const REV_KEY = 'bb_selections_rev';
 const MAX_SELECTIONS = 100;
@@ -79,16 +90,20 @@ export function toggleSelection(userId, product) {
   if (idx >= 0) {
     list.splice(idx, 1);
     write(userId, list);
+    cloudDeleteSelection(product.id).catch(() => {});
     return false;
   }
-  list.unshift(snapshot(product));
+  const item = snapshot(product);
+  list.unshift(item);
   if (list.length > MAX_SELECTIONS) list.length = MAX_SELECTIONS;
   write(userId, list);
+  cloudUpsertSelection(item).catch(() => {});
   return true;
 }
 
 export function removeSelection(userId, id) {
   write(userId, listSelections(userId).filter((p) => p.id !== id));
+  cloudDeleteSelection(id).catch(() => {});
 }
 
 export function clearSelections(userId) {
@@ -96,4 +111,11 @@ export function clearSelections(userId) {
     localStorage.removeItem(keyFor(userId));
     bumpRevision(userId);
   } catch {}
+  cloudClearSelections().catch(() => {});
+}
+
+// Local-only overwrite used by cloudSync after pulling the server state.
+// Does NOT push back to the cloud (avoids echo loops).
+export function replaceSelections(userId, list) {
+  write(userId, Array.isArray(list) ? list : []);
 }

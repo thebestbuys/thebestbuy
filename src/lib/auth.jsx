@@ -8,6 +8,9 @@ import React, {
 } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { SocialLogin } from '@capgo/capacitor-social-login';
+import { supabase, isSupabaseConfigured } from './supabase.js';
+import { setCloudSession } from './cloud.js';
+import { linkAndSync, pullOnly } from './cloudSync.js';
 
 const STORAGE_KEY = 'bb_auth_user';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
@@ -90,6 +93,49 @@ export function AuthProvider({ children }) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
     } catch {}
+    // Exchange the Google ID token for a verified Supabase session, then merge
+    // local data up and pull the account's data down. Best-effort: if cloud
+    // isn't configured or fails, the app keeps working on localStorage.
+    if (isSupabaseConfigured && response?.credential) {
+      (async () => {
+        try {
+          const { data, error } = await supabase.auth.signInWithIdToken({
+            provider: 'google',
+            token: response.credential,
+          });
+          if (error) {
+            console.error('[auth] supabase sign-in failed', error);
+            return;
+          }
+          setCloudSession(data.session);
+          await linkAndSync(u.sub);
+        } catch (e) {
+          console.error('[auth] cloud sync failed', e);
+        }
+      })();
+    }
+  }, []);
+
+  // Restore an existing Supabase session on load and pull the account's data.
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    let active = true;
+    let storedSub = null;
+    try {
+      storedSub = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')?.sub || null;
+    } catch {}
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active || !data?.session) return;
+      setCloudSession(data.session);
+      pullOnly(storedSub).catch(() => {});
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, sess) => {
+      setCloudSession(sess);
+    });
+    return () => {
+      active = false;
+      listener?.subscription?.unsubscribe?.();
+    };
   }, []);
 
   useEffect(() => {
@@ -163,6 +209,23 @@ export function AuthProvider({ children }) {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
       } catch {}
+      // Establish the Supabase session from the native Google ID token.
+      if (isSupabaseConfigured && r.idToken) {
+        try {
+          const { data, error } = await supabase.auth.signInWithIdToken({
+            provider: 'google',
+            token: r.idToken,
+          });
+          if (!error) {
+            setCloudSession(data.session);
+            await linkAndSync(u.sub);
+          } else {
+            console.error('[auth] supabase sign-in failed', error);
+          }
+        } catch (e) {
+          console.error('[auth] cloud sync failed', e);
+        }
+      }
     } catch (e) {
       const msg = e?.message || e?.code || String(e);
       console.error('[auth] native sign-in failed', e);
@@ -175,6 +238,13 @@ export function AuthProvider({ children }) {
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {}
+    // End the cloud session (keeps the account's server data intact).
+    if (isSupabaseConfigured) {
+      setCloudSession(null);
+      try {
+        await supabase.auth.signOut();
+      } catch {}
+    }
     if (IS_NATIVE) {
       try {
         await SocialLogin.logout({ provider: 'google' });
