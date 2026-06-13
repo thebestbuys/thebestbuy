@@ -168,9 +168,19 @@ async function checkAmazon(brand, model, searchContext) {
     const amazonBrand = titleWords[0] || brand;
     const amazonModel = titleWords.slice(1).join(' ') || model;
 
-    // Price: digits only, avoids NBSP
-    const priceMatch = chunk.match(/class="a-price-whole">([^<]+)/);
-    const price = priceMatch ? (parseInt(priceMatch[1].replace(/\D/g, ''), 10) || null) : null;
+    // Price — the most reliable source is the fully-formatted "a-offscreen" span
+    // (e.g. "1 199,00 €"). Take the integer euros before the decimal comma; fall
+    // back to "a-price-whole". Strip spaces/NBSP/thousands separators.
+    let price = null;
+    const offscreen = chunk.match(/class="a-offscreen">\s*([\d.,\s]+?)\s*€/);
+    if (offscreen) {
+      const intPart = offscreen[1].replace(/[\s €]/g, '').split(',')[0];
+      price = parseInt(intPart.replace(/\D/g, ''), 10) || null;
+    }
+    if (price == null) {
+      const pw = chunk.match(/class="a-price-whole">\s*([^<]+)/);
+      price = pw ? (parseInt(pw[1].replace(/\D/g, ''), 10) || null) : null;
+    }
 
     // Rating: "4,5 sur 5"
     const ratingMatch = chunk.match(/(\d[,.]\d)\s+sur\s+5/);
