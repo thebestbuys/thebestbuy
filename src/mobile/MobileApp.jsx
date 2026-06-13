@@ -2156,7 +2156,7 @@ export default function MobileApp() {
           opacity: transitioning ? 0 : 1,
           transform: transitioning ? "scale(0.985)" : "scale(1)",
           transition: "opacity 0.22s ease, transform 0.22s ease",
-          paddingTop: "45px",
+          paddingTop: "env(safe-area-inset-top, 0px)",
         }}
       >
         {view === "search" ? (

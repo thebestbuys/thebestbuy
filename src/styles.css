@@ -1611,7 +1611,7 @@ ul {
 .bb-mobile-root {
   position: fixed;
   inset: 0;
-  background: #221a14;
+  background: #fffcf8;
   font-family: "Nunito", "Quicksand", system-ui, sans-serif;
   color: #221a14;
   overflow: hidden;
