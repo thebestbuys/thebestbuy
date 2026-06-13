@@ -6,10 +6,13 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { SocialLogin } from '@capgo/capacitor-social-login';
 
 const STORAGE_KEY = 'bb_auth_user';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const IS_NATIVE = Capacitor.isNativePlatform();
 
 function decodeJwt(token) {
   try {
@@ -51,7 +54,10 @@ const AuthContext = createContext({
   user: null,
   ready: false,
   clientId: '',
-  signOut: () => {},
+  isNative: false,
+  lastError: null,
+  signInNative: async () => {},
+  signOut: async () => {},
   renderButton: () => {},
   promptSignIn: () => {},
 });
@@ -66,6 +72,7 @@ export function AuthProvider({ children }) {
     }
   });
   const [ready, setReady] = useState(false);
+  const [lastError, setLastError] = useState(null);
   const initializedRef = useRef(false);
 
   const handleCredential = useCallback((response) => {
@@ -93,6 +100,21 @@ export function AuthProvider({ children }) {
       );
       return;
     }
+    if (IS_NATIVE) {
+      (async () => {
+        try {
+          await SocialLogin.initialize({ google: { webClientId: CLIENT_ID } });
+          initializedRef.current = true;
+        } catch (e) {
+          console.error('[auth] native init failed', e);
+          if (active) setLastError('init: ' + (e?.message || String(e)));
+        }
+        if (active) setReady(true);
+      })();
+      return () => {
+        active = false;
+      };
+    }
     loadGisScript().then((ok) => {
       if (!active || !ok) return;
       if (!initializedRef.current && window.google?.accounts?.id) {
@@ -115,14 +137,53 @@ export function AuthProvider({ children }) {
     };
   }, [handleCredential]);
 
-  const signOut = useCallback(() => {
+  const signInNative = useCallback(async () => {
+    if (!IS_NATIVE) return;
+    setLastError(null);
+    try {
+      const res = await SocialLogin.login({
+        provider: 'google',
+        options: {},
+      });
+      const r = res?.result;
+      if (!r || r.responseType !== 'online' || !r.profile) {
+        setLastError('Réponse inattendue: ' + JSON.stringify(res).slice(0, 200));
+        return;
+      }
+      const p = r.profile;
+      const u = {
+        sub: p.id,
+        name: p.name,
+        email: p.email,
+        picture: p.imageUrl,
+        given_name: p.givenName,
+        family_name: p.familyName,
+      };
+      setUser(u);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+      } catch {}
+    } catch (e) {
+      const msg = e?.message || e?.code || String(e);
+      console.error('[auth] native sign-in failed', e);
+      setLastError(msg);
+    }
+  }, []);
+
+  const signOut = useCallback(async () => {
     setUser(null);
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {}
-    try {
-      window.google?.accounts?.id?.disableAutoSelect?.();
-    } catch {}
+    if (IS_NATIVE) {
+      try {
+        await SocialLogin.logout({ provider: 'google' });
+      } catch {}
+    } else {
+      try {
+        window.google?.accounts?.id?.disableAutoSelect?.();
+      } catch {}
+    }
   }, []);
 
   const renderButton = useCallback((el, options = {}) => {
@@ -155,6 +216,9 @@ export function AuthProvider({ children }) {
         user,
         ready,
         clientId: CLIENT_ID,
+        isNative: IS_NATIVE,
+        lastError,
+        signInNative,
         signOut,
         renderButton,
         promptSignIn,

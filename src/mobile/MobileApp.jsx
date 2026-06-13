@@ -783,7 +783,7 @@ function AccountAvatar({ onClick, size = 32, variant = "B" }) {
 }
 
 function AuthSheet({ open, onClose }) {
-  const { user, ready, clientId, renderButton, signOut } = useAuth();
+  const { user, ready, clientId, isNative, signInNative, renderButton, signOut, lastError } = useAuth();
   const btnRef = useRef(null);
   const sheetRef = useRef(null);
 
@@ -801,10 +801,10 @@ function AuthSheet({ open, onClose }) {
   }, [open, onClose]);
 
   useEffect(() => {
-    if (open && !user && ready && btnRef.current) {
+    if (!isNative && open && !user && ready && btnRef.current) {
       renderButton(btnRef.current, { width: 260 });
     }
-  }, [open, user, ready, renderButton]);
+  }, [open, user, ready, renderButton, isNative]);
 
   if (!open) return null;
 
@@ -1007,6 +1007,49 @@ function AuthSheet({ open, onClose }) {
                   Ajoutez <code>VITE_GOOGLE_CLIENT_ID</code> dans le{" "}
                   <code>.env</code>.
                 </div>
+              ) : isNative ? (
+                <button
+                  type="button"
+                  onClick={signInNative}
+                  disabled={!ready}
+                  style={{
+                    appearance: "none",
+                    background: "#fff",
+                    border: `1px solid ${BB.line}`,
+                    borderRadius: 999,
+                    padding: "10px 20px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 10,
+                    fontFamily: BB.body,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: BB.ink,
+                    cursor: ready ? "pointer" : "default",
+                    opacity: ready ? 1 : 0.6,
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+                    <path
+                      fill="#4285F4"
+                      d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.79 2.71v2.26h2.89c1.7-1.56 2.7-3.86 2.7-6.61z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M9 18c2.43 0 4.46-.8 5.94-2.18l-2.89-2.26c-.8.54-1.83.86-3.05.86-2.35 0-4.34-1.58-5.05-3.71H.95v2.33A9 9 0 0 0 9 18z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M3.95 10.71A5.4 5.4 0 0 1 3.66 9c0-.59.1-1.17.29-1.71V4.96H.95A9 9 0 0 0 0 9c0 1.45.35 2.83.95 4.04l3-2.33z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58A9 9 0 0 0 9 0 9 9 0 0 0 .95 4.96l3 2.33C4.66 5.16 6.65 3.58 9 3.58z"
+                    />
+                  </svg>
+                  {ready ? "Se connecter avec Google" : "Chargement…"}
+                </button>
               ) : !ready ? (
                 <div style={{ fontSize: 12, color: BB.inkMute }}>
                   Chargement…
@@ -1016,6 +1059,26 @@ function AuthSheet({ open, onClose }) {
               )}
             </div>
 
+            {lastError && (
+              <div
+                style={{
+                  marginTop: 14,
+                  padding: "10px 12px",
+                  background: "#FDECE7",
+                  border: `1px solid ${BB.coralDeep}33`,
+                  borderRadius: 10,
+                  fontSize: 11,
+                  color: BB.coralDeep,
+                  textAlign: "left",
+                  lineHeight: 1.4,
+                  fontFamily: "ui-monospace, monospace",
+                  wordBreak: "break-word",
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>Erreur</div>
+                {String(lastError)}
+              </div>
+            )}
             <div
               style={{
                 marginTop: 18,
