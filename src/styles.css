@@ -814,7 +814,7 @@ ul {
   color: var(--text-muted);
 }
 .hero-model {
-  font-family: var(--display);
+  font-family: 'Amazon Ember', var(--display);
   font-size: 34px;
   font-weight: 400;
   letter-spacing: -0.02em;
@@ -1033,7 +1033,7 @@ ul {
   color: var(--text-muted);
 }
 .small-model {
-  font-family: var(--display);
+  font-family: 'Amazon Ember', var(--display);
   font-size: 19px;
   font-weight: 400;
   letter-spacing: -0.01em;
