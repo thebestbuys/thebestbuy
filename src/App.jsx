@@ -6,9 +6,11 @@ import ChatPanel from './components/ChatPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
 import LegalNotices from './components/LegalNotices.jsx';
 import GuideArticle from './components/GuideArticle.jsx';
-import { GUIDES } from './data/guides.js';
+import LangToggle from './components/LangToggle.jsx';
+import { GUIDES, localizeGuide } from './data/guides.js';
 import { HeroCard, ProductImage, ScoreRing, SmallCard, Stars } from './components/ProductCard.jsx';
 import { useAuth } from './lib/auth.jsx';
+import { useI18n } from './lib/i18n.jsx';
 import {
   deriveTitle,
   newConversationId,
@@ -61,6 +63,7 @@ function bgPattern(category, id) {
 }
 
 function ResultsPlaceholder({ category }) {
+  const { t } = useI18n();
   const patternId = `placeholder-pattern-${category}`;
   return (
     <div className="results-placeholder">
@@ -70,18 +73,18 @@ function ResultsPlaceholder({ category }) {
       </svg>
       <div className="placeholder-message">
         <div className="placeholder-icon">✦</div>
-        <h3 className="placeholder-title">
-          Vos suggestions<br />apparaîtront ici
-        </h3>
-        <p className="placeholder-sub">
-          Répondez aux questions dans le chat pour que Bestbuys sélectionne les meilleurs produits pour vous.
-        </p>
+        <h3
+          className="placeholder-title"
+          dangerouslySetInnerHTML={{ __html: t('results.placeholderTitle') }}
+        />
+        <p className="placeholder-sub">{t('results.placeholderSub')}</p>
       </div>
     </div>
   );
 }
 
 function CategoryPicker({ onPick, onOpenHistory, onOpenLegal, onOpenGuide }) {
+  const { t, lang } = useI18n();
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
 
@@ -97,10 +100,10 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenLegal, onOpenGuide }) {
   };
 
   const suggestions = [
-    { label: 'Un téléphone pour la photo', cat: 'phone' },
-    { label: 'Un ordinateur portable léger', cat: 'laptop' },
-    { label: 'Un casque avec réduction de bruit', cat: 'headphones' },
-    { label: 'Un PC pour le gaming', cat: 'laptop' },
+    { key: 'suggestion.phonePhoto', cat: 'phone' },
+    { key: 'suggestion.lightLaptop', cat: 'laptop' },
+    { key: 'suggestion.ancHeadphones', cat: 'headphones' },
+    { key: 'suggestion.gamingPc', cat: 'laptop' },
   ];
 
   const SuggestionIcon = ({ cat }) => {
@@ -132,19 +135,20 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenLegal, onOpenGuide }) {
           type="button"
           className="auth-trigger auth-trigger-home"
           onClick={onOpenHistory}
-          aria-label="Historique"
-          title="Historique des conversations"
+          aria-label={t('home.history')}
+          title={t('home.historyTitle')}
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.4" />
             <path d="M8 4.5V8l2.4 1.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
           </svg>
-          Historique
+          {t('home.history')}
         </button>
+        <LangToggle />
         <AuthMenu variant="home" />
       </div>
       <main className="home-main">
-        <h1 className="home-logo">Bestbuys</h1>
+        <h1 className="home-logo">Oraklia</h1>
         <form className="home-search" onSubmit={submit}>
           <span className="home-search-icon" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -155,11 +159,11 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenLegal, onOpenGuide }) {
           <input
             ref={inputRef}
             type="text"
-            placeholder="Que cherchez-vous aujourd'hui ?"
+            placeholder={t('home.searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <button type="submit" disabled={!query.trim()} className="home-search-submit" aria-label="Rechercher">
+          <button type="submit" disabled={!query.trim()} className="home-search-submit" aria-label={t('home.search')}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M2 8 L14 8 M9 3 L14 8 L9 13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -167,52 +171,53 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenLegal, onOpenGuide }) {
         </form>
 
         <div className="home-suggestions">
-          {suggestions.map((s) => (
-            <button key={s.label} type="button" className="suggestion-chip"
-              onClick={() => onPick(s.cat, s.label)}>
-              <span className="suggestion-chip-icon"><SuggestionIcon cat={s.cat} /></span>
-              {s.label}
-            </button>
-          ))}
+          {suggestions.map((s) => {
+            const label = t(s.key);
+            return (
+              <button key={s.key} type="button" className="suggestion-chip"
+                onClick={() => onPick(s.cat, label)}>
+                <span className="suggestion-chip-icon"><SuggestionIcon cat={s.cat} /></span>
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         <section className="home-guides">
           <div className="home-guides-head">
-            <h2 className="home-guides-title">Nos guides d'achat</h2>
-            <p className="home-guides-sub">
-              Des conseils clairs et indépendants pour choisir le bon produit, sans jargon.
-            </p>
+            <h2 className="home-guides-title">{t('guides.sectionTitle')}</h2>
+            <p className="home-guides-sub">{t('guides.sectionSub')}</p>
           </div>
           <div className="home-guides-grid">
-            {GUIDES.map((g) => (
-              <button
-                key={g.slug}
-                type="button"
-                className="guide-card"
-                onClick={() => onOpenGuide(g.slug)}
-              >
-                <div className="guide-card-eyebrow">Guide · {g.readTime}</div>
-                <h3 className="guide-card-title">{g.title}</h3>
-                <p className="guide-card-sub">{g.subtitle}</p>
-                <span className="guide-card-link">Lire le guide →</span>
-              </button>
-            ))}
+            {GUIDES.map((g) => {
+              const lg = localizeGuide(g, lang);
+              return (
+                <button
+                  key={g.slug}
+                  type="button"
+                  className="guide-card"
+                  onClick={() => onOpenGuide(g.slug)}
+                >
+                  <div className="guide-card-eyebrow">{t('guides.cardEyebrow', { time: lg.readTime })}</div>
+                  <h3 className="guide-card-title">{lg.title}</h3>
+                  <p className="guide-card-sub">{lg.subtitle}</p>
+                  <span className="guide-card-link">{t('guides.read')}</span>
+                </button>
+              );
+            })}
           </div>
         </section>
       </main>
 
       <footer className="home-footer">
-        <p className="home-footer-affiliate">
-          En tant que Partenaire Amazon, Bestbuys réalise un bénéfice sur les
-          achats remplissant les conditions requises.
-        </p>
+        <p className="home-footer-affiliate">{t('footer.affiliate')}</p>
         <div className="home-footer-inner">
           <div className="home-footer-left">
-            © {new Date().getFullYear()} Bestbuys. Tous droits réservés.
+            {t('footer.rights', { year: new Date().getFullYear() })}
           </div>
           <div className="home-footer-right">
             <button type="button" className="home-footer-link" onClick={onOpenLegal}>
-              Mentions légales
+              {t('footer.legal')}
             </button>
           </div>
         </div>
@@ -222,12 +227,14 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenLegal, onOpenGuide }) {
 }
 
 function ProductDetail({ product, onClose, onBuy }) {
+  const { t, lang } = useI18n();
+  const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   const amazonUrl = product.amazon_url ||
     `https://www.amazon.fr/s?k=${encodeURIComponent(`${product.category ? product.category + ' ' : ''}${product.brand} ${product.model}`)}&tag=oraklia123-21`;
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} aria-label="Fermer">✕</button>
+        <button className="modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
         <div className="modal-grid">
           <div className="modal-left">
             <ProductImage product={product} size="modal" />
@@ -240,44 +247,44 @@ function ProductDetail({ product, onClose, onBuy }) {
                 <Stars rating={product.rating} />
                 <span className="rating-num">{product.rating.toFixed(1)}</span>
                 {product.reviews != null && (
-                  <span className="rating-count">({product.reviews.toLocaleString('fr-FR')} avis)</span>
+                  <span className="rating-count">({t('product.reviews', { n: product.reviews.toLocaleString(locale) })})</span>
                 )}
               </div>
             )}
             <div className="modal-score-row">
               <ScoreRing score={product.score} size={56} />
               <div>
-                <div className="modal-score-title">{product.score}% de correspondance</div>
-                <div className="modal-score-sub">avec vos critères</div>
+                <div className="modal-score-title">{t('product.matchPct', { score: product.score })}</div>
+                <div className="modal-score-sub">{t('product.matchSub')}</div>
               </div>
             </div>
             {product.why && (
               <>
-                <div className="modal-section-title">Pourquoi ce produit ?</div>
+                <div className="modal-section-title">{t('product.why')}</div>
                 <p className="modal-why">{product.why}</p>
               </>
             )}
-            <div className="modal-section-title">Caractéristiques principales</div>
+            <div className="modal-section-title">{t('product.features')}</div>
             <ul className="modal-specs">
               {product.specs.map((s, i) => <li key={i}>{s}</li>)}
             </ul>
             <div className="modal-bottom">
               <div>
-                <div className="modal-price-label">Prix</div>
+                <div className="modal-price-label">{t('product.price')}</div>
                 <div className="modal-price">
-                  <span>{product.price.toLocaleString('fr-FR')}</span>
+                  <span>{product.price.toLocaleString(locale)}</span>
                   <span className="price-currency">€</span>
                 </div>
-                <div className="modal-shipping">Livraison gratuite · 30 jours d'essai</div>
+                <div className="modal-shipping">{t('product.shipping')}</div>
               </div>
               <a
                 className="btn-primary big"
                 href={amazonUrl}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener noreferrer sponsored"
                 onClick={() => onBuy(product)}
               >
-                Voir sur Amazon
+                {t('product.viewAmazon')}
                 <span className="btn-arrow">→</span>
               </a>
             </div>
@@ -297,6 +304,7 @@ export default function App() {
 
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const { user } = useAuth();
+  const { t: tr, lang } = useI18n();
 
   const [category, setCategory] = useState(null);
   const [initialQuery, setInitialQuery] = useState('');
@@ -320,7 +328,7 @@ export default function App() {
     setCurrentQuestion(null);
     const apiHistory = hiddenExtra ? [...history, hiddenExtra] : history;
     try {
-      const result = await askAI({ messages: apiHistory, category });
+      const result = await askAI({ messages: apiHistory, category, lang });
       const reply = result?.reply || '…';
       setMessages((m) => [...m, { role: 'bot', text: reply }]);
       if (result?.action === 'recommend') {
@@ -351,7 +359,7 @@ export default function App() {
     } catch (e) {
       setMessages((m) => [...m, {
         role: 'bot',
-        text: `Désolé, le service de recommandation n'a pas répondu (${e.message}). Réessayez ou rafraîchissez la page.`,
+        text: tr('chat.error', { msg: e.message }),
       }]);
     } finally {
       setIsTyping(false);
@@ -464,7 +472,7 @@ export default function App() {
 
   // Guide article view (accessible before choosing a category)
   if (activeGuide) {
-    const guide = GUIDES.find((g) => g.slug === activeGuide);
+    const guide = localizeGuide(GUIDES.find((g) => g.slug === activeGuide), lang);
     return (
       <>
         <GuideArticle
@@ -522,15 +530,16 @@ export default function App() {
       <main className="results-panel">
         <header className="results-header">
           <div>
-            <div className="results-eyebrow">Top 3 sélection</div>
+            <div className="results-eyebrow">{tr('results.eyebrow')}</div>
             <h2 className="results-title">
-              {CATEGORIES.find((c) => c.id === category)?.label ?? category}
+              {CATEGORIES.find((c) => c.id === category) ? tr('cat.' + category) : category}
             </h2>
           </div>
           <div className="results-header-right">
             <div className="results-meta">
-              {done && !currentQuestion && !isTyping ? 'Sélection finalisée' : 'Affinage en cours…'}
+              {done && !currentQuestion && !isTyping ? tr('results.finalized') : tr('results.refining')}
             </div>
+            <LangToggle />
             <AuthMenu variant="results" />
           </div>
         </header>
@@ -555,14 +564,11 @@ export default function App() {
         </div>
 
         <footer className="results-footer">
-          <span className="results-footer-affiliate">
-            En tant que Partenaire Amazon, Bestbuys réalise un bénéfice sur les
-            achats remplissant les conditions requises.
-          </span>
+          <span className="results-footer-affiliate">{tr('footer.affiliate')}</span>
           <span className="results-footer-meta">
-            © {new Date().getFullYear()} Bestbuys ·{' '}
+            {tr('footer.copyrightShort', { year: new Date().getFullYear() })} ·{' '}
             <button type="button" className="home-footer-link" onClick={() => setLegalOpen(true)}>
-              Mentions légales
+              {tr('footer.legal')}
             </button>
           </span>
         </footer>

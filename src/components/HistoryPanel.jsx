@@ -1,19 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
+import { useI18n } from '../lib/i18n.jsx';
 import {
   deleteConversation,
   formatRelative,
   listConversations,
 } from '../lib/history.js';
 
-const CATEGORY_LABELS = {
-  phone: 'Téléphone',
-  laptop: 'Ordinateur',
-  headphones: 'Casque',
-};
-
 export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [items, setItems] = useState([]);
 
   useEffect(() => {
@@ -49,18 +45,16 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
         <header className="history-head">
           <div>
             <h2 id="history-title" className="history-title">
-              Historique
+              {t('history.title')}
             </h2>
             <p className="history-sub">
-              {user
-                ? 'Vos conversations sauvegardées localement.'
-                : 'Conversations stockées sur cet appareil.'}
+              {user ? t('history.subUser') : t('history.subGuest')}
             </p>
           </div>
           <button
             className="auth-modal-close"
             onClick={onClose}
-            aria-label="Fermer"
+            aria-label={t('auth.close')}
           >
             ✕
           </button>
@@ -69,18 +63,16 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
         {items.length === 0 ? (
           <div className="history-empty">
             <div className="history-empty-icon">✦</div>
-            <div className="history-empty-text">
-              Aucune conversation sauvegardée pour l'instant.
-            </div>
-            <div className="history-empty-sub">
-              Vos sélections apparaîtront ici dès qu'une recherche démarre.
-            </div>
+            <div className="history-empty-text">{t('history.emptyText')}</div>
+            <div className="history-empty-sub">{t('history.emptySub')}</div>
           </div>
         ) : (
           <ul className="history-list">
             {items.map((c) => {
               const isCurrent = c.id === currentId;
-              const catLabel = CATEGORY_LABELS[c.category] || c.category;
+              const catLabel = ['phone', 'laptop', 'headphones'].includes(c.category)
+                ? t('cat.' + c.category)
+                : c.category;
               return (
                 <li
                   key={c.id}
@@ -95,7 +87,7 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
                     }}
                   >
                     <div className="history-item-title">
-                      {c.title || 'Conversation'}
+                      {c.title || t('history.conversation')}
                     </div>
                     <div className="history-item-meta">
                       {catLabel && (
@@ -103,16 +95,16 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
                       )}
                       <span>{formatRelative(c.updatedAt)}</span>
                       {Array.isArray(c.messages) && c.messages.length > 0 && (
-                        <span>· {c.messages.length} messages</span>
+                        <span>{t('history.messages', { n: c.messages.length })}</span>
                       )}
-                      {c.done && <span className="history-item-done">✓ finalisée</span>}
+                      {c.done && <span className="history-item-done">{t('history.done')}</span>}
                     </div>
                   </button>
                   <button
                     type="button"
                     className="history-item-del"
-                    aria-label="Supprimer cette conversation"
-                    title="Supprimer"
+                    aria-label={t('history.deleteConvo')}
+                    title={t('history.delete')}
                     onClick={(e) => remove(c.id, e)}
                   >
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">

@@ -1,3 +1,5 @@
+import { useI18n } from '../lib/i18n.jsx';
+
 export function ProductImage({ product, size = 'normal' }) {
   if (product.image_url) {
     return (
@@ -87,11 +89,13 @@ export function ScoreRing({ score, size = 64 }) {
 }
 
 export function HeroCard({ product, density, onSelect }) {
+  const { t, lang } = useI18n();
+  const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   return (
     <article className={'hero-card density-' + density} onClick={() => onSelect(product)}>
       <div className="hero-badge">
         <span className="hero-badge-dot" />
-        Meilleur match
+        {t('product.bestMatch')}
       </div>
       <div className="hero-grid">
         <ProductImage product={product} size="large" />
@@ -103,7 +107,7 @@ export function HeroCard({ product, density, onSelect }) {
               <Stars rating={product.rating} />
               <span className="rating-num">{product.rating.toFixed(1)}</span>
               {product.reviews != null && (
-                <span className="rating-count">({product.reviews.toLocaleString('fr-FR')} avis)</span>
+                <span className="rating-count">({t('product.reviews', { n: product.reviews.toLocaleString(locale) })})</span>
               )}
             </div>
           )}
@@ -115,18 +119,18 @@ export function HeroCard({ product, density, onSelect }) {
           </ul>
           <div className="hero-bottom">
             <div className="hero-price">
-              <span className="price-num">{product.price.toLocaleString('fr-FR')}</span>
+              <span className="price-num">{product.price.toLocaleString(locale)}</span>
               <span className="price-currency">€</span>
             </div>
             <button className="btn-primary" onClick={(e) => { e.stopPropagation(); onSelect(product); }}>
-              Voir détails
+              {t('product.viewDetails')}
               <span className="btn-arrow">→</span>
             </button>
           </div>
         </div>
         <div className="hero-score">
           <ScoreRing score={product.score} size={92} />
-          <div className="hero-score-label">match</div>
+          <div className="hero-score-label">{t('product.matchLabel')}</div>
         </div>
       </div>
     </article>
@@ -134,6 +138,8 @@ export function HeroCard({ product, density, onSelect }) {
 }
 
 export function SmallCard({ product, rank, density, onSelect }) {
+  const { lang } = useI18n();
+  const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   return (
     <article className={'small-card density-' + density} onClick={() => onSelect(product)}>
       <div className="small-rank">#{rank}</div>
@@ -151,7 +157,7 @@ export function SmallCard({ product, rank, density, onSelect }) {
           {product.specs.slice(0, density === 'compact' ? 2 : 3).map((s, i) => <li key={i}>{s}</li>)}
         </ul>
         <div className="small-bottom">
-          <div className="small-price">{product.price.toLocaleString('fr-FR')} €</div>
+          <div className="small-price">{product.price.toLocaleString(locale)} €</div>
           <div className="small-score">
             <span className="small-score-num">{product.score}</span>
             <span className="small-score-pct">% match</span>

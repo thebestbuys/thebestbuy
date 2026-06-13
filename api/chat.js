@@ -23,8 +23,12 @@ function send(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-function buildSystemPrompt(category) {
-  return `Tu es Bestbuys, un conseiller d'achat conversationnel en français.
+function buildSystemPrompt(category, lang = 'fr') {
+  const langLine = lang === 'en'
+    ? 'Reply ALWAYS in English. All "reply", "question", "choices", "specs" and "why" texts MUST be written in English.'
+    : 'Réponds toujours en français.';
+  return `Tu es Oraklia, un conseiller d'achat conversationnel.
+LANGUE DE RÉPONSE / OUTPUT LANGUAGE: ${langLine}
 
 OBJECTIF: identifier les meilleurs produits réels pour l'utilisateur (catégorie: ${category || 'inconnue'}), via un dialogue en deux phases.
 
@@ -39,7 +43,7 @@ PHASE 2 — RAFFINEMENT CONTINU (après le premier recommend):
 - Si tu reçois le message "__refine__": c'est le signal de démarrage de la phase 2, pose immédiatement la première question de raffinement (action="ask").
 
 RÈGLES GÉNÉRALES:
-- Réponds toujours en français.
+- ${langLine}
 - Une seule question à la fois, courte, 2 à 4 choix concrets.
 - Les choix peuvent avoir des "tags" (ex: "ios", "android", "camera", "perf") ou des bornes budget "min"/"max" en euros.
 - Le champ "preferences" doit ACCUMULER tous les tags et contraintes (ne supprime jamais les précédentes).
@@ -206,12 +210,12 @@ export default async function handler(req, res) {
   }
   const t1_ms = ms(t1);
 
-  const { messages = [], category } = body;
+  const { messages = [], category, lang = 'fr' } = body;
   if (!Array.isArray(messages)) {
     return send(res, 400, { error: '"messages" must be an array' });
   }
 
-  const systemPrompt = buildSystemPrompt(category);
+  const systemPrompt = buildSystemPrompt(category, lang);
 
   // 2. Build prompt
   const t2 = performance.now();

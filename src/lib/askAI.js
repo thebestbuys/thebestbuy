@@ -2,12 +2,13 @@
 // Set VITE_API_BASE_URL=https://your-app.vercel.app for the native APK build.
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
-export async function askAI({ messages, category }) {
+export async function askAI({ messages, category, lang = 'fr' }) {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       category,
+      lang,
       messages: messages.map((m) => ({
         role: m.role === 'bot' || m.role === 'ai' ? 'assistant' : 'user',
         content: m.text,

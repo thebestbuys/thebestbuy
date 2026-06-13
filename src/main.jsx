@@ -4,6 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import App from './App.jsx';
 import MobileApp from './mobile/MobileApp.jsx';
 import { AuthProvider } from './lib/auth.jsx';
+import { LanguageProvider } from './lib/i18n.jsx';
 import './styles.css';
 
 const MOBILE_BREAKPOINT = 768;
@@ -36,8 +37,10 @@ function Root() {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AuthProvider>
-      <Root />
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <Root />
+      </AuthProvider>
+    </LanguageProvider>
   </React.StrictMode>,
 );

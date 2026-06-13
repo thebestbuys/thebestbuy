@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { useI18n } from '../lib/i18n.jsx';
 
 function ChatBubble({ role, children, layout }) {
+  const { t } = useI18n();
   if (layout === 'list') {
     return (
       <div className={'chat-list-row role-' + role}>
-        <div className="chat-list-tag">{role === 'bot' ? 'Assistant' : 'Vous'}</div>
+        <div className="chat-list-tag">{role === 'bot' ? t('chat.assistant') : t('chat.you')}</div>
         <div className="chat-list-text">{children}</div>
       </div>
     );
@@ -17,10 +19,11 @@ function ChatBubble({ role, children, layout }) {
 }
 
 function TypingDots({ layout }) {
+  const { t } = useI18n();
   if (layout === 'list') {
     return (
       <div className="chat-list-row role-bot">
-        <div className="chat-list-tag">Assistant</div>
+        <div className="chat-list-tag">{t('chat.assistant')}</div>
         <div className="chat-list-text"><span className="typing"><i/><i/><i/></span></div>
       </div>
     );
@@ -39,22 +42,24 @@ function isBudgetQuestion(question) {
 }
 
 function BudgetSlider({ question, onAnswer }) {
+  const { t, lang } = useI18n();
+  const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   const [minVal, setMinVal] = useState(0);
   const [maxVal, setMaxVal] = useState(BUDGET_MAX);
 
   const minPct = (minVal / BUDGET_MAX) * 100;
   const maxPct = (maxVal / BUDGET_MAX) * 100;
 
-  const fmtMin = minVal === 0 ? '0 €' : `${minVal.toLocaleString('fr-FR')} €`;
-  const fmtMax = maxVal >= BUDGET_MAX ? '1 000€+' : `${maxVal.toLocaleString('fr-FR')} €`;
+  const fmtMin = minVal === 0 ? '0 €' : `${minVal.toLocaleString(locale)} €`;
+  const fmtMax = maxVal >= BUDGET_MAX ? '1 000€+' : `${maxVal.toLocaleString(locale)} €`;
 
   const confirm = () => {
     const maxForAI = maxVal >= BUDGET_MAX ? null : maxVal;
     let label;
-    if (minVal === 0 && maxForAI === null) label = 'Pas de contrainte de budget';
-    else if (minVal === 0) label = `Mon budget maximum est de ${maxVal}€`;
-    else if (maxForAI === null) label = `Mon budget est d'au moins ${minVal}€`;
-    else label = `Mon budget est entre ${minVal}€ et ${maxVal}€`;
+    if (minVal === 0 && maxForAI === null) label = t('budget.none');
+    else if (minVal === 0) label = t('budget.maxOnly', { max: maxVal });
+    else if (maxForAI === null) label = t('budget.minOnly', { min: minVal });
+    else label = t('budget.range', { min: minVal, max: maxVal });
     onAnswer(question.id, { id: 'slider', label, tags: [], min: minVal || null, max: maxForAI });
   };
 
@@ -99,13 +104,14 @@ function BudgetSlider({ question, onAnswer }) {
         <span>1 000€+</span>
       </div>
       <button className="budget-confirm" onClick={confirm}>
-        Confirmer <span className="btn-arrow">→</span>
+        {t('budget.confirm')} <span className="btn-arrow">→</span>
       </button>
     </div>
   );
 }
 
 export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, isTyping, layout, progress }) {
+  const { t } = useI18n();
   const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
 
@@ -128,13 +134,13 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
         <div className="chat-header-left">
           <div className="chat-avatar">
             <span className="chat-avatar-pulse" />
-            B
+            O
           </div>
           <div>
-            <div className="chat-title">Bestbuys</div>
+            <div className="chat-title">Oraklia</div>
             <div className="chat-subtitle">
               <span className="chat-status-dot" />
-              Conseiller en ligne
+              {t('chat.subtitle')}
             </div>
           </div>
         </div>
@@ -143,8 +149,8 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
             <button
               className="chat-restart"
               onClick={onOpenHistory}
-              title="Historique"
-              aria-label="Historique"
+              title={t('chat.history')}
+              aria-label={t('chat.history')}
             >
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" />
@@ -156,8 +162,8 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
             <button
               className="chat-restart"
               onClick={onHome}
-              title="Retour à l'accueil"
-              aria-label="Retour à l'accueil"
+              title={t('chat.home')}
+              aria-label={t('chat.home')}
             >
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path
@@ -170,7 +176,7 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
               </svg>
             </button>
           )}
-          <button className="chat-restart" onClick={onRestart} title="Recommencer la conversation" aria-label="Recommencer la conversation">↻</button>
+          <button className="chat-restart" onClick={onRestart} title={t('chat.restart')} aria-label={t('chat.restart')}>↻</button>
         </div>
       </header>
 
@@ -202,11 +208,11 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
       <form className="chat-input" onSubmit={submit}>
         <input
           type="text"
-          placeholder={currentQuestion ? 'Ou écrivez votre réponse…' : 'Précisez vos critères…'}
+          placeholder={currentQuestion ? t('chat.inputAnswer') : t('chat.inputCriteria')}
           value={freeText}
           onChange={(e) => setFreeText(e.target.value)}
         />
-        <button type="submit" disabled={!freeText.trim()} aria-label="Envoyer">
+        <button type="submit" disabled={!freeText.trim()} aria-label={t('chat.send')}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M2 8 L14 8 M9 3 L14 8 L9 13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>

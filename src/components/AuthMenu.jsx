@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
+import { useI18n } from '../lib/i18n.jsx';
 
 function initials(name = '', email = '') {
   const src = (name || email || '').trim();
@@ -36,6 +37,7 @@ function Avatar({ user, size = 32 }) {
 
 function LoginModal({ onClose }) {
   const { ready, clientId, renderButton } = useAuth();
+  const { t } = useI18n();
   const btnRef = useRef(null);
 
   useEffect(() => {
@@ -64,36 +66,34 @@ function LoginModal({ onClose }) {
         <button
           className="auth-modal-close"
           onClick={onClose}
-          aria-label="Fermer"
+          aria-label={t('auth.close')}
         >
           ✕
         </button>
         <h2 id="auth-modal-title" className="auth-modal-title">
-          Bienvenue sur Bestbuys
+          {t('auth.welcome')}
         </h2>
-        <p className="auth-modal-sub">
-          Connectez-vous ou créez un compte pour sauvegarder vos sélections.
-        </p>
+        <p className="auth-modal-sub">{t('auth.sub')}</p>
 
         {!clientId ? (
           <div className="auth-modal-error">
-            La connexion Google n'est pas configurée.
+            {t('auth.notConfigured')}
             <br />
-            <span className="auth-modal-error-code">
-              VITE_GOOGLE_CLIENT_ID
-            </span>{' '}
-            manquant dans <code>.env</code>.
+            <span className="auth-modal-error-code">VITE_GOOGLE_CLIENT_ID</span>{' '}
+            {t('auth.missing')} <code>.env</code>.
           </div>
         ) : !ready ? (
-          <div className="auth-modal-loading">Chargement…</div>
+          <div className="auth-modal-loading">{t('auth.loading')}</div>
         ) : (
           <div className="auth-modal-google" ref={btnRef} />
         )}
 
         <div className="auth-modal-foot">
-          En continuant vous acceptez nos{' '}
-          <a href="#">conditions</a> et notre{' '}
-          <a href="#">politique de confidentialité</a>.
+          {t('auth.terms').split(/(\{terms\}|\{privacy\})/).map((p, i) => {
+            if (p === '{terms}') return <a key={i} href="#">{t('auth.termsLink')}</a>;
+            if (p === '{privacy}') return <a key={i} href="#">{t('auth.privacyLink')}</a>;
+            return p;
+          })}
         </div>
       </div>
     </div>
@@ -101,6 +101,7 @@ function LoginModal({ onClose }) {
 }
 
 function UserDropdown({ user, onClose, onSignOut }) {
+  const { t } = useI18n();
   const wrapRef = useRef(null);
   useEffect(() => {
     const onDoc = (e) => {
@@ -130,8 +131,8 @@ function UserDropdown({ user, onClose, onSignOut }) {
       </div>
       <div className="auth-dropdown-sep" />
       <button type="button" className="auth-dropdown-item" disabled>
-        Mes sélections
-        <span className="auth-dropdown-soon">bientôt</span>
+        {t('auth.mySelections')}
+        <span className="auth-dropdown-soon">{t('auth.soon')}</span>
       </button>
       <button
         type="button"
@@ -141,7 +142,7 @@ function UserDropdown({ user, onClose, onSignOut }) {
           onClose();
         }}
       >
-        Se déconnecter
+        {t('auth.signOut')}
       </button>
     </div>
   );
@@ -149,6 +150,7 @@ function UserDropdown({ user, onClose, onSignOut }) {
 
 export default function AuthMenu({ variant = 'home' }) {
   const { user, signOut } = useAuth();
+  const { t } = useI18n();
   const [openLogin, setOpenLogin] = useState(false);
   const [openMenu, setOpenMenu] = useState(false);
 
@@ -169,7 +171,7 @@ export default function AuthMenu({ variant = 'home' }) {
               strokeLinecap="round"
             />
           </svg>
-          Se connecter
+          {t('auth.signIn')}
         </button>
         {openLogin && <LoginModal onClose={() => setOpenLogin(false)} />}
       </>
@@ -187,7 +189,7 @@ export default function AuthMenu({ variant = 'home' }) {
       >
         <Avatar user={user} size={32} />
         <span className="auth-userbtn-name">
-          {user.given_name || user.name?.split(' ')[0] || 'Compte'}
+          {user.given_name || user.name?.split(' ')[0] || t('auth.account')}
         </span>
         <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
           <path
