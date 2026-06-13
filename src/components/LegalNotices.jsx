@@ -8,18 +8,24 @@ const LEGAL = {
   siteUrl: 'https://thebestbuy.vercel.app',
 
   // Éditeur du site
-  editorName: 'Corentin Gaillard',
-  editorStatus: 'À COMPLÉTER : entrepreneur individuel / auto-entrepreneur / SARL…',
-  editorAddress: 'À COMPLÉTER : adresse postale complète',
-  editorSiret: 'À COMPLÉTER : numéro SIRET (si activité déclarée)',
+  editorName: 'NCLS CREATION (Oraklia) — SARL au capital de 1 000 €',
+  editorAddress: '42 Bd du chemin de fer, 68290 Masevaux',
+  editorSiret: '903 067 999 00016 — immatriculée à l\'INSEE le 13/09/2021',
   editorEmail: 'darknortar@gmail.com',
-  editorPhone: 'À COMPLÉTER : numéro de téléphone (facultatif)',
-  publicationDirector: 'Corentin Gaillard',
+  editorPhone: '06 17 15 40 80 (tarif non surtaxé)',
+  publicationDirector: 'M. Nicolas BINDLER',
 
   // Hébergeur
-  hostName: 'Vercel Inc.',
-  hostAddress: '340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis',
-  hostUrl: 'https://vercel.com',
+  hostName: 'ONLINE SAS (Scaleway) — SAS au capital de 214 410,50 €, filiale du groupe Iliad',
+  hostAddress: 'BP 438, 75366 Paris Cedex 08 — RCS Paris B 433 115 904 — TVA FR35433115904',
+  hostPhone: '0 184 130 000 (tarif non surtaxé)',
+  hostUrl: 'https://www.scaleway.com/fr/',
+
+  // Nom de domaine
+  domainName: 'OVH SAS — SAS au capital de 10 059 500 €',
+  domainAddress: '2 rue Kellermann, 59100 Roubaix, France — RCS Lille Métropole 424 761 419 00045 — TVA FR22424761419',
+  domainPhone: '1007 (tarif non surtaxé)',
+  domainUrl: 'https://www.ovh.com/fr/',
 };
 
 function Row({ label, value }) {
@@ -50,24 +56,39 @@ export default function LegalNotices({ open, onClose }) {
 
           <section className="legal-section">
             <h2>Éditeur du site</h2>
-            <Row label="Nom" value={LEGAL.editorName} />
-            <Row label="Statut" value={LEGAL.editorStatus} />
-            <Row label="Adresse" value={LEGAL.editorAddress} />
+            <Row label="Société" value={LEGAL.editorName} />
+            <Row label="Siège social" value={LEGAL.editorAddress} />
             <Row label="SIRET" value={LEGAL.editorSiret} />
+            <Row label="Directeur de la publication" value={LEGAL.publicationDirector} />
             <Row label="E-mail" value={LEGAL.editorEmail} />
             <Row label="Téléphone" value={LEGAL.editorPhone} />
-            <Row label="Directeur de la publication" value={LEGAL.publicationDirector} />
           </section>
 
           <section className="legal-section">
             <h2>Hébergement</h2>
             <Row label="Hébergeur" value={LEGAL.hostName} />
             <Row label="Adresse" value={LEGAL.hostAddress} />
+            <Row label="Téléphone" value={LEGAL.hostPhone} />
             <Row
               label="Site web"
               value={
                 <a href={LEGAL.hostUrl} target="_blank" rel="noopener noreferrer">
                   {LEGAL.hostUrl}
+                </a>
+              }
+            />
+          </section>
+
+          <section className="legal-section">
+            <h2>Nom de domaine</h2>
+            <Row label="Registrar" value={LEGAL.domainName} />
+            <Row label="Adresse" value={LEGAL.domainAddress} />
+            <Row label="Téléphone" value={LEGAL.domainPhone} />
+            <Row
+              label="Site web"
+              value={
+                <a href={LEGAL.domainUrl} target="_blank" rel="noopener noreferrer">
+                  {LEGAL.domainUrl}
                 </a>
               }
             />

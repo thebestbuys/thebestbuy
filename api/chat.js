@@ -156,7 +156,7 @@ async function checkAmazon(brand, model, searchContext) {
     return {
       found: true,
       title: titleRaw,
-      amazon_url: `https://www.amazon.fr/dp/${asin}?tag=bestbuys007-21`,
+      amazon_url: `https://www.amazon.fr/dp/${asin}?tag=oraklia123-21`,
       image_url: imgMatch?.[1] ?? null,
       brand: amazonBrand,
       model: amazonModel,

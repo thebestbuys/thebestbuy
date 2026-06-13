@@ -1,4 +1,4 @@
-const AFFILIATE_TAG = 'bestbuys007-21';
+const AFFILIATE_TAG = 'oraklia123-21';
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
