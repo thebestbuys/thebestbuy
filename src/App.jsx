@@ -31,6 +31,19 @@ const CATEGORY_KEYWORDS = {
   headphones: ['casque', 'écouteur', 'ecouteur', 'airpods', 'audio', 'headphone', 'earbuds', 'intra', 'bluetooth audio'],
 };
 
+// The AI returns positional ids ("p1", "p2", "p3") that repeat across every
+// recommendation set — so favoriting "p2" once would make every set's 2nd item
+// look favorited. Derive a stable id from brand+model (the product's identity)
+// so selections track the actual product, not its rank.
+function productKey(p) {
+  const slug = `${p.brand || ''} ${p.model || ''}`
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return slug || p.id || `p-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function detectCategory(query) {
   const q = query.toLowerCase();
   for (const [cat, kws] of Object.entries(CATEGORY_KEYWORDS)) {
@@ -378,7 +391,7 @@ export default function App() {
   const loadProducts = (products) => {
     if (!Array.isArray(products) || !products.length) return;
     setDone(true);
-    const base = products.map((p) => ({ ...p, category }));
+    const base = products.map((p) => ({ ...p, id: productKey(p), category }));
     setRecommendedProducts(base);
     base.forEach((p, i) => {
       enrichProduct(p).then((enriched) => {
