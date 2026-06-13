@@ -159,6 +159,17 @@ const SparkleIcon = ({ size = 14, color = BB.coral }) => (
     <circle cx="2" cy="11.5" r="0.6" fill={color} />
   </svg>
 );
+const PersonIcon = ({ size = 18, color = BB.inkSoft }) => (
+  <svg width={size} height={size} viewBox="0 0 18 18" fill="none">
+    <circle cx="9" cy="6" r="3" stroke={color} strokeWidth="1.5" />
+    <path
+      d="M3.5 15c.9-2.7 3-4.2 5.5-4.2s4.6 1.5 5.5 4.2"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
 const MicIcon = ({ size = 18, color = BB.inkSoft }) => (
   <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
     <rect x="7" y="3" width="6" height="10" rx="3" fill={color} />
@@ -772,7 +783,7 @@ function FeedbackToast({ text }) {
 
 function userInitials(user) {
   const src = (user?.name || user?.email || '').trim();
-  if (!src) return 'JL';
+  if (!src) return '?';
   const parts = src.split(/[\s._@-]+/).filter(Boolean);
   const first = parts[0]?.[0] || '';
   const second = parts.length > 1 ? parts[parts.length - 1][0] : '';
@@ -817,8 +828,10 @@ function AccountAvatar({ onClick, size = 32, variant = "B" }) {
           referrerPolicy="no-referrer"
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
-      ) : (
+      ) : user ? (
         userInitials(user)
+      ) : (
+        <PersonIcon size={size <= 32 ? 17 : 19} color={BB.inkSoft} />
       )}
     </button>
   );
