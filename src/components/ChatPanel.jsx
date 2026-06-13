@@ -35,77 +35,41 @@ function TypingDots({ layout }) {
   );
 }
 
-const BUDGET_MAX = 1000;
-
 function isBudgetQuestion(question) {
   return question?.choices?.some((c) => c.min != null || c.max != null);
 }
 
-function BudgetSlider({ question, onAnswer }) {
-  const { t, lang } = useI18n();
-  const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
-  const [minVal, setMinVal] = useState(0);
-  const [maxVal, setMaxVal] = useState(BUDGET_MAX);
+// Fixed budget brackets shown as chips — faster and clearer than a slider.
+const BUDGET_BRACKETS = [
+  { id: 'b1', labelKey: 'budget.bracket1', min: null, max: 300 },
+  { id: 'b2', labelKey: 'budget.bracket2', min: 300, max: 600 },
+  { id: 'b3', labelKey: 'budget.bracket3', min: 600, max: 1000 },
+  { id: 'b4', labelKey: 'budget.bracket4', min: 1000, max: null },
+];
 
-  const minPct = (minVal / BUDGET_MAX) * 100;
-  const maxPct = (maxVal / BUDGET_MAX) * 100;
+function BudgetBrackets({ question, onAnswer }) {
+  const { t } = useI18n();
 
-  const fmtMin = minVal === 0 ? '0 €' : `${minVal.toLocaleString(locale)} €`;
-  const fmtMax = maxVal >= BUDGET_MAX ? '1 000€+' : `${maxVal.toLocaleString(locale)} €`;
-
-  const confirm = () => {
-    const maxForAI = maxVal >= BUDGET_MAX ? null : maxVal;
+  const send = (b) => {
     let label;
-    if (minVal === 0 && maxForAI === null) label = t('budget.none');
-    else if (minVal === 0) label = t('budget.maxOnly', { max: maxVal });
-    else if (maxForAI === null) label = t('budget.minOnly', { min: minVal });
-    else label = t('budget.range', { min: minVal, max: maxVal });
-    onAnswer(question.id, { id: 'slider', label, tags: [], min: minVal || null, max: maxForAI });
+    if (b.min == null) label = t('budget.maxOnly', { max: b.max });
+    else if (b.max == null) label = t('budget.minOnly', { min: b.min });
+    else label = t('budget.range', { min: b.min, max: b.max });
+    onAnswer(question.id, { id: b.id, label, tags: [], min: b.min, max: b.max });
   };
 
   return (
-    <div className="budget-slider">
-      <div className="budget-slider-values">
-        <span className="budget-val">{fmtMin}</span>
-        <span className="budget-dash">—</span>
-        <span className="budget-val budget-val-max">{fmtMax}</span>
-      </div>
-      <div className="budget-range-wrap">
-        <div className="budget-track-bg" />
-        <div
-          className="budget-track-fill"
-          style={{ left: `${minPct}%`, width: `${maxPct - minPct}%` }}
-        />
-        <input
-          type="range"
-          min={0} max={BUDGET_MAX} step={50}
-          value={minVal}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            if (v < maxVal) setMinVal(v);
-          }}
-          className="budget-range budget-range-min"
-          style={{ zIndex: minVal >= maxVal - 50 ? 5 : 3 }}
-        />
-        <input
-          type="range"
-          min={0} max={BUDGET_MAX} step={50}
-          value={maxVal}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            if (v > minVal) setMaxVal(v);
-          }}
-          className="budget-range budget-range-max"
-          style={{ zIndex: 4 }}
-        />
-      </div>
-      <div className="budget-slider-labels">
-        <span>0 €</span>
-        <span>1 000€+</span>
-      </div>
-      <button className="budget-confirm" onClick={confirm}>
-        {t('budget.confirm')} <span className="btn-arrow">→</span>
-      </button>
+    <div className="budget-brackets">
+      {BUDGET_BRACKETS.map((b) => (
+        <button
+          key={b.id}
+          type="button"
+          className="choice-chip budget-bracket"
+          onClick={() => send(b)}
+        >
+          {t(b.labelKey)}
+        </button>
+      ))}
     </div>
   );
 }
@@ -193,7 +157,7 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
         {!isTyping && currentQuestion && (
           <div className="chat-choices">
             {isBudgetQuestion(currentQuestion) ? (
-              <BudgetSlider question={currentQuestion} onAnswer={onAnswer} />
+              <BudgetBrackets question={currentQuestion} onAnswer={onAnswer} />
             ) : (
               currentQuestion.choices.map((c) => (
                 <button key={c.id} className="choice-chip" onClick={() => onAnswer(currentQuestion.id, c)}>

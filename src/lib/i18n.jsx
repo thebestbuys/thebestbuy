@@ -54,6 +54,10 @@ const TRANSLATIONS = {
     'budget.maxOnly': 'Mon budget maximum est de {max}€',
     'budget.minOnly': "Mon budget est d'au moins {min}€",
     'budget.range': 'Mon budget est entre {min}€ et {max}€',
+    'budget.bracket1': 'Moins de 300 €',
+    'budget.bracket2': '300 – 600 €',
+    'budget.bracket3': '600 – 1000 €',
+    'budget.bracket4': 'Plus de 1000 €',
 
     // Product card / detail
     'product.bestMatch': 'Meilleur match',
@@ -165,6 +169,10 @@ const TRANSLATIONS = {
     'budget.maxOnly': 'My maximum budget is {max}€',
     'budget.minOnly': 'My budget is at least {min}€',
     'budget.range': 'My budget is between {min}€ and {max}€',
+    'budget.bracket1': 'Under €300',
+    'budget.bracket2': '€300 – €600',
+    'budget.bracket3': '€600 – €1000',
+    'budget.bracket4': 'Over €1000',
 
     // Product card / detail
     'product.bestMatch': 'Best match',
