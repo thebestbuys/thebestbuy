@@ -5,6 +5,7 @@ import AuthMenu from './components/AuthMenu.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
 import SelectionsPanel from './components/SelectionsPanel.jsx';
+import ProfilePanel from './components/ProfilePanel.jsx';
 import FavoriteButton from './components/FavoriteButton.jsx';
 import LegalNotices from './components/LegalNotices.jsx';
 import GuideArticle from './components/GuideArticle.jsx';
@@ -13,6 +14,7 @@ import { GUIDES, localizeGuide } from './data/guides.js';
 import { AmazonPrice, HeroCard, ProductImage, ScoreRing, SmallCard, Stars } from './components/ProductCard.jsx';
 import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './lib/i18n.jsx';
+import { getProfile, profileToPrompt } from './lib/profile.js';
 import {
   deriveTitle,
   newConversationId,
@@ -98,7 +100,7 @@ function ResultsPlaceholder({ category }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenLegal, onOpenGuide }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenLegal, onOpenGuide }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -204,7 +206,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenLegal, 
           {t('home.selections')}
         </button>
         <LangToggle />
-        <AuthMenu variant="home" onOpenSelections={onOpenSelections} />
+        <AuthMenu variant="home" onOpenSelections={onOpenSelections} onOpenProfile={onOpenProfile} />
       </div>
       <main className="home-main">
         <h1 className="home-logo">Oraklia</h1>
@@ -384,6 +386,7 @@ export default function App() {
   const [convoId, setConvoId] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectionsOpen, setSelectionsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [legalOpen, setLegalOpen] = useState(false);
   const [activeGuide, setActiveGuide] = useState(null);
   const [objet, setObjet] = useState('');      // human search term sent to the AI
@@ -415,14 +418,15 @@ export default function App() {
   const advance = async (currentAnswers, searchObjet = objet) => {
     setIsTyping(true);
     setCurrentQuestion(null);
+    const profile = profileToPrompt(getProfile(user?.sub));
     try {
       if (shouldRecommendAt(currentAnswers.length)) {
-        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang });
+        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile });
         if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
         loadProducts(rec?.products);
       }
       // Always queue the next refinement question.
-      const q = await askQuestion({ objet: searchObjet, answers: currentAnswers, lang });
+      const q = await askQuestion({ objet: searchObjet, answers: currentAnswers, lang, profile });
       if (q?.reply) setMessages((m) => [...m, { role: 'bot', text: q.reply }]);
       setCurrentQuestion(q?.question?.choices ? q.question : null);
       setRefreshKey((k) => k + 1);
@@ -545,6 +549,7 @@ export default function App() {
   const navOpenLegal = () => { pushHistory(); setLegalOpen(true); };
   const navOpenHistory = () => { pushHistory(); setHistoryOpen(true); };
   const navOpenSelections = () => { pushHistory(); setSelectionsOpen(true); };
+  const navOpenProfile = () => { pushHistory(); setProfileOpen(true); };
   const navOpenProduct = (p) => { pushHistory(); setSelected(p); };
   const navPickCategory = (cat, q) => {
     pushHistory();
@@ -568,6 +573,7 @@ export default function App() {
       // Close the topmost open layer; at home, let the browser navigate away.
       if (selected) { setSelected(null); return; }
       if (legalOpen) { setLegalOpen(false); return; }
+      if (profileOpen) { setProfileOpen(false); return; }
       if (selectionsOpen) { setSelectionsOpen(false); return; }
       if (historyOpen) { setHistoryOpen(false); return; }
       if (activeGuide) { setActiveGuide(null); return; }
@@ -576,7 +582,7 @@ export default function App() {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, selectionsOpen, historyOpen, activeGuide, category]);
+  }, [selected, legalOpen, profileOpen, selectionsOpen, historyOpen, activeGuide, category]);
 
   const getAmazonUrl = (p) => {
     if (p.amazon_url) return p.amazon_url;
@@ -624,6 +630,7 @@ export default function App() {
           onPick={navPickCategory}
           onOpenHistory={navOpenHistory}
           onOpenSelections={navOpenSelections}
+          onOpenProfile={navOpenProfile}
           onOpenLegal={navOpenLegal}
           onOpenGuide={navOpenGuide}
         />
@@ -639,6 +646,7 @@ export default function App() {
           getAmazonUrl={getAmazonUrl}
           onBuy={handleBuy}
         />
+        <ProfilePanel open={profileOpen} onClose={navBack} />
         <LegalNotices open={legalOpen} onClose={navBack} />
       </>
     );
@@ -675,7 +683,7 @@ export default function App() {
               {done && !currentQuestion && !isTyping ? tr('results.finalized') : tr('results.refining')}
             </div>
             <LangToggle />
-            <AuthMenu variant="results" onOpenSelections={navOpenSelections} />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} />
           </div>
         </header>
 
@@ -733,6 +741,8 @@ export default function App() {
         getAmazonUrl={getAmazonUrl}
         onBuy={handleBuy}
       />
+
+      <ProfilePanel open={profileOpen} onClose={navBack} />
 
       <LegalNotices open={legalOpen} onClose={navBack} />
 

@@ -101,7 +101,7 @@ function LoginModal({ onClose }) {
   );
 }
 
-function UserDropdown({ user, onClose, onSignOut, onOpenSelections }) {
+function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfile }) {
   const { t } = useI18n();
   const wrapRef = useRef(null);
   const count = listSelections(user?.sub).length;
@@ -145,6 +145,16 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections }) {
       </button>
       <button
         type="button"
+        className="auth-dropdown-item"
+        onClick={() => {
+          onOpenProfile?.();
+          onClose();
+        }}
+      >
+        {t('auth.myProfile')}
+      </button>
+      <button
+        type="button"
         className="auth-dropdown-item danger"
         onClick={() => {
           onSignOut();
@@ -157,7 +167,7 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections }) {
   );
 }
 
-export default function AuthMenu({ variant = 'home', onOpenSelections }) {
+export default function AuthMenu({ variant = 'home', onOpenSelections, onOpenProfile }) {
   const { user, signOut } = useAuth();
   const { t } = useI18n();
   const [openLogin, setOpenLogin] = useState(false);
@@ -217,6 +227,7 @@ export default function AuthMenu({ variant = 'home', onOpenSelections }) {
           onClose={() => setOpenMenu(false)}
           onSignOut={signOut}
           onOpenSelections={onOpenSelections}
+          onOpenProfile={onOpenProfile}
         />
       )}
     </div>

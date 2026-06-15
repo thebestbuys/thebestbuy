@@ -11,6 +11,7 @@ import {
   saveConversation,
 } from "../lib/history.js";
 import { listSelections, removeSelection } from "../lib/selections.js";
+import { getProfile, profileToPrompt, saveProfile } from "../lib/profile.js";
 
 // Which search variant to ship: 'A' = Premium Search, 'B' = Hey-Jordan Hub.
 const VARIANT = "B";
@@ -387,7 +388,11 @@ function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
   const runTurn = async (history) => {
     setTyping(true);
     try {
-      const result = await askAI({ messages: history, category });
+      const result = await askAI({
+        messages: history,
+        category,
+        profile: profileToPrompt(getProfile(user?.sub)),
+      });
       const reply = result?.reply || "…";
       const chips =
         result?.action === "ask" &&
@@ -837,7 +842,7 @@ function AccountAvatar({ onClick, size = 32, variant = "B" }) {
   );
 }
 
-function AuthSheet({ open, onClose, onOpenSelections }) {
+function AuthSheet({ open, onClose, onOpenSelections, onOpenProfile }) {
   const { user, ready, clientId, isNative, signInNative, renderButton, signOut, lastError } = useAuth();
   const { t } = useI18n();
   const btnRef = useRef(null);
@@ -994,6 +999,35 @@ function AuthSheet({ open, onClose, onOpenSelections }) {
               }}
             >
               {t('auth.mySelections')}
+              <span aria-hidden="true" style={{ color: BB.inkMute }}>→</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenProfile?.();
+              }}
+              style={{
+                width: "100%",
+                appearance: "none",
+                border: `1px solid ${BB.line}`,
+                background: "#fff",
+                color: BB.ink,
+                padding: "12px 14px",
+                borderRadius: 14,
+                fontWeight: 600,
+                fontFamily: BB.body,
+                fontSize: 13,
+                marginBottom: 8,
+                textAlign: "left",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                cursor: "pointer",
+              }}
+            >
+              {t('auth.myProfile')}
               <span aria-hidden="true" style={{ color: BB.inkMute }}>→</span>
             </button>
 
@@ -1368,6 +1402,187 @@ function HistorySheet({ open, onClose, onLoad }) {
             ))
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileSheet({ open, onClose }) {
+  const { user } = useAuth();
+  const { t } = useI18n();
+  const [bio, setBio] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setBio(getProfile(user?.sub).bio || "");
+    setSaved(false);
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open, onClose, user?.sub]);
+
+  if (!open) return null;
+
+  const save = () => {
+    const clean = saveProfile(user?.sub, { bio });
+    setBio(clean.bio);
+    setSaved(true);
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(20,12,8,0.45)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        animation: "bb-rise 0.22s ease-out",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: 480,
+          background: BB.paper,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          padding: "12px 22px 24px",
+          boxShadow: "0 -10px 40px rgba(0,0,0,0.18)",
+          animation: "bb-rise 0.28s ease-out",
+        }}
+      >
+        <div
+          style={{
+            width: 44,
+            height: 4,
+            borderRadius: 4,
+            background: BB.line,
+            margin: "0 auto 12px",
+          }}
+        />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            marginBottom: 12,
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontFamily: BB.display,
+                fontSize: 20,
+                fontWeight: 700,
+                color: BB.ink,
+                letterSpacing: -0.2,
+              }}
+            >
+              {t("profile.title")}
+            </div>
+            <div style={{ fontSize: 12, color: BB.inkSoft, marginTop: 2 }}>
+              {t("profile.sub")}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label={t("auth.close")}
+            style={{
+              appearance: "none",
+              border: 0,
+              background: BB.cream,
+              color: BB.inkSoft,
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              fontSize: 14,
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <label
+          htmlFor="bb-profile-bio"
+          style={{
+            display: "block",
+            fontSize: 12,
+            fontWeight: 700,
+            color: BB.ink,
+            marginBottom: 6,
+          }}
+        >
+          {t("profile.label")}
+        </label>
+        <textarea
+          id="bb-profile-bio"
+          value={bio}
+          maxLength={600}
+          rows={6}
+          placeholder={t("profile.placeholder")}
+          onChange={(e) => {
+            setBio(e.target.value);
+            setSaved(false);
+          }}
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            resize: "vertical",
+            border: `1px solid ${BB.line}`,
+            borderRadius: 14,
+            background: "#fff",
+            color: BB.ink,
+            fontFamily: BB.body,
+            fontSize: 14,
+            lineHeight: 1.5,
+            padding: "12px 14px",
+            outline: "none",
+          }}
+        />
+        <div
+          style={{
+            fontSize: 11,
+            color: BB.inkSoft,
+            margin: "8px 2px 14px",
+            lineHeight: 1.45,
+          }}
+        >
+          {t("profile.hint")}
+        </div>
+        <button
+          type="button"
+          onClick={save}
+          style={{
+            width: "100%",
+            appearance: "none",
+            border: 0,
+            background: BB.ink,
+            color: "#fff",
+            padding: "13px 14px",
+            borderRadius: 14,
+            fontWeight: 700,
+            fontFamily: BB.body,
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          {saved ? t("profile.saved") : t("profile.save")}
+        </button>
       </div>
     </div>
   );
@@ -2098,6 +2313,7 @@ export default function MobileApp() {
   const [authOpen, setAuthOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectionsOpen, setSelectionsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [convoId, setConvoId] = useState(null);
   const [restoreData, setRestoreData] = useState(null);
   const [recents, setRecents] = useState([]);
@@ -2146,6 +2362,7 @@ export default function MobileApp() {
   const openAuth = () => setAuthOpen(true);
   const openHistory = () => setHistoryOpen(true);
   const openSelections = () => setSelectionsOpen(true);
+  const openProfile = () => setProfileOpen(true);
 
   return (
     <div className="bb-mobile-root">
@@ -2181,6 +2398,7 @@ export default function MobileApp() {
         open={authOpen}
         onClose={() => setAuthOpen(false)}
         onOpenSelections={openSelections}
+        onOpenProfile={openProfile}
       />
       <HistorySheet
         open={historyOpen}
@@ -2190,6 +2408,10 @@ export default function MobileApp() {
       <SelectionsSheet
         open={selectionsOpen}
         onClose={() => setSelectionsOpen(false)}
+      />
+      <ProfileSheet
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
       />
     </div>
   );

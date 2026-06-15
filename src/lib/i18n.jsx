@@ -91,10 +91,24 @@ const TRANSLATIONS = {
     "auth.termsLink": "conditions",
     "auth.privacyLink": "politique de confidentialité",
     "auth.mySelections": "Mes sélections",
+    "auth.myProfile": "Mon profil",
     "auth.soon": "bientôt",
     "auth.signOut": "Se déconnecter",
     "auth.account": "Compte",
     "auth.close": "Fermer",
+
+    // Profile (personalization)
+    "profile.title": "Mon profil",
+    "profile.sub": "Décrivez-vous pour des suggestions plus adaptées.",
+    "profile.label": "À propos de vous",
+    "profile.placeholder":
+      "Ex : famille de 4, deux jeunes enfants. J'aime les marques durables, je privilégie la simplicité et le rapport qualité-prix. Plutôt écosystème Apple. Sensible à l'écologie.",
+    "profile.hint":
+      "Ces informations sont envoyées à l'assistant pour personnaliser ses questions et ses recommandations. Stockées sur cet appareil.",
+    "profile.save": "Enregistrer",
+    "profile.saved": "Profil enregistré",
+    "profile.clear": "Effacer",
+    "profile.counter": "{n}/600",
 
     // History
     "history.title": "Historique",
@@ -244,10 +258,24 @@ const TRANSLATIONS = {
     "auth.termsLink": "terms",
     "auth.privacyLink": "privacy policy",
     "auth.mySelections": "My selections",
+    "auth.myProfile": "My profile",
     "auth.soon": "soon",
     "auth.signOut": "Sign out",
     "auth.account": "Account",
     "auth.close": "Close",
+
+    // Profile (personalization)
+    "profile.title": "My profile",
+    "profile.sub": "Describe yourself for better-tailored suggestions.",
+    "profile.label": "About you",
+    "profile.placeholder":
+      "E.g. family of 4 with two young kids. I like durable brands, prefer simplicity and value for money. Mostly Apple ecosystem. I care about sustainability.",
+    "profile.hint":
+      "This is sent to the assistant to personalize its questions and recommendations. Stored on this device.",
+    "profile.save": "Save",
+    "profile.saved": "Profile saved",
+    "profile.clear": "Clear",
+    "profile.counter": "{n}/600",
 
     // History
     "history.title": "History",

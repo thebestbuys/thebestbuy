@@ -44,11 +44,19 @@ function answersJson(answers) {
   return JSON.stringify(answers.map((a) => ({ q: a.q || '', r: a.a ?? a.label ?? '' })));
 }
 
+// Optional user profile block — a free-form self-description used to tailor
+// questions and recommendations. Empty string when no profile is set.
+function profileLine(profile) {
+  const p = typeof profile === 'string' ? profile.trim() : '';
+  if (!p) return '';
+  return `\nProfil de l'utilisateur (à prendre en compte pour personnaliser, sans le répéter): "${p.slice(0, 600)}"`;
+}
+
 // Prompt to generate ONE next question, adapted to the criteria gathered so far.
-function buildAskPrompt(objet, answers, lang) {
+function buildAskPrompt(objet, answers, lang, profile = '') {
   const first = !Array.isArray(answers) || answers.length === 0;
   return `Tu es Oraklia, un conseiller d'achat. ${langLineFor(lang)}
-L'utilisateur cherche à acheter : "${objet || 'un produit'}".
+L'utilisateur cherche à acheter : "${objet || 'un produit'}".${profileLine(profile)}
 Réponses déjà recueillies (JSON — ne repose JAMAIS une dimension déjà couverte): ${answersJson(answers)}
 
 Pose UNE SEULE nouvelle question, pertinente, pour affiner le besoin sur une dimension PAS ENCORE couverte.
@@ -61,12 +69,12 @@ Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 }
 
 // Prompt to generate 10 real product candidates from the criteria JSON.
-function buildRecommendPrompt(objet, answers, lang, exclude = []) {
+function buildRecommendPrompt(objet, answers, lang, exclude = [], profile = '') {
   const excludeLine = exclude.length
     ? `\nNE propose AUCUN de ces produits (déjà testés, introuvables sur Amazon.fr) : ${exclude.join(', ')}. Propose-en 10 AUTRES, différents.`
     : '';
   return `Tu es Oraklia, un conseiller d'achat. ${langLineFor(lang)}
-L'utilisateur cherche à acheter : "${objet || 'un produit'}".
+L'utilisateur cherche à acheter : "${objet || 'un produit'}".${profileLine(profile)}
 Critères recueillis (JSON): ${answersJson(answers)}
 
 Propose EXACTEMENT 10 produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, correspondant au mieux à ces critères. Donne des marques et modèles PRÉCIS. Chaque produit a un score de correspondance 0-99 selon les critères.${excludeLine}
@@ -83,10 +91,10 @@ function toGeminiContents(messages) {
   }));
 }
 
-function buildSystemPrompt(category, lang = 'fr') {
+function buildSystemPrompt(category, lang = 'fr', profile = '') {
   const langLine = langLineFor(lang);
   return `Tu es Oraklia, un conseiller d'achat conversationnel.
-LANGUE DE RÉPONSE / OUTPUT LANGUAGE: ${langLine}
+LANGUE DE RÉPONSE / OUTPUT LANGUAGE: ${langLine}${profileLine(profile)}
 
 OBJECTIF: identifier les meilleurs produits réels (catégorie: ${category || 'inconnue'}), via un dialogue en deux phases.
 
@@ -250,7 +258,7 @@ export default async function handler(req, res) {
   }
   const t1_ms = ms(t1);
 
-  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr' } = body;
+  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '' } = body;
   // Legacy clients (mobile) send a full transcript in "messages" with no "mode".
   const legacy = Array.isArray(messages) && messages.length > 0 && body.mode == null;
   const isRecommend = mode === 'recommend';
@@ -260,13 +268,13 @@ export default async function handler(req, res) {
   const t2 = performance.now();
   let systemPrompt, contents, temperature;
   if (legacy) {
-    systemPrompt = buildSystemPrompt(category, lang);
+    systemPrompt = buildSystemPrompt(category, lang, profile);
     contents = toGeminiContents(messages);
     temperature = 0.5;
   } else {
     systemPrompt = isRecommend
-      ? buildRecommendPrompt(searchTerm, answers, lang)
-      : buildAskPrompt(searchTerm, answers, lang);
+      ? buildRecommendPrompt(searchTerm, answers, lang, [], profile)
+      : buildAskPrompt(searchTerm, answers, lang, profile);
     contents = [{ role: 'user', parts: [{ text: isRecommend ? 'Donne les recommandations.' : 'Pose la prochaine question.' }] }];
     temperature = isRecommend ? 0.5 : 0.4;
   }
@@ -385,7 +393,7 @@ export default async function handler(req, res) {
             generationConfig: { temperature: 0.6, responseMimeType: 'application/json' },
           }
         : {
-            systemInstruction: { parts: [{ text: buildRecommendPrompt(searchTerm, answers, lang, [...triedNames]) }] },
+            systemInstruction: { parts: [{ text: buildRecommendPrompt(searchTerm, answers, lang, [...triedNames], profile) }] },
             contents: [{ role: 'user', parts: [{ text: 'Donne 10 autres recommandations.' }] }],
             generationConfig: { temperature: 0.6, responseMimeType: 'application/json' },
           };

@@ -39,10 +39,11 @@ async function postChat(payload) {
 }
 
 // Legacy transcript-based API — still used by the mobile app.
-export function askAI({ messages, category, lang = 'fr' }) {
+export function askAI({ messages, category, lang = 'fr', profile = '' }) {
   return postChat({
     category,
     lang,
+    profile,
     messages: messages.map((m) => ({
       role: m.role === 'bot' || m.role === 'ai' ? 'assistant' : 'user',
       content: m.text,
@@ -51,13 +52,14 @@ export function askAI({ messages, category, lang = 'fr' }) {
 }
 
 // Ask for the next question, given the compact criteria gathered so far.
-export function askQuestion({ objet, answers, lang = 'fr' }) {
-  return postChat({ mode: 'ask', objet, answers, lang });
+// `profile` is an optional free-form user self-description for personalization.
+export function askQuestion({ objet, answers, lang = 'fr', profile = '' }) {
+  return postChat({ mode: 'ask', objet, answers, lang, profile });
 }
 
 // Ask for product recommendations from the accumulated criteria.
-export function recommend({ objet, answers, lang = 'fr' }) {
-  return postChat({ mode: 'recommend', objet, answers, lang });
+export function recommend({ objet, answers, lang = 'fr', profile = '' }) {
+  return postChat({ mode: 'recommend', objet, answers, lang, profile });
 }
 
 // Enrich a product with real Amazon data (image, URL, rating, reviews).
