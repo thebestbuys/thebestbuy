@@ -19,9 +19,19 @@ create table if not exists public.conversations (
   primary key (user_id, id)
 );
 
+-- ── Recipients (saved gift profiles) ──────────────────────────────────────
+create table if not exists public.recipients (
+  user_id      uuid        not null references auth.users (id) on delete cascade,
+  recipient_id text        not null,
+  data         jsonb       not null,
+  added_at     timestamptz not null default now(),
+  primary key (user_id, recipient_id)
+);
+
 -- ── Row Level Security ────────────────────────────────────────────────────
 alter table public.selections    enable row level security;
 alter table public.conversations enable row level security;
+alter table public.recipients    enable row level security;
 
 drop policy if exists "own selections" on public.selections;
 create policy "own selections" on public.selections
@@ -35,8 +45,16 @@ create policy "own conversations" on public.conversations
   using      (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+drop policy if exists "own recipients" on public.recipients;
+create policy "own recipients" on public.recipients
+  for all
+  using      (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
 -- Helpful index for the ordered fetches the client does.
 create index if not exists selections_added_idx
   on public.selections (user_id, added_at desc);
 create index if not exists conversations_updated_idx
   on public.conversations (user_id, updated_at desc);
+create index if not exists recipients_added_idx
+  on public.recipients (user_id, added_at desc);

@@ -1,29 +1,82 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
 import { GIFT_EMPTY } from '../lib/gift.js';
+import {
+  listRecipients,
+  removeRecipient,
+  saveRecipient,
+} from '../lib/recipients.js';
 
 // Recipient form for gift mode. Collects relationship, gender, age, interests,
 // occasion and budget, then hands the payload to onSubmit which starts a gift
 // advisor session (reusing the normal recommend/refine pipeline).
+//
+// People can be saved & reused ("Mes proches"): the durable parts (name,
+// relationship, gender, age, interests) persist per user; occasion and budget
+// stay per search.
 export default function GiftPanel({ open, onClose, onSubmit }) {
+  const { user } = useAuth();
   const { t } = useI18n();
   const [form, setForm] = useState(GIFT_EMPTY);
+  const [people, setPeople] = useState([]);
+  const [savedId, setSavedId] = useState(null);   // id of the loaded saved person
+  const [personName, setPersonName] = useState('');
 
   useEffect(() => {
     if (!open) return;
     setForm(GIFT_EMPTY);
+    setPeople(listRecipients(user?.sub));
+    setSavedId(null);
+    setPersonName('');
     const onKey = (e) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  }, [open, user?.sub]);
 
   if (!open) return null;
 
   const set = (key) => (e) => {
     const value = e.target.value;
     setForm((f) => ({ ...f, [key]: value }));
+  };
+
+  const loadPerson = (r) => {
+    setForm((f) => ({
+      ...f,
+      relationship: r.relationship || '',
+      gender: r.gender || '',
+      age: r.age || '',
+      interests: r.interests || '',
+    }));
+    setSavedId(r.id);
+    setPersonName(r.label || '');
+  };
+
+  const deletePerson = (id, e) => {
+    e.stopPropagation();
+    removeRecipient(user?.sub, id);
+    setPeople((cur) => cur.filter((r) => r.id !== id));
+    if (savedId === id) {
+      setSavedId(null);
+      setPersonName('');
+    }
+  };
+
+  const savePerson = () => {
+    if (!personName.trim()) return;
+    const item = saveRecipient(user?.sub, {
+      id: savedId,
+      label: personName,
+      relationship: form.relationship,
+      gender: form.gender,
+      age: form.age,
+      interests: form.interests,
+    });
+    setPeople(listRecipients(user?.sub));
+    setSavedId(item.id);
   };
 
   const submit = (e) => {
@@ -33,6 +86,7 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
   };
 
   const canSubmit = form.relationship || form.interests.trim();
+  const canSave = personName.trim() && (form.relationship || form.interests.trim());
 
   return (
     <div className="auth-modal-bg" onClick={onClose}>
@@ -62,6 +116,40 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
         </header>
 
         <div className="profile-form">
+          {people.length > 0 && (
+            <div className="gift-people">
+              <div className="profile-label">{t('gift.saved')}</div>
+              <div className="gift-people-row">
+                {people.map((r) => (
+                  <span
+                    key={r.id}
+                    className={'gift-chip' + (savedId === r.id ? ' is-active' : '')}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => loadPerson(r)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        loadPerson(r);
+                      }
+                    }}
+                  >
+                    {r.label || '—'}
+                    <button
+                      type="button"
+                      className="gift-chip-x"
+                      aria-label={t('gift.deletePerson')}
+                      title={t('gift.deletePerson')}
+                      onClick={(e) => deletePerson(r.id, e)}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="profile-grid">
             <div className="profile-field profile-field-wide">
               <label className="profile-label" htmlFor="gift-rel">
@@ -171,6 +259,22 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
             onChange={set('interests')}
             rows={4}
           />
+
+          <div className="gift-save-row">
+            <input
+              type="text"
+              className="profile-input gift-name-input"
+              value={personName}
+              maxLength={60}
+              placeholder={t('gift.personNamePlaceholder')}
+              aria-label={t('gift.personName')}
+              onChange={(e) => setPersonName(e.target.value)}
+            />
+            <button type="button" className="profile-clear" onClick={savePerson} disabled={!canSave}>
+              {savedId ? t('gift.updatePerson') : t('gift.savePerson')}
+            </button>
+          </div>
+
           <div className="profile-meta">
             <span className="profile-hint">{t('gift.hint')}</span>
           </div>

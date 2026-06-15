@@ -1,6 +1,7 @@
-# Supabase setup — cross-device sync of selections & history
+# Supabase setup — cross-device sync of selections, history & gift recipients
 
-Selections ("Mes sélections") and chat history sync across devices when the
+Selections ("Mes sélections"), chat history and saved gift recipients
+("Mes proches") sync across devices when the
 user is signed in with Google. localStorage stays as the offline cache; the
 server (Supabase) is the source of truth once signed in. If the Supabase env
 vars are absent, the app runs exactly as before (localStorage only).
@@ -17,8 +18,10 @@ vars are absent, the app runs exactly as before (localStorage only).
 ## 2. Create the tables
 
 Open *SQL Editor*, paste the contents of [`supabase/schema.sql`](supabase/schema.sql)
-and run it. This creates `selections` and `conversations`, both protected by
-Row Level Security (a user can only read/write their own rows).
+and run it. This creates `selections`, `conversations` and `recipients`, all
+protected by Row Level Security (a user can only read/write their own rows).
+The script is idempotent — re-run it to add the `recipients` table to an
+existing project.
 
 ## 3. Enable Google sign-in (ID-token flow)
 

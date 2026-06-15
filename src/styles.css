@@ -2431,6 +2431,11 @@ select.profile-input {
   filter: none;
 }
 
+.profile-clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Gift finder entry button (home top bar) */
 .gift-trigger {
   border-color: var(--accent) !important;
@@ -2438,6 +2443,66 @@ select.profile-input {
 }
 .gift-trigger:hover {
   background: var(--accent-soft) !important;
+}
+
+/* Saved recipients ("Mes proches") */
+.gift-people {
+  margin-bottom: 16px;
+}
+.gift-people-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gift-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px 6px 13px;
+  border: 0.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-elev);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.gift-chip:hover {
+  border-color: var(--accent);
+}
+.gift-chip.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.gift-chip-x {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 1;
+  padding: 2px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.gift-chip-x:hover {
+  color: var(--accent);
+}
+
+/* Save-this-person row */
+.gift-save-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.gift-name-input {
+  flex: 1;
+  min-width: 0;
+}
+.gift-save-row .profile-clear {
+  flex-shrink: 0;
 }
 
 /* ───────────────────────── Language toggle ─────────────────────────── */

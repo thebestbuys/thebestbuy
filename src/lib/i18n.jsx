@@ -190,6 +190,12 @@ const TRANSLATIONS = {
     "gift.budgetMin": "Min",
     "gift.budgetMax": "Max",
     "gift.submit": "Trouver des idées",
+    "gift.saved": "Mes proches",
+    "gift.personName": "Nom du proche",
+    "gift.personNamePlaceholder": "Ex : Maman",
+    "gift.savePerson": "Enregistrer ce proche",
+    "gift.updatePerson": "Mettre à jour",
+    "gift.deletePerson": "Supprimer",
     "gift.hint":
       "Ces informations servent uniquement à générer des idées. Stockées sur cet appareil.",
     "gift.introReply":
@@ -413,6 +419,12 @@ const TRANSLATIONS = {
     "gift.budgetMin": "Min",
     "gift.budgetMax": "Max",
     "gift.submit": "Find ideas",
+    "gift.saved": "My people",
+    "gift.personName": "Person's name",
+    "gift.personNamePlaceholder": "e.g. Mom",
+    "gift.savePerson": "Save this person",
+    "gift.updatePerson": "Update",
+    "gift.deletePerson": "Delete",
     "gift.hint":
       "This is only used to generate ideas. Stored on this device.",
     "gift.introReply":

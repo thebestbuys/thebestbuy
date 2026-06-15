@@ -61,6 +61,44 @@ export async function cloudFetchSelections() {
   return (data || []).map((r) => r.data).filter(Boolean);
 }
 
+// ─── Recipients (saved gift profiles) ──────────────────────────────────────
+export async function cloudUpsertRecipient(item) {
+  if (!hasCloudSession() || item?.id == null) return;
+  await supabase.from('recipients').upsert(
+    {
+      user_id: uid(),
+      recipient_id: String(item.id),
+      data: item,
+      added_at: new Date(item.addedAt || Date.now()).toISOString(),
+    },
+    { onConflict: 'user_id,recipient_id' },
+  );
+}
+
+export async function cloudDeleteRecipient(recipientId) {
+  if (!hasCloudSession() || recipientId == null) return;
+  await supabase
+    .from('recipients')
+    .delete()
+    .eq('user_id', uid())
+    .eq('recipient_id', String(recipientId));
+}
+
+export async function cloudClearRecipients() {
+  if (!hasCloudSession()) return;
+  await supabase.from('recipients').delete().eq('user_id', uid());
+}
+
+export async function cloudFetchRecipients() {
+  if (!hasCloudSession()) return null;
+  const { data, error } = await supabase
+    .from('recipients')
+    .select('data, added_at')
+    .order('added_at', { ascending: false });
+  if (error) return null;
+  return (data || []).map((r) => r.data).filter(Boolean);
+}
+
 // ─── Conversations ───────────────────────────────────────────────────────
 export async function cloudUpsertConversation(convo) {
   if (!hasCloudSession() || !convo?.id) return;

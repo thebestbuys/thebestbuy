@@ -17,11 +17,14 @@ import {
   hasCloudSession,
   cloudFetchSelections,
   cloudFetchConversations,
+  cloudFetchRecipients,
   cloudUpsertSelection,
   cloudUpsertConversation,
+  cloudUpsertRecipient,
 } from './cloud.js';
 import { listSelections, replaceSelections } from './selections.js';
 import { listConversations, replaceConversations } from './history.js';
+import { listRecipients, replaceRecipients } from './recipients.js';
 
 async function pullSelections(userId) {
   const server = await cloudFetchSelections();
@@ -33,9 +36,14 @@ async function pullConversations(userId) {
   if (server) replaceConversations(userId, server);
 }
 
+async function pullRecipients(userId) {
+  const server = await cloudFetchRecipients();
+  if (server) replaceRecipients(userId, server);
+}
+
 export async function pullOnly(userId) {
   if (!hasCloudSession()) return;
-  await Promise.all([pullSelections(userId), pullConversations(userId)]);
+  await Promise.all([pullSelections(userId), pullConversations(userId), pullRecipients(userId)]);
 }
 
 export async function linkAndSync(userId) {
@@ -49,6 +57,10 @@ export async function linkAndSync(userId) {
   const localConv = dedupeById([...listConversations(userId), ...listConversations(null)]);
   for (const convo of localConv) {
     await cloudUpsertConversation(convo).catch(() => {});
+  }
+  const localRec = dedupeById([...listRecipients(userId), ...listRecipients(null)]);
+  for (const rec of localRec) {
+    await cloudUpsertRecipient(rec).catch(() => {});
   }
 
   // 2. Pull the merged server state back down, overwriting the local cache.
@@ -75,7 +87,8 @@ function dedupeById(items) {
 // account). We bypass the cloud-aware clear helpers by writing empties for the
 // anon key only.
 function clearAnonLocal() {
-  // replaceSelections/replaceConversations are local-only writers.
+  // replaceSelections/replaceConversations/replaceRecipients are local-only writers.
   replaceSelections(null, []);
   replaceConversations(null, []);
+  replaceRecipients(null, []);
 }
