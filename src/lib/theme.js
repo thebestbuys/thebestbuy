@@ -57,6 +57,20 @@ const DARK_EXTRA = {
   '--text-faint': '#847c6d',
   '--border-soft': 'rgba(255,255,255,0.06)',
   '--accent-soft': '#3a2a20',
+  // Mobile app palette (dark).
+  '--m-coral': '#f2774e',
+  '--m-coral-deep': '#e0623c',
+  '--m-amber': '#f5b544',
+  '--m-cream': '#2a231c',
+  '--m-paper': '#19150f',
+  '--m-card': '#251f17',
+  '--m-ink': '#f3efe7',
+  '--m-ink-soft': '#b3ab9b',
+  '--m-ink-mute': '#847c6d',
+  '--m-line': '#352f27',
+  '--m-chip-bg': '#2c2419',
+  '--m-chip-bg-hov': '#38301f',
+  '--m-bubble-ai': '#241f18',
 };
 
 export function systemPrefersDark() {

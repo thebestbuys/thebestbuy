@@ -12,6 +12,7 @@ import {
 } from "../lib/history.js";
 import { listSelections, removeSelection } from "../lib/selections.js";
 import { getProfile, profileToPrompt, saveProfile } from "../lib/profile.js";
+import { getMode, setMode as setThemeMode } from "../lib/theme.js";
 
 // Which search variant to ship: 'A' = Premium Search, 'B' = Hey-Jordan Hub.
 const VARIANT = "B";
@@ -30,19 +31,23 @@ function detectCategory(query) {
   return null;
 }
 
+// Palette driven by CSS variables (defined light in styles.css :root and dark in
+// theme.js DARK_EXTRA) so the mobile app follows the app-wide light/dark theme.
+// NB: CSS var() does not resolve in SVG presentation attributes — icons below
+// apply the colour via inline `style` + `currentColor`.
 const BB = {
-  coral: "#F26B4E",
-  coralDeep: "#D9492C",
-  amber: "#F5B544",
-  cream: "#FFF7F0",
-  paper: "#FFFCF8",
-  ink: "#221A14",
-  inkSoft: "#5C504A",
-  inkMute: "#9A8E86",
-  line: "#EDE3D8",
-  chipBg: "#FBEFE2",
-  chipBgHov: "#F6E2CB",
-  bubbleAi: "#F4ECE2",
+  coral: "var(--m-coral)",
+  coralDeep: "var(--m-coral-deep)",
+  amber: "var(--m-amber)",
+  cream: "var(--m-cream)",
+  paper: "var(--m-paper)",
+  ink: "var(--m-ink)",
+  inkSoft: "var(--m-ink-soft)",
+  inkMute: "var(--m-ink-mute)",
+  line: "var(--m-line)",
+  chipBg: "var(--m-chip-bg)",
+  chipBgHov: "var(--m-chip-bg-hov)",
+  bubbleAi: "var(--m-bubble-ai)",
   display: '"Quicksand", "Nunito", system-ui, sans-serif',
   body: '"Nunito", "Quicksand", system-ui, sans-serif',
 };
@@ -71,13 +76,13 @@ function firstNameOf(user) {
 }
 
 const HeartIcon = ({ size = 18, color = BB.ink, filled = false }) => (
-  <svg width={size} height={size} viewBox="0 0 18 18" fill="none">
+  <svg width={size} height={size} viewBox="0 0 18 18" fill="none" style={{ color }}>
     <path
       d="M9 15.4S2.4 11.3 2.4 6.8A3.35 3.35 0 0 1 9 5.1 3.35 3.35 0 0 1 15.6 6.8C15.6 11.3 9 15.4 9 15.4Z"
-      stroke={color}
+      stroke="currentColor"
       strokeWidth="1.5"
       strokeLinejoin="round"
-      fill={filled ? color : "none"}
+      fill={filled ? "currentColor" : "none"}
     />
   </svg>
 );
@@ -92,7 +97,7 @@ function LangPill() {
       style={{
         display: "inline-flex",
         alignItems: "center",
-        background: "#fff",
+        background: "var(--m-card)",
         border: `1px solid ${BB.line}`,
         borderRadius: 999,
         padding: 2,
@@ -129,21 +134,21 @@ function LangPill() {
 }
 
 const SearchIcon = ({ size = 18, color = BB.inkMute }) => (
-  <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-    <circle cx="9" cy="9" r="6.2" stroke={color} strokeWidth="1.8" />
+  <svg width={size} height={size} viewBox="0 0 20 20" fill="none" style={{ color }}>
+    <circle cx="9" cy="9" r="6.2" stroke="currentColor" strokeWidth="1.8" />
     <path
       d="M13.5 13.5L17 17"
-      stroke={color}
+      stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"
     />
   </svg>
 );
 const BackIcon = ({ size = 20, color = BB.ink }) => (
-  <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+  <svg width={size} height={size} viewBox="0 0 20 20" fill="none" style={{ color }}>
     <path
       d="M12.5 4L6.5 10l6 6"
-      stroke={color}
+      stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -151,32 +156,32 @@ const BackIcon = ({ size = 20, color = BB.ink }) => (
   </svg>
 );
 const SparkleIcon = ({ size = 14, color = BB.coral }) => (
-  <svg width={size} height={size} viewBox="0 0 14 14" fill="none">
+  <svg width={size} height={size} viewBox="0 0 14 14" fill="none" style={{ color }}>
     <path
       d="M7 1.5l1.3 3.7L12 6.5l-3.7 1.3L7 11.5 5.7 7.8 2 6.5l3.7-1.3L7 1.5z"
-      fill={color}
+      fill="currentColor"
     />
-    <circle cx="11.5" cy="2.5" r="0.8" fill={color} />
-    <circle cx="2" cy="11.5" r="0.6" fill={color} />
+    <circle cx="11.5" cy="2.5" r="0.8" fill="currentColor" />
+    <circle cx="2" cy="11.5" r="0.6" fill="currentColor" />
   </svg>
 );
 const PersonIcon = ({ size = 18, color = BB.inkSoft }) => (
-  <svg width={size} height={size} viewBox="0 0 18 18" fill="none">
-    <circle cx="9" cy="6" r="3" stroke={color} strokeWidth="1.5" />
+  <svg width={size} height={size} viewBox="0 0 18 18" fill="none" style={{ color }}>
+    <circle cx="9" cy="6" r="3" stroke="currentColor" strokeWidth="1.5" />
     <path
       d="M3.5 15c.9-2.7 3-4.2 5.5-4.2s4.6 1.5 5.5 4.2"
-      stroke={color}
+      stroke="currentColor"
       strokeWidth="1.5"
       strokeLinecap="round"
     />
   </svg>
 );
 const MicIcon = ({ size = 18, color = BB.inkSoft }) => (
-  <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-    <rect x="7" y="3" width="6" height="10" rx="3" fill={color} />
+  <svg width={size} height={size} viewBox="0 0 20 20" fill="none" style={{ color }}>
+    <rect x="7" y="3" width="6" height="10" rx="3" fill="currentColor" />
     <path
       d="M4 10a6 6 0 0012 0M10 16v2"
-      stroke={color}
+      stroke="currentColor"
       strokeWidth="1.6"
       strokeLinecap="round"
     />
@@ -186,7 +191,7 @@ const MicIcon = ({ size = 18, color = BB.inkSoft }) => (
 function Chip({ children, onClick, variant = "soft", icon }) {
   const styles = {
     soft: { bg: BB.chipBg, fg: BB.ink, border: "transparent" },
-    outline: { bg: "#fff", fg: BB.ink, border: BB.line },
+    outline: { bg: "var(--m-card)", fg: BB.ink, border: BB.line },
     primary: { bg: BB.coral, fg: "#fff", border: "transparent" },
   }[variant];
   return (
@@ -229,7 +234,7 @@ function ProductCard({ product }) {
   return (
     <div
       style={{
-        background: "#fff",
+        background: "var(--m-card)",
         borderRadius: 20,
         overflow: "hidden",
         border: `1px solid ${BB.line}`,
@@ -512,7 +517,7 @@ function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
           alignItems: "center",
           gap: 10,
           borderBottom: `1px solid ${BB.line}`,
-          background: "#fff",
+          background: "var(--m-card)",
         }}
       >
         <button
@@ -609,7 +614,7 @@ function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
           style={{
             padding: "10px 12px 12px",
             borderTop: `1px solid ${BB.line}`,
-            background: "#fff",
+            background: "var(--m-card)",
             display: "flex",
             alignItems: "center",
             gap: 8,
@@ -801,7 +806,7 @@ function AccountAvatar({ onClick, size = 32, variant = "B" }) {
   const borderStyle =
     variant === "A"
       ? { background: BB.cream, border: 0 }
-      : { background: "#fff", border: `1px solid ${BB.line}` };
+      : { background: "var(--m-card)", border: `1px solid ${BB.line}` };
   return (
     <button
       type="button"
@@ -839,6 +844,63 @@ function AccountAvatar({ onClick, size = 32, variant = "B" }) {
         <PersonIcon size={size <= 32 ? 17 : 19} color={BB.inkSoft} />
       )}
     </button>
+  );
+}
+
+// Appearance (theme) switch — Système / Clair / Sombre.
+function AppearanceSeg() {
+  const { t } = useI18n();
+  const [mode, setMode] = useState(getMode);
+  const modes = ["system", "light", "dark"];
+  const change = (m) => {
+    setThemeMode(m);
+    setMode(m);
+  };
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: BB.inkSoft, marginBottom: 6 }}>
+        {t("appearance.label")}
+      </div>
+      <div
+        role="radiogroup"
+        style={{
+          display: "flex",
+          gap: 3,
+          padding: 3,
+          background: BB.chipBg,
+          borderRadius: 12,
+        }}
+      >
+        {modes.map((m) => {
+          const active = mode === m;
+          return (
+            <button
+              key={m}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => change(m)}
+              style={{
+                flex: 1,
+                appearance: "none",
+                border: 0,
+                background: active ? BB.paper : "transparent",
+                color: active ? BB.coralDeep : BB.inkSoft,
+                fontFamily: BB.body,
+                fontSize: 12.5,
+                fontWeight: 700,
+                padding: "8px 4px",
+                borderRadius: 9,
+                cursor: "pointer",
+                boxShadow: active ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+              }}
+            >
+              {t("appearance." + m)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -983,7 +1045,7 @@ function AuthSheet({ open, onClose, onOpenSelections, onOpenProfile }) {
                 width: "100%",
                 appearance: "none",
                 border: `1px solid ${BB.line}`,
-                background: "#fff",
+                background: "var(--m-card)",
                 color: BB.ink,
                 padding: "12px 14px",
                 borderRadius: 14,
@@ -1012,7 +1074,7 @@ function AuthSheet({ open, onClose, onOpenSelections, onOpenProfile }) {
                 width: "100%",
                 appearance: "none",
                 border: `1px solid ${BB.line}`,
-                background: "#fff",
+                background: "var(--m-card)",
                 color: BB.ink,
                 padding: "12px 14px",
                 borderRadius: 14,
@@ -1030,6 +1092,8 @@ function AuthSheet({ open, onClose, onOpenSelections, onOpenProfile }) {
               {t('auth.myProfile')}
               <span aria-hidden="true" style={{ color: BB.inkMute }}>→</span>
             </button>
+
+            <AppearanceSeg />
 
             <button
               type="button"
@@ -1107,7 +1171,7 @@ function AuthSheet({ open, onClose, onOpenSelections, onOpenProfile }) {
                   disabled={!ready}
                   style={{
                     appearance: "none",
-                    background: "#fff",
+                    background: "var(--m-card)",
                     border: `1px solid ${BB.line}`,
                     borderRadius: 999,
                     padding: "10px 20px",
@@ -1326,7 +1390,7 @@ function HistorySheet({ open, onClose, onLoad }) {
                   display: "flex",
                   alignItems: "stretch",
                   gap: 6,
-                  background: "#fff",
+                  background: "var(--m-card)",
                   border: `1px solid ${BB.line}`,
                   borderRadius: 14,
                   marginBottom: 8,
@@ -1453,7 +1517,7 @@ function ProfileSheet({ open, onClose }) {
     boxSizing: "border-box",
     border: `1px solid ${BB.line}`,
     borderRadius: 12,
-    background: "#fff",
+    background: "var(--m-card)",
     color: BB.ink,
     fontFamily: BB.body,
     fontSize: 14,
@@ -1822,7 +1886,7 @@ function SelectionsSheet({ open, onClose }) {
                   display: "flex",
                   alignItems: "center",
                   gap: 12,
-                  background: "#fff",
+                  background: "var(--m-card)",
                   border: `1px solid ${BB.line}`,
                   borderRadius: 14,
                   marginBottom: 8,
@@ -1965,10 +2029,10 @@ function SearchA({ onSubmit, onOpenAuth }) {
             justifyContent: "center",
           }}
         >
-          <svg width="16" height="14" viewBox="0 0 16 14" fill="none">
+          <svg width="16" height="14" viewBox="0 0 16 14" fill="none" style={{ color: BB.ink }}>
             <path
               d="M2 4l6-3 6 3v6l-6 3-6-3V4z"
-              stroke={BB.ink}
+              stroke="currentColor"
               strokeWidth="1.6"
               strokeLinejoin="round"
             />
@@ -1998,7 +2062,7 @@ function SearchA({ onSubmit, onOpenAuth }) {
           submit();
         }}
         style={{
-          background: "#fff",
+          background: "var(--m-card)",
           border: `1.5px solid ${BB.line}`,
           borderRadius: 999,
           padding: "12px 14px",
@@ -2153,7 +2217,7 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onOpenSelections, onLoad
               height: 32,
               borderRadius: "50%",
               border: `1px solid ${BB.line}`,
-              background: "#fff",
+              background: "var(--m-card)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -2186,7 +2250,7 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onOpenSelections, onLoad
       <div
         style={{
           marginTop: 22,
-          background: "#fff",
+          background: "var(--m-card)",
           borderRadius: 22,
           border: `1px solid ${BB.line}`,
           padding: 14,
@@ -2298,7 +2362,7 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onOpenSelections, onLoad
         {recents.length === 0 ? (
           <div
             style={{
-              background: "#fff",
+              background: "var(--m-card)",
               borderRadius: 14,
               padding: "14px 14px",
               border: `1px dashed ${BB.line}`,
@@ -2328,7 +2392,7 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onOpenSelections, onLoad
                 style={{
                   width: 210,
                   flexShrink: 0,
-                  background: "#fff",
+                  background: "var(--m-card)",
                   borderRadius: 14,
                   padding: 12,
                   border: `1px solid ${BB.line}`,

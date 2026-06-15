@@ -28,6 +28,21 @@
   --display: "Instrument Serif", "Times New Roman", serif;
   --sans:
     "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Mobile app palette (light) — dark values applied in dark mode (theme.js). */
+  --m-coral: #f26b4e;
+  --m-coral-deep: #d9492c;
+  --m-amber: #f5b544;
+  --m-cream: #fff7f0;
+  --m-paper: #fffcf8;
+  --m-card: #ffffff;
+  --m-ink: #221a14;
+  --m-ink-soft: #5c504a;
+  --m-ink-mute: #9a8e86;
+  --m-line: #ede3d8;
+  --m-chip-bg: #fbefe2;
+  --m-chip-bg-hov: #f6e2cb;
+  --m-bubble-ai: #f4ece2;
 }
 
 *,
@@ -1612,9 +1627,9 @@ ul {
 .bb-mobile-root {
   position: fixed;
   inset: 0;
-  background: #fffcf8;
+  background: var(--m-paper);
   font-family: "Nunito", "Quicksand", system-ui, sans-serif;
-  color: #221a14;
+  color: var(--m-ink);
   overflow: hidden;
 }
 .bb-mobile-root *,
