@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const __TWEAKS_STYLE = `
+export const TWEAKS_STYLE = `
   .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;
     max-height:calc(100vh - 32px);display:flex;flex-direction:column;
     background:rgba(250,249,247,.78);color:#29261b;
@@ -177,7 +177,7 @@ export function TweaksPanel({ title = 'Tweaks', children }) {
   if (!open) return null;
   return (
     <>
-      <style>{__TWEAKS_STYLE}</style>
+      <style>{TWEAKS_STYLE}</style>
       <div ref={dragRef} className="twk-panel"
            style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
         <div className="twk-hd" onMouseDown={onDragStart}>
