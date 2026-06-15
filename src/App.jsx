@@ -6,6 +6,7 @@ import ChatPanel from './components/ChatPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
 import SelectionsPanel from './components/SelectionsPanel.jsx';
 import ProfilePanel from './components/ProfilePanel.jsx';
+import GiftPanel from './components/GiftPanel.jsx';
 import FavoriteButton from './components/FavoriteButton.jsx';
 import LegalNotices from './components/LegalNotices.jsx';
 import GuideArticle from './components/GuideArticle.jsx';
@@ -15,6 +16,7 @@ import { AmazonPrice, HeroCard, ProductImage, ScoreRing, SmallCard, Stars } from
 import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './lib/i18n.jsx';
 import { getProfile, profileToPrompt } from './lib/profile.js';
+import { giftToPrompt, giftTitle } from './lib/gift.js';
 import {
   deriveTitle,
   newConversationId,
@@ -100,7 +102,7 @@ function ResultsPlaceholder({ category }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenLegal, onOpenGuide }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenGift, onOpenLegal, onOpenGuide }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -204,6 +206,16 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             />
           </svg>
           {t('home.selections')}
+        </button>
+        <button
+          type="button"
+          className="auth-trigger auth-trigger-home gift-trigger"
+          onClick={onOpenGift}
+          aria-label={t('home.gift')}
+          title={t('home.gift')}
+        >
+          <span aria-hidden="true">🎁</span>
+          {t('home.gift')}
         </button>
         <LangToggle />
         <AuthMenu variant="home" onOpenSelections={onOpenSelections} onOpenProfile={onOpenProfile} />
@@ -387,6 +399,8 @@ export default function App() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectionsOpen, setSelectionsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [giftOpen, setGiftOpen] = useState(false);
+  const [gift, setGift] = useState(null);   // recipient payload when in gift mode
   const [legalOpen, setLegalOpen] = useState(false);
   const [activeGuide, setActiveGuide] = useState(null);
   const [objet, setObjet] = useState('');      // human search term sent to the AI
@@ -394,8 +408,10 @@ export default function App() {
 
   const progress = done ? 100 : Math.min(90, turnCount * 22);
 
-  // Recommend after the first 5 answers, then every 3 more (8, 11, …).
-  const shouldRecommendAt = (n) => n >= 5 && (n - 5) % 3 === 0;
+  // Self mode: recommend after the first 5 answers, then every 3 more (8, 11, …).
+  // Gift mode: recommend immediately (the recipient form already has budget +
+  // occasion), then every 3 refinement answers (0, 3, 6, …).
+  const shouldRecommendAt = (n) => (gift ? n % 3 === 0 : n >= 5 && (n - 5) % 3 === 0);
 
   const loadProducts = (products) => {
     if (!Array.isArray(products) || !products.length) return;
@@ -419,14 +435,15 @@ export default function App() {
     setIsTyping(true);
     setCurrentQuestion(null);
     const profile = profileToPrompt(getProfile(user?.sub), lang);
+    const giftStr = gift ? giftToPrompt(gift, lang) : '';
     try {
       if (shouldRecommendAt(currentAnswers.length)) {
-        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile });
+        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr });
         if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
         loadProducts(rec?.products);
       }
       // Always queue the next refinement question.
-      const q = await askQuestion({ objet: searchObjet, answers: currentAnswers, lang, profile });
+      const q = await askQuestion({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr });
       if (q?.reply) setMessages((m) => [...m, { role: 'bot', text: q.reply }]);
       setCurrentQuestion(q?.question?.choices ? q.question : null);
       setRefreshKey((k) => k + 1);
@@ -451,7 +468,7 @@ export default function App() {
     if (!convoId || !category || messages.length === 0) return;
     saveConversation(user?.sub, {
       id: convoId,
-      title: deriveTitle({ initialQuery, messages }),
+      title: gift ? giftTitle(gift, lang) : deriveTitle({ initialQuery, messages }),
       category,
       initialQuery,
       objet,
@@ -461,8 +478,9 @@ export default function App() {
       done,
       turnCount,
       currentQuestion,
+      gift,
     });
-  }, [convoId, category, objet, answers, messages, recommendedProducts, initialQuery, done, turnCount, currentQuestion, user?.sub]);
+  }, [convoId, category, objet, answers, messages, recommendedProducts, initialQuery, done, turnCount, currentQuestion, gift, lang, user?.sub]);
 
   const recordAnswer = (label, choice = {}) => {
     const next = [...answers, {
@@ -495,6 +513,7 @@ export default function App() {
     setTurnCount(0);
     setRecommendedProducts([]);
     setConvoId(null);
+    setGift(null);
   };
 
   const handleRestart = () => {
@@ -516,6 +535,7 @@ export default function App() {
   const loadConversation = (convo) => {
     if (!convo) return;
     setConvoId(convo.id);
+    setGift(convo.gift || null);
     setInitialQuery(convo.initialQuery || '');
     setObjet(convo.objet || convo.initialQuery || '');
     setAnswers(Array.isArray(convo.answers) ? convo.answers : []);
@@ -550,7 +570,25 @@ export default function App() {
   const navOpenHistory = () => { pushHistory(); setHistoryOpen(true); };
   const navOpenSelections = () => { pushHistory(); setSelectionsOpen(true); };
   const navOpenProfile = () => { pushHistory(); setProfileOpen(true); };
+  const navOpenGift = () => { pushHistory(); setGiftOpen(true); };
   const navOpenProduct = (p) => { pushHistory(); setSelected(p); };
+  // Start a gift advisor session from the recipient form. Reuses the normal
+  // advisor pipeline with a pseudo-category ('gift') and the recipient payload;
+  // the auto-start effect (keyed on convoId) fires the first recommend + ask.
+  const startGift = (giftData) => {
+    setGiftOpen(false);
+    setGift(giftData);
+    setConvoId(newConversationId());
+    setObjet('');
+    setInitialQuery('');
+    setAnswers([]);
+    setMessages([]);
+    setRecommendedProducts([]);
+    setDone(false);
+    setTurnCount(0);
+    setCurrentQuestion(null);
+    setCategory('gift');
+  };
   const navPickCategory = (cat, q) => {
     pushHistory();
     setConvoId(newConversationId());
@@ -573,6 +611,7 @@ export default function App() {
       // Close the topmost open layer; at home, let the browser navigate away.
       if (selected) { setSelected(null); return; }
       if (legalOpen) { setLegalOpen(false); return; }
+      if (giftOpen) { setGiftOpen(false); return; }
       if (profileOpen) { setProfileOpen(false); return; }
       if (selectionsOpen) { setSelectionsOpen(false); return; }
       if (historyOpen) { setHistoryOpen(false); return; }
@@ -582,7 +621,7 @@ export default function App() {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, profileOpen, selectionsOpen, historyOpen, activeGuide, category]);
+  }, [selected, legalOpen, giftOpen, profileOpen, selectionsOpen, historyOpen, activeGuide, category]);
 
   const getAmazonUrl = (p) => {
     if (p.amazon_url) return p.amazon_url;
@@ -631,6 +670,7 @@ export default function App() {
           onOpenHistory={navOpenHistory}
           onOpenSelections={navOpenSelections}
           onOpenProfile={navOpenProfile}
+          onOpenGift={navOpenGift}
           onOpenLegal={navOpenLegal}
           onOpenGuide={navOpenGuide}
         />
@@ -647,6 +687,7 @@ export default function App() {
           onBuy={handleBuy}
         />
         <ProfilePanel open={profileOpen} onClose={navBack} />
+        <GiftPanel open={giftOpen} onClose={navBack} onSubmit={startGift} />
         <LegalNotices open={legalOpen} onClose={navBack} />
       </>
     );
@@ -675,7 +716,7 @@ export default function App() {
           <div>
             <div className="results-eyebrow">{tr('results.eyebrow')}</div>
             <h2 className="results-title">
-              {CATEGORIES.find((c) => c.id === category) ? tr('cat.' + category) : category}
+              {category === 'gift' || CATEGORIES.find((c) => c.id === category) ? tr('cat.' + category) : category}
             </h2>
           </div>
           <div className="results-header-right">
@@ -743,6 +784,8 @@ export default function App() {
       />
 
       <ProfilePanel open={profileOpen} onClose={navBack} />
+
+      <GiftPanel open={giftOpen} onClose={navBack} onSubmit={startGift} />
 
       <LegalNotices open={legalOpen} onClose={navBack} />
 

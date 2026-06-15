@@ -83,6 +83,34 @@ Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 {"reply":"<courte phrase d'introduction>","products":[{"id":"p1","brand":"Marque","model":"Modèle exact","price":999,"score":94,"specs":["Spec 1","Spec 2","Spec 3","Spec 4"],"why":"Raison courte"}]}`;
 }
 
+// ── Gift mode ──────────────────────────────────────────────────────────────
+// One next question to refine gift ideas for the described recipient.
+function buildGiftAskPrompt(giftStr, answers, lang) {
+  return `Tu es Oraklia, un conseiller en idées cadeaux. ${langLineFor(lang)}
+On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".
+Préférences de raffinement déjà recueillies (JSON): ${answersJson(answers)}
+
+Pose UNE SEULE nouvelle question courte (2 à 4 choix concrets) pour mieux cerner le cadeau idéal, sur une dimension PAS ENCORE couverte (ex: style/usage, pratique vs original, plaisir vs utile, univers précis). Ne repose jamais le budget ni l'occasion (déjà connus). Les choix peuvent porter des "tags" courts.
+
+Réponds UNIQUEMENT par un objet JSON valide de cette forme:
+{"reply":"<la question à afficher>","question":{"id":"slug-court","text":"<la question>","choices":[{"id":"slug","label":"Libellé court","tags":[],"min":null,"max":null}]}}`;
+}
+
+// 10 real, varied gift product candidates for the recipient + occasion + budget.
+function buildGiftRecommendPrompt(giftStr, answers, lang, exclude = []) {
+  const excludeLine = exclude.length
+    ? `\nNE propose AUCUN de ces produits (déjà testés, introuvables sur Amazon.fr) : ${exclude.join(', ')}. Propose-en 10 AUTRES, différents.`
+    : '';
+  return `Tu es Oraklia, un conseiller en idées cadeaux. ${langLineFor(lang)}
+On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".
+Préférences de raffinement (JSON): ${answersJson(answers)}
+
+Propose EXACTEMENT 10 idées de cadeaux : des produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, qui feraient de bons cadeaux pour CETTE personne, pour cette occasion et DANS le budget indiqué. VARIE les catégories (pas 10 produits du même type). Donne des marques et modèles PRÉCIS. "why" explique en une phrase pourquoi ça correspond à la personne. Score 0-99 = à quel point l'idée lui correspond.${excludeLine}
+
+Réponds UNIQUEMENT par un objet JSON valide de cette forme:
+{"reply":"<courte phrase d'introduction>","products":[{"id":"p1","brand":"Marque","model":"Modèle exact","price":999,"score":94,"specs":["Spec 1","Spec 2","Spec 3"],"why":"Pourquoi ce cadeau lui correspond"}]}`;
+}
+
 // ── Legacy transcript-based prompt (still used by the mobile app) ──────────
 function toGeminiContents(messages) {
   return messages.map((m) => ({
@@ -258,11 +286,15 @@ export default async function handler(req, res) {
   }
   const t1_ms = ms(t1);
 
-  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '' } = body;
+  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '', gift = '' } = body;
   // Legacy clients (mobile) send a full transcript in "messages" with no "mode".
   const legacy = Array.isArray(messages) && messages.length > 0 && body.mode == null;
   const isRecommend = mode === 'recommend';
-  const searchTerm = objet || category || (legacy ? (messages[0]?.content || '') : '');
+  // Gift mode: a recipient description is sent instead of a product "objet".
+  const isGift = !legacy && typeof gift === 'string' && gift.trim().length > 0;
+  // Amazon verification searches by brand+model; in gift mode there is no single
+  // product context, so don't prepend one.
+  const searchTerm = isGift ? '' : (objet || category || (legacy ? (messages[0]?.content || '') : ''));
 
   // 2. Build prompt — new path sends a compact criteria JSON; legacy sends the transcript.
   const t2 = performance.now();
@@ -271,6 +303,12 @@ export default async function handler(req, res) {
     systemPrompt = buildSystemPrompt(category, lang, profile);
     contents = toGeminiContents(messages);
     temperature = 0.5;
+  } else if (isGift) {
+    systemPrompt = isRecommend
+      ? buildGiftRecommendPrompt(gift, answers, lang)
+      : buildGiftAskPrompt(gift, answers, lang);
+    contents = [{ role: 'user', parts: [{ text: isRecommend ? 'Donne les idées de cadeaux.' : 'Pose la prochaine question.' }] }];
+    temperature = isRecommend ? 0.7 : 0.5;
   } else {
     systemPrompt = isRecommend
       ? buildRecommendPrompt(searchTerm, answers, lang, [], profile)
@@ -393,7 +431,9 @@ export default async function handler(req, res) {
             generationConfig: { temperature: 0.6, responseMimeType: 'application/json' },
           }
         : {
-            systemInstruction: { parts: [{ text: buildRecommendPrompt(searchTerm, answers, lang, [...triedNames], profile) }] },
+            systemInstruction: { parts: [{ text: isGift
+              ? buildGiftRecommendPrompt(gift, answers, lang, [...triedNames])
+              : buildRecommendPrompt(searchTerm, answers, lang, [...triedNames], profile) }] },
             contents: [{ role: 'user', parts: [{ text: 'Donne 10 autres recommandations.' }] }],
             generationConfig: { temperature: 0.6, responseMimeType: 'application/json' },
           };

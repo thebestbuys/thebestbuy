@@ -53,13 +53,14 @@ export function askAI({ messages, category, lang = 'fr', profile = '' }) {
 
 // Ask for the next question, given the compact criteria gathered so far.
 // `profile` is an optional free-form user self-description for personalization.
-export function askQuestion({ objet, answers, lang = 'fr', profile = '' }) {
-  return postChat({ mode: 'ask', objet, answers, lang, profile });
+// `gift` (when set) switches to gift mode: a compact recipient description.
+export function askQuestion({ objet, answers, lang = 'fr', profile = '', gift = '' }) {
+  return postChat({ mode: 'ask', objet, answers, lang, profile, gift });
 }
 
 // Ask for product recommendations from the accumulated criteria.
-export function recommend({ objet, answers, lang = 'fr', profile = '' }) {
-  return postChat({ mode: 'recommend', objet, answers, lang, profile });
+export function recommend({ objet, answers, lang = 'fr', profile = '', gift = '' }) {
+  return postChat({ mode: 'recommend', objet, answers, lang, profile, gift });
 }
 
 // Enrich a product with real Amazon data (image, URL, rating, reviews).

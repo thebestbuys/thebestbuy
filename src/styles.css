@@ -2425,6 +2425,20 @@ select.profile-input {
 .profile-save:hover {
   filter: brightness(0.95);
 }
+.profile-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: none;
+}
+
+/* Gift finder entry button (home top bar) */
+.gift-trigger {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+.gift-trigger:hover {
+  background: var(--accent-soft) !important;
+}
 
 /* ───────────────────────── Language toggle ─────────────────────────── */
 .lang-toggle {
