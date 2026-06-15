@@ -2291,6 +2291,47 @@ ul {
   font-weight: 700;
 }
 
+/* Appearance (theme) switch inside the account dropdown */
+.auth-appearance {
+  padding: 8px 12px 10px;
+}
+.auth-appearance-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.auth-seg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-soft, var(--accent-soft));
+  border-radius: 9px;
+}
+.auth-seg-btn {
+  flex: 1;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 4px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.auth-seg-btn:hover {
+  color: var(--text);
+}
+.auth-seg-btn.is-active {
+  background: var(--bg-elev);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
 /* ───────────────────────── Profile panel ──────────────────────────── */
 .profile-panel {
   max-width: 520px;

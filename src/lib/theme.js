@@ -59,16 +59,24 @@ const DARK_EXTRA = {
   '--accent-soft': '#3a2a20',
 };
 
-function detectInitialMode() {
+export function systemPrefersDark() {
   try {
-    if (typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-  } catch {}
-  return 'light';
+    return typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches;
+  } catch {
+    return false;
+  }
 }
 
+// Resolve the preference ('system'|'light'|'dark') to a concrete palette.
+export function resolveMode(mode) {
+  if (mode === 'light' || mode === 'dark') return mode;
+  return systemPrefersDark() ? 'dark' : 'light';
+}
+
+const MODES = ['system', 'light', 'dark'];
+
 // Normalized state: { mode, light:{token:val}, dark:{token:val}, shared:{token:val} }
+// `mode` is the user preference: 'system' follows the OS.
 export function loadTheme() {
   let saved = {};
   try {
@@ -76,11 +84,23 @@ export function loadTheme() {
     if (raw) saved = JSON.parse(raw) || {};
   } catch {}
   return {
-    mode: saved.mode === 'dark' || saved.mode === 'light' ? saved.mode : detectInitialMode(),
+    mode: MODES.includes(saved.mode) ? saved.mode : 'system',
     light: saved.light && typeof saved.light === 'object' ? saved.light : {},
     dark: saved.dark && typeof saved.dark === 'object' ? saved.dark : {},
     shared: saved.shared && typeof saved.shared === 'object' ? saved.shared : {},
   };
+}
+
+export function getMode() {
+  return loadTheme().mode;
+}
+
+// Set just the appearance preference (used by the account dropdown).
+export function setMode(mode) {
+  const next = { ...loadTheme(), mode: MODES.includes(mode) ? mode : 'system' };
+  saveTheme(next);
+  applyTheme(next);
+  return next;
 }
 
 export function saveTheme(state) {
@@ -96,7 +116,7 @@ function cssValue(schema, value) {
 // Apply the active mode's palette as inline custom properties on <html>.
 export function applyTheme(state) {
   const root = document.documentElement;
-  const dark = state.mode === 'dark';
+  const dark = resolveMode(state.mode) === 'dark';
   root.dataset.theme = dark ? 'dark' : 'light';
   root.style.colorScheme = dark ? 'dark' : 'light';
 

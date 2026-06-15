@@ -97,6 +97,10 @@ const TRANSLATIONS = {
     "auth.signOut": "Se déconnecter",
     "auth.account": "Compte",
     "auth.close": "Fermer",
+    "appearance.label": "Apparence",
+    "appearance.system": "Système",
+    "appearance.light": "Clair",
+    "appearance.dark": "Sombre",
 
     // Profile (personalization)
     "profile.title": "Mon profil",
@@ -335,6 +339,10 @@ const TRANSLATIONS = {
     "auth.signOut": "Sign out",
     "auth.account": "Account",
     "auth.close": "Close",
+    "appearance.label": "Appearance",
+    "appearance.system": "System",
+    "appearance.light": "Light",
+    "appearance.dark": "Dark",
 
     // Profile (personalization)
     "profile.title": "My profile",

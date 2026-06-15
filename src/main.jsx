@@ -6,7 +6,7 @@ import MobileApp from './mobile/MobileApp.jsx';
 import { AuthProvider } from './lib/auth.jsx';
 import { LanguageProvider } from './lib/i18n.jsx';
 import ThemeEditor from './components/ThemeEditor.jsx';
-import { applyStoredTheme } from './lib/theme.js';
+import { applyStoredTheme, getMode } from './lib/theme.js';
 import './styles.css';
 
 // Apply any saved "charte graphique" overrides before first paint (no flash).
@@ -34,6 +34,17 @@ function Root() {
     if (getOverride() || Capacitor.isNativePlatform()) return;
     const mq = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
     const onChange = () => setView(mq.matches ? 'mobile' : 'web');
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  // Re-apply the theme when the OS scheme changes, while preference is "system".
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return;
+    const mq = matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => {
+      if (getMode() === 'system') applyStoredTheme();
+    };
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
   }, []);

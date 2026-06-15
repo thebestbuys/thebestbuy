@@ -2,6 +2,37 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
 import { listSelections } from '../lib/selections.js';
+import { getMode, setMode as setThemeMode } from '../lib/theme.js';
+
+const APPEARANCE_MODES = ['system', 'light', 'dark'];
+
+function AppearanceToggle() {
+  const { t } = useI18n();
+  const [mode, setMode] = useState(getMode);
+  const change = (m) => {
+    setThemeMode(m);
+    setMode(m);
+  };
+  return (
+    <div className="auth-appearance">
+      <span className="auth-appearance-label">{t('appearance.label')}</span>
+      <div className="auth-seg" role="radiogroup" aria-label={t('appearance.label')}>
+        {APPEARANCE_MODES.map((m) => (
+          <button
+            key={m}
+            type="button"
+            role="radio"
+            aria-checked={mode === m}
+            className={'auth-seg-btn' + (mode === m ? ' is-active' : '')}
+            onClick={() => change(m)}
+          >
+            {t('appearance.' + m)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function initials(name = '', email = '') {
   const src = (name || email || '').trim();
@@ -153,6 +184,9 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
       >
         {t('auth.myProfile')}
       </button>
+      <div className="auth-dropdown-sep" />
+      <AppearanceToggle />
+      <div className="auth-dropdown-sep" />
       <button
         type="button"
         className="auth-dropdown-item danger"

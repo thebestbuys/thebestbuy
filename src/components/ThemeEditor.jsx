@@ -15,6 +15,7 @@ import {
   saveTheme,
   applyTheme,
   resetTheme,
+  resolveMode,
   exportThemeCSS,
 } from '../lib/theme.js';
 
@@ -40,11 +41,14 @@ export default function ThemeEditor({ open, onClose }) {
 
   const setMode = (mode) => commit({ ...state, mode });
 
-  // Color edits go to the active mode's bucket; fonts/sizes are shared.
+  // Which concrete palette we're editing (system resolves to light/dark).
+  const editMode = resolveMode(state.mode);
+
+  // Color edits go to the resolved palette's bucket; fonts/sizes are shared.
   const update = (schema, value) => {
     if (schema.type === 'color') {
-      const bucket = { ...state[state.mode], [schema.token]: value };
-      commit({ ...state, [state.mode]: bucket });
+      const bucket = { ...state[editMode], [schema.token]: value };
+      commit({ ...state, [editMode]: bucket });
     } else {
       commit({ ...state, shared: { ...state.shared, [schema.token]: value } });
     }
@@ -64,7 +68,7 @@ export default function ThemeEditor({ open, onClose }) {
 
   const valueFor = (s) => {
     if (s.type === 'color') {
-      return state[state.mode][s.token] ?? (state.mode === 'dark' ? s.darkDef : s.def);
+      return state[editMode][s.token] ?? (editMode === 'dark' ? s.darkDef : s.def);
     }
     return state.shared[s.token] ?? s.def;
   };
@@ -82,6 +86,7 @@ export default function ThemeEditor({ open, onClose }) {
             label="Mode"
             value={state.mode}
             options={[
+              { value: 'system', label: 'Système' },
               { value: 'light', label: 'Clair' },
               { value: 'dark', label: 'Sombre' },
             ]}
@@ -89,7 +94,7 @@ export default function ThemeEditor({ open, onClose }) {
           />
 
           {GROUPS.map((group) => (
-            <TweakSection key={group} label={group === 'Couleurs' ? `Couleurs · ${state.mode === 'dark' ? 'Sombre' : 'Clair'}` : group}>
+            <TweakSection key={group} label={group === 'Couleurs' ? `Couleurs · ${editMode === 'dark' ? 'Sombre' : 'Clair'}` : group}>
               {THEME_SCHEMA.filter((s) => s.group === group).map((s) => {
                 if (s.type === 'color') {
                   return (
