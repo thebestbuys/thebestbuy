@@ -1,16 +1,20 @@
 // Charte graphique — single source of truth for the site's editable design
-// tokens (colors, fonts, sizes). Each token maps to a CSS custom property used
-// throughout styles.css. The runtime applies *overrides* as inline styles on
-// <html>, so anything not overridden keeps the default defined in styles.css.
+// tokens (colors, fonts, sizes), with independent LIGHT and DARK palettes.
 //
-// Two ways to reconfigure the look:
-//   1. Edit the `def` values below (the config file).
-//   2. Use the live Theme editor (Alt+Shift+T) — it writes overrides to
-//      localStorage and can export a CSS snippet to paste back here.
+// Each color token maps to a CSS custom property and has a light (`def`) and a
+// dark (`darkDef`) default. Fonts/sizes are mode-independent ("shared").
+//
+// At runtime the active mode's values are applied as inline styles on <html>:
+//   • light mode applies only *overrides* (styles.css :root provides the rest);
+//   • dark mode forces the full dark palette (defaults + overrides) plus a set
+//     of secondary vars (DARK_EXTRA) so the whole UI flips.
+//
+// Reconfigure the look two ways: edit the defaults in this file, or use the live
+// Theme editor (Alt+Shift+T) which switches/edits both palettes, persists to
+// localStorage and exports a CSS snippet.
 
 const STORAGE_KEY = 'oraklia_theme';
 
-// Font stacks for the loaded families (see index.html).
 export const FONT_OPTIONS = [
   { value: '"Inter", ui-sans-serif, system-ui, -apple-system, sans-serif', label: 'Inter' },
   { value: '"Quicksand", ui-sans-serif, system-ui, sans-serif', label: 'Quicksand' },
@@ -20,49 +24,68 @@ export const FONT_OPTIONS = [
   { value: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif', label: 'Système' },
 ];
 
-// Editable tokens. `def` for colors is a hex approximation of the current
-// CSS default — it only takes effect once the user changes it.
+// Editable color tokens (per-mode) + shared font/size tokens.
 export const THEME_SCHEMA = [
-  // ── Couleurs ──
-  { group: 'Couleurs', token: 'bg',        cssVar: '--bg',               type: 'color', label: 'Fond',            def: '#faf8f4' },
-  { group: 'Couleurs', token: 'surface',   cssVar: '--bg-elev',          type: 'color', label: 'Surfaces',        def: '#ffffff' },
-  { group: 'Couleurs', token: 'text',      cssVar: '--text',             type: 'color', label: 'Texte',           def: '#1a1814' },
-  { group: 'Couleurs', token: 'textMuted', cssVar: '--text-muted',       type: 'color', label: 'Texte secondaire', def: '#6b6555' },
-  { group: 'Couleurs', token: 'accent',    cssVar: '--accent',           type: 'color', label: 'Accent',          def: '#c2603c' },
-  { group: 'Couleurs', token: 'accentCta', cssVar: '--accent-light',     type: 'color', label: 'CTA / boutons',   def: '#e8b58f' },
-  { group: 'Couleurs', token: 'accentInk', cssVar: '--accent-light-ink', type: 'color', label: 'Texte sur CTA',   def: '#8a4326' },
-  { group: 'Couleurs', token: 'border',    cssVar: '--border',           type: 'color', label: 'Bordures',        def: '#e7e3da' },
+  // ── Couleurs (light `def` / dark `darkDef`) ──
+  { group: 'Couleurs', token: 'bg',        cssVar: '--bg',               type: 'color', label: 'Fond',             def: '#faf8f4', darkDef: '#19150f' },
+  { group: 'Couleurs', token: 'surface',   cssVar: '--bg-elev',          type: 'color', label: 'Surfaces',         def: '#ffffff', darkDef: '#221d16' },
+  { group: 'Couleurs', token: 'text',      cssVar: '--text',             type: 'color', label: 'Texte',            def: '#1a1814', darkDef: '#f3efe7' },
+  { group: 'Couleurs', token: 'textMuted', cssVar: '--text-muted',       type: 'color', label: 'Texte secondaire', def: '#6b6555', darkDef: '#b3ab9b' },
+  { group: 'Couleurs', token: 'accent',    cssVar: '--accent',           type: 'color', label: 'Accent',           def: '#c2603c', darkDef: '#d2774e' },
+  { group: 'Couleurs', token: 'accentCta', cssVar: '--accent-light',     type: 'color', label: 'CTA / boutons',    def: '#e8b58f', darkDef: '#c2603c' },
+  { group: 'Couleurs', token: 'accentInk', cssVar: '--accent-light-ink', type: 'color', label: 'Texte sur CTA',    def: '#8a4326', darkDef: '#ffffff' },
+  { group: 'Couleurs', token: 'border',    cssVar: '--border',           type: 'color', label: 'Bordures',         def: '#e7e3da', darkDef: '#36312a' },
 
-  // ── Polices ──
+  // ── Polices (shared) ──
   { group: 'Polices', token: 'fontSans',    cssVar: '--sans',    type: 'font', label: 'Interface', def: FONT_OPTIONS[0].value },
   { group: 'Polices', token: 'fontDisplay', cssVar: '--display', type: 'font', label: 'Titres',    def: FONT_OPTIONS[4].value },
 
-  // ── Tailles ──
+  // ── Tailles (shared) ──
   { group: 'Tailles', token: 'baseSize', cssVar: '--base-size', type: 'size', label: 'Texte',    def: 14, min: 12, max: 18, step: 0.5, unit: 'px' },
   { group: 'Tailles', token: 'radius',   cssVar: '--radius',    type: 'size', label: 'Arrondis', def: 14, min: 0,  max: 28, step: 1,   unit: 'px' },
 ];
 
+export const COLOR_TOKENS = THEME_SCHEMA.filter((s) => s.type === 'color');
+export const SHARED_TOKENS = THEME_SCHEMA.filter((s) => s.type !== 'color');
 const byToken = Object.fromEntries(THEME_SCHEMA.map((s) => [s.token, s]));
 
-export function loadTheme() {
+// Secondary (non-editable) vars that must also flip in dark mode for the whole
+// UI to read correctly.
+const DARK_EXTRA = {
+  '--bg-soft': '#211c15',
+  '--bg-softer': '#2b251c',
+  '--text-faint': '#847c6d',
+  '--border-soft': 'rgba(255,255,255,0.06)',
+  '--accent-soft': '#3a2a20',
+};
+
+function detectInitialMode() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const obj = JSON.parse(raw);
-    return obj && typeof obj === 'object' ? obj : {};
-  } catch {
-    return {};
-  }
+    if (typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+  } catch {}
+  return 'light';
 }
 
-export function saveTheme(overrides) {
+// Normalized state: { mode, light:{token:val}, dark:{token:val}, shared:{token:val} }
+export function loadTheme() {
+  let saved = {};
   try {
-    const clean = {};
-    for (const [k, v] of Object.entries(overrides || {})) {
-      if (byToken[k] && v != null && v !== '') clean[k] = v;
-    }
-    if (Object.keys(clean).length === 0) localStorage.removeItem(STORAGE_KEY);
-    else localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) saved = JSON.parse(raw) || {};
+  } catch {}
+  return {
+    mode: saved.mode === 'dark' || saved.mode === 'light' ? saved.mode : detectInitialMode(),
+    light: saved.light && typeof saved.light === 'object' ? saved.light : {},
+    dark: saved.dark && typeof saved.dark === 'object' ? saved.dark : {},
+    shared: saved.shared && typeof saved.shared === 'object' ? saved.shared : {},
+  };
+}
+
+export function saveTheme(state) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {}
 }
 
@@ -70,14 +93,36 @@ function cssValue(schema, value) {
   return schema.type === 'size' ? `${value}${schema.unit || 'px'}` : String(value);
 }
 
-// Apply overrides as inline custom properties on <html>. Tokens not present in
-// `overrides` are cleared, reverting to the stylesheet default.
-export function applyTheme(overrides = {}) {
+// Apply the active mode's palette as inline custom properties on <html>.
+export function applyTheme(state) {
   const root = document.documentElement;
-  for (const schema of THEME_SCHEMA) {
-    const v = overrides[schema.token];
-    if (v != null && v !== '') root.style.setProperty(schema.cssVar, cssValue(schema, v));
-    else root.style.removeProperty(schema.cssVar);
+  const dark = state.mode === 'dark';
+  root.dataset.theme = dark ? 'dark' : 'light';
+  root.style.colorScheme = dark ? 'dark' : 'light';
+
+  // Color tokens (per-mode).
+  for (const s of COLOR_TOKENS) {
+    const override = (dark ? state.dark : state.light)[s.token];
+    if (dark) {
+      root.style.setProperty(s.cssVar, override || s.darkDef);
+    } else if (override) {
+      root.style.setProperty(s.cssVar, override);
+    } else {
+      root.style.removeProperty(s.cssVar);
+    }
+  }
+
+  // Secondary dark-only vars.
+  for (const [cssVar, val] of Object.entries(DARK_EXTRA)) {
+    if (dark) root.style.setProperty(cssVar, val);
+    else root.style.removeProperty(cssVar);
+  }
+
+  // Shared tokens (fonts/sizes) — applied only when overridden, both modes.
+  for (const s of SHARED_TOKENS) {
+    const v = state.shared[s.token];
+    if (v != null && v !== '') root.style.setProperty(s.cssVar, cssValue(s, v));
+    else root.style.removeProperty(s.cssVar);
   }
 }
 
@@ -85,18 +130,29 @@ export function applyStoredTheme() {
   applyTheme(loadTheme());
 }
 
-export function resetTheme() {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {}
-  applyTheme({});
+// Clears all customizations (both palettes + shared), keeps the current mode.
+export function resetTheme(mode) {
+  const state = { mode: mode || loadTheme().mode, light: {}, dark: {}, shared: {} };
+  saveTheme(state);
+  applyTheme(state);
+  return state;
 }
 
-// A CSS :root snippet of the current overrides — paste into styles.css (or use
-// the `def` values in this file) to make the change permanent.
-export function exportThemeCSS(overrides = {}) {
-  const lines = THEME_SCHEMA.filter((s) => overrides[s.token] != null && overrides[s.token] !== '')
-    .map((s) => `  ${s.cssVar}: ${cssValue(s, overrides[s.token])};`);
-  if (!lines.length) return '/* Aucune personnalisation — charte par défaut. */';
-  return `:root {\n${lines.join('\n')}\n}`;
+// CSS snippet to make the current customization permanent: a :root block for
+// shared + light overrides, and a [data-theme="dark"] block for the dark palette.
+export function exportThemeCSS(state) {
+  const lightLines = [
+    ...SHARED_TOKENS.filter((s) => state.shared[s.token] != null && state.shared[s.token] !== '')
+      .map((s) => `  ${s.cssVar}: ${cssValue(s, state.shared[s.token])};`),
+    ...COLOR_TOKENS.filter((s) => state.light[s.token])
+      .map((s) => `  ${s.cssVar}: ${state.light[s.token]};`),
+  ];
+  const darkLines = [
+    ...COLOR_TOKENS.map((s) => `  ${s.cssVar}: ${state.dark[s.token] || s.darkDef};`),
+    ...Object.entries(DARK_EXTRA).map(([v, val]) => `  ${v}: ${val};`),
+  ];
+  const blocks = [];
+  if (lightLines.length) blocks.push(`:root {\n${lightLines.join('\n')}\n}`);
+  blocks.push(`:root[data-theme="dark"] {\n${darkLines.join('\n')}\n}`);
+  return blocks.join('\n\n');
 }

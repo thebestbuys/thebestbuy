@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   TWEAKS_STYLE,
   TweakSection,
+  TweakRadio,
   TweakColor,
   TweakSelect,
   TweakSlider,
@@ -17,36 +18,43 @@ import {
   exportThemeCSS,
 } from '../lib/theme.js';
 
-// Live "charte graphique" editor. Reuses the existing Tweak* controls + styling.
-// Opened with Alt+Shift+T (wired in main.jsx). Writes overrides to localStorage
-// and applies them live; Export copies a CSS :root snippet to the clipboard.
+// Live "charte graphique" editor with independent light/dark palettes. Reuses
+// the existing Tweak* controls + styling. Opened with Alt+Shift+T (main.jsx).
 const GROUPS = ['Couleurs', 'Polices', 'Tailles'];
 
 export default function ThemeEditor({ open, onClose }) {
-  const [vals, setVals] = useState({});
+  const [state, setState] = useState(loadTheme);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (open) setVals(loadTheme());
+    if (open) setState(loadTheme());
   }, [open]);
 
   if (!open) return null;
 
-  const update = (token, value) => {
-    const next = { ...vals, [token]: value };
-    setVals(next);
+  const commit = (next) => {
+    setState(next);
     saveTheme(next);
     applyTheme(next);
   };
 
-  const reset = () => {
-    resetTheme();
-    setVals({});
+  const setMode = (mode) => commit({ ...state, mode });
+
+  // Color edits go to the active mode's bucket; fonts/sizes are shared.
+  const update = (schema, value) => {
+    if (schema.type === 'color') {
+      const bucket = { ...state[state.mode], [schema.token]: value };
+      commit({ ...state, [state.mode]: bucket });
+    } else {
+      commit({ ...state, shared: { ...state.shared, [schema.token]: value } });
+    }
   };
+
+  const reset = () => setState(resetTheme(state.mode));
 
   const exportCSS = async () => {
     try {
-      await navigator.clipboard.writeText(exportThemeCSS(vals));
+      await navigator.clipboard.writeText(exportThemeCSS(state));
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -54,7 +62,12 @@ export default function ThemeEditor({ open, onClose }) {
     }
   };
 
-  const valueFor = (s) => (vals[s.token] != null ? vals[s.token] : s.def);
+  const valueFor = (s) => {
+    if (s.type === 'color') {
+      return state[state.mode][s.token] ?? (state.mode === 'dark' ? s.darkDef : s.def);
+    }
+    return state.shared[s.token] ?? s.def;
+  };
 
   return (
     <>
@@ -65,8 +78,18 @@ export default function ThemeEditor({ open, onClose }) {
           <button className="twk-x" aria-label="Fermer" onClick={onClose}>✕</button>
         </div>
         <div className="twk-body">
+          <TweakRadio
+            label="Mode"
+            value={state.mode}
+            options={[
+              { value: 'light', label: 'Clair' },
+              { value: 'dark', label: 'Sombre' },
+            ]}
+            onChange={setMode}
+          />
+
           {GROUPS.map((group) => (
-            <TweakSection key={group} label={group}>
+            <TweakSection key={group} label={group === 'Couleurs' ? `Couleurs · ${state.mode === 'dark' ? 'Sombre' : 'Clair'}` : group}>
               {THEME_SCHEMA.filter((s) => s.group === group).map((s) => {
                 if (s.type === 'color') {
                   return (
@@ -74,7 +97,7 @@ export default function ThemeEditor({ open, onClose }) {
                       key={s.token}
                       label={s.label}
                       value={valueFor(s)}
-                      onChange={(v) => update(s.token, v)}
+                      onChange={(v) => update(s, v)}
                     />
                   );
                 }
@@ -85,7 +108,7 @@ export default function ThemeEditor({ open, onClose }) {
                       label={s.label}
                       value={valueFor(s)}
                       options={FONT_OPTIONS}
-                      onChange={(v) => update(s.token, v)}
+                      onChange={(v) => update(s, v)}
                     />
                   );
                 }
@@ -98,7 +121,7 @@ export default function ThemeEditor({ open, onClose }) {
                     max={s.max}
                     step={s.step}
                     unit={s.unit}
-                    onChange={(v) => update(s.token, v)}
+                    onChange={(v) => update(s, v)}
                   />
                 );
               })}
