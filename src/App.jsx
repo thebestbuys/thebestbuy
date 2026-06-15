@@ -418,7 +418,7 @@ export default function App() {
   const advance = async (currentAnswers, searchObjet = objet) => {
     setIsTyping(true);
     setCurrentQuestion(null);
-    const profile = profileToPrompt(getProfile(user?.sub));
+    const profile = profileToPrompt(getProfile(user?.sub), lang);
     try {
       if (shouldRecommendAt(currentAnswers.length)) {
         const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile });

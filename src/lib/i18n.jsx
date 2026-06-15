@@ -100,6 +100,22 @@ const TRANSLATIONS = {
     // Profile (personalization)
     "profile.title": "Mon profil",
     "profile.sub": "Décrivez-vous pour des suggestions plus adaptées.",
+    "profile.sectionInfo": "Informations",
+    "profile.sectionAbout": "À propos de vous",
+    "profile.gender": "Genre",
+    "profile.genderPlaceholder": "Sélectionner…",
+    "profile.gender.female": "Femme",
+    "profile.gender.male": "Homme",
+    "profile.gender.other": "Autre",
+    "profile.gender.na": "Préfère ne pas dire",
+    "profile.age": "Âge",
+    "profile.agePlaceholder": "Ex : 34",
+    "profile.profession": "Profession",
+    "profile.professionPlaceholder": "Ex : enseignante",
+    "profile.nationality": "Nationalité",
+    "profile.nationalityPlaceholder": "Ex : française",
+    "profile.address": "Adresse",
+    "profile.addressPlaceholder": "Ex : Lyon, France",
     "profile.label": "À propos de vous",
     "profile.placeholder":
       "Ex : famille de 4, deux jeunes enfants. J'aime les marques durables, je privilégie la simplicité et le rapport qualité-prix. Plutôt écosystème Apple. Sensible à l'écologie.",
@@ -107,7 +123,7 @@ const TRANSLATIONS = {
       "Ces informations sont envoyées à l'assistant pour personnaliser ses questions et ses recommandations. Stockées sur cet appareil.",
     "profile.save": "Enregistrer",
     "profile.saved": "Profil enregistré",
-    "profile.clear": "Effacer",
+    "profile.clear": "Tout effacer",
     "profile.counter": "{n}/600",
 
     // History
@@ -267,6 +283,22 @@ const TRANSLATIONS = {
     // Profile (personalization)
     "profile.title": "My profile",
     "profile.sub": "Describe yourself for better-tailored suggestions.",
+    "profile.sectionInfo": "Information",
+    "profile.sectionAbout": "About you",
+    "profile.gender": "Gender",
+    "profile.genderPlaceholder": "Select…",
+    "profile.gender.female": "Female",
+    "profile.gender.male": "Male",
+    "profile.gender.other": "Other",
+    "profile.gender.na": "Prefer not to say",
+    "profile.age": "Age",
+    "profile.agePlaceholder": "e.g. 34",
+    "profile.profession": "Profession",
+    "profile.professionPlaceholder": "e.g. teacher",
+    "profile.nationality": "Nationality",
+    "profile.nationalityPlaceholder": "e.g. French",
+    "profile.address": "Address",
+    "profile.addressPlaceholder": "e.g. Lyon, France",
     "profile.label": "About you",
     "profile.placeholder":
       "E.g. family of 4 with two young kids. I like durable brands, prefer simplicity and value for money. Mostly Apple ecosystem. I care about sustainability.",
@@ -274,7 +306,7 @@ const TRANSLATIONS = {
       "This is sent to the assistant to personalize its questions and recommendations. Stored on this device.",
     "profile.save": "Save",
     "profile.saved": "Profile saved",
-    "profile.clear": "Clear",
+    "profile.clear": "Clear all",
     "profile.counter": "{n}/600",
 
     // History

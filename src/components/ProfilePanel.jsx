@@ -3,21 +3,22 @@ import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
 import { getProfile, saveProfile } from '../lib/profile.js';
 
-const MAX_LEN = 600;
+const BIO_MAX = 600;
 
-// "Mon profil": a short free-form self-description, stored per user and injected
-// into the AI prompts so questions/recommendations match the user. Mirrors the
-// modal styling of SelectionsPanel / HistoryPanel.
+// "Mon profil": structured fields (gender, age, profession, nationality,
+// address) plus a free-form self-description, stored per user and injected into
+// the AI prompts so questions/recommendations match the user. Mirrors the modal
+// styling of SelectionsPanel / HistoryPanel.
 export default function ProfilePanel({ open, onClose }) {
   const { user } = useAuth();
   const { t } = useI18n();
-  const [bio, setBio] = useState('');
+  const [form, setForm] = useState(getProfile());
   const [saved, setSaved] = useState(false);
 
   // Load fresh whenever the panel opens (or the user changes).
   useEffect(() => {
     if (!open) return;
-    setBio(getProfile(user?.sub).bio || '');
+    setForm(getProfile(user?.sub));
     setSaved(false);
   }, [open, user?.sub]);
 
@@ -32,17 +33,23 @@ export default function ProfilePanel({ open, onClose }) {
 
   if (!open) return null;
 
+  const set = (key) => (e) => {
+    const value = e.target.value;
+    setForm((f) => ({ ...f, [key]: value }));
+    setSaved(false);
+  };
+
   const save = () => {
-    const clean = saveProfile(user?.sub, { bio });
-    setBio(clean.bio);
+    setForm(saveProfile(user?.sub, form));
     setSaved(true);
   };
 
   const clear = () => {
-    saveProfile(user?.sub, { bio: '' });
-    setBio('');
+    setForm(saveProfile(user?.sub, {}));
     setSaved(false);
   };
+
+  const hasAny = Object.values(form).some((v) => String(v || '').trim());
 
   return (
     <div className="auth-modal-bg" onClick={onClose}>
@@ -70,30 +77,106 @@ export default function ProfilePanel({ open, onClose }) {
         </header>
 
         <div className="profile-form">
-          <label className="profile-label" htmlFor="profile-bio">
+          <div className="profile-grid">
+            <div className="profile-field">
+              <label className="profile-label" htmlFor="profile-gender">
+                {t('profile.gender')}
+              </label>
+              <select
+                id="profile-gender"
+                className="profile-input"
+                value={form.gender}
+                onChange={set('gender')}
+              >
+                <option value="">{t('profile.genderPlaceholder')}</option>
+                <option value={t('profile.gender.female')}>{t('profile.gender.female')}</option>
+                <option value={t('profile.gender.male')}>{t('profile.gender.male')}</option>
+                <option value={t('profile.gender.other')}>{t('profile.gender.other')}</option>
+                <option value={t('profile.gender.na')}>{t('profile.gender.na')}</option>
+              </select>
+            </div>
+
+            <div className="profile-field">
+              <label className="profile-label" htmlFor="profile-age">
+                {t('profile.age')}
+              </label>
+              <input
+                id="profile-age"
+                className="profile-input"
+                type="number"
+                min="0"
+                max="120"
+                inputMode="numeric"
+                value={form.age}
+                placeholder={t('profile.agePlaceholder')}
+                onChange={set('age')}
+              />
+            </div>
+
+            <div className="profile-field">
+              <label className="profile-label" htmlFor="profile-profession">
+                {t('profile.profession')}
+              </label>
+              <input
+                id="profile-profession"
+                className="profile-input"
+                type="text"
+                value={form.profession}
+                placeholder={t('profile.professionPlaceholder')}
+                onChange={set('profession')}
+              />
+            </div>
+
+            <div className="profile-field">
+              <label className="profile-label" htmlFor="profile-nationality">
+                {t('profile.nationality')}
+              </label>
+              <input
+                id="profile-nationality"
+                className="profile-input"
+                type="text"
+                value={form.nationality}
+                placeholder={t('profile.nationalityPlaceholder')}
+                onChange={set('nationality')}
+              />
+            </div>
+
+            <div className="profile-field profile-field-wide">
+              <label className="profile-label" htmlFor="profile-address">
+                {t('profile.address')}
+              </label>
+              <input
+                id="profile-address"
+                className="profile-input"
+                type="text"
+                value={form.address}
+                placeholder={t('profile.addressPlaceholder')}
+                onChange={set('address')}
+              />
+            </div>
+          </div>
+
+          <label className="profile-label profile-bio-label" htmlFor="profile-bio">
             {t('profile.label')}
           </label>
           <textarea
             id="profile-bio"
             className="profile-textarea"
-            value={bio}
-            maxLength={MAX_LEN}
+            value={form.bio}
+            maxLength={BIO_MAX}
             placeholder={t('profile.placeholder')}
-            onChange={(e) => {
-              setBio(e.target.value);
-              setSaved(false);
-            }}
-            rows={7}
+            onChange={set('bio')}
+            rows={6}
           />
           <div className="profile-meta">
             <span className="profile-counter">
-              {t('profile.counter', { n: bio.length })}
+              {t('profile.counter', { n: form.bio.length })}
             </span>
             <span className="profile-hint">{t('profile.hint')}</span>
           </div>
 
           <div className="profile-actions">
-            {bio.trim() && (
+            {hasAny && (
               <button type="button" className="profile-clear" onClick={clear}>
                 {t('profile.clear')}
               </button>

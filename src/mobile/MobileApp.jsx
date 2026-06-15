@@ -361,7 +361,7 @@ function ProductCard({ product }) {
 
 function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
   const { user } = useAuth();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const category = useMemo(
     () => restore?.category || detectCategory(query),
     [query, restore],
@@ -391,7 +391,7 @@ function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
       const result = await askAI({
         messages: history,
         category,
-        profile: profileToPrompt(getProfile(user?.sub)),
+        profile: profileToPrompt(getProfile(user?.sub), lang),
       });
       const reply = result?.reply || "…";
       const chips =
@@ -1410,12 +1410,12 @@ function HistorySheet({ open, onClose, onLoad }) {
 function ProfileSheet({ open, onClose }) {
   const { user } = useAuth();
   const { t } = useI18n();
-  const [bio, setBio] = useState("");
+  const [form, setForm] = useState(getProfile());
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setBio(getProfile(user?.sub).bio || "");
+    setForm(getProfile(user?.sub));
     setSaved(false);
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
@@ -1430,10 +1430,35 @@ function ProfileSheet({ open, onClose }) {
 
   if (!open) return null;
 
+  const set = (key) => (e) => {
+    const value = e.target.value;
+    setForm((f) => ({ ...f, [key]: value }));
+    setSaved(false);
+  };
+
   const save = () => {
-    const clean = saveProfile(user?.sub, { bio });
-    setBio(clean.bio);
+    setForm(saveProfile(user?.sub, form));
     setSaved(true);
+  };
+
+  const fieldLabel = {
+    display: "block",
+    fontSize: 12,
+    fontWeight: 700,
+    color: BB.ink,
+    marginBottom: 6,
+  };
+  const fieldInput = {
+    width: "100%",
+    boxSizing: "border-box",
+    border: `1px solid ${BB.line}`,
+    borderRadius: 12,
+    background: "#fff",
+    color: BB.ink,
+    fontFamily: BB.body,
+    fontSize: 14,
+    padding: "11px 13px",
+    outline: "none",
   };
 
   return (
@@ -1455,12 +1480,15 @@ function ProfileSheet({ open, onClose }) {
         style={{
           width: "100%",
           maxWidth: 480,
+          maxHeight: "88vh",
           background: BB.paper,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
           padding: "12px 22px 24px",
           boxShadow: "0 -10px 40px rgba(0,0,0,0.18)",
           animation: "bb-rise 0.28s ease-out",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <div
@@ -1470,6 +1498,7 @@ function ProfileSheet({ open, onClose }) {
             borderRadius: 4,
             background: BB.line,
             margin: "0 auto 12px",
+            flexShrink: 0,
           }}
         />
         <div
@@ -1478,7 +1507,8 @@ function ProfileSheet({ open, onClose }) {
             alignItems: "center",
             justifyContent: "space-between",
             gap: 12,
-            marginBottom: 12,
+            marginBottom: 14,
+            flexShrink: 0,
           }}
         >
           <div>
@@ -1517,53 +1547,117 @@ function ProfileSheet({ open, onClose }) {
           </button>
         </div>
 
-        <label
-          htmlFor="bb-profile-bio"
-          style={{
-            display: "block",
-            fontSize: 12,
-            fontWeight: 700,
-            color: BB.ink,
-            marginBottom: 6,
-          }}
-        >
-          {t("profile.label")}
-        </label>
-        <textarea
-          id="bb-profile-bio"
-          value={bio}
-          maxLength={600}
-          rows={6}
-          placeholder={t("profile.placeholder")}
-          onChange={(e) => {
-            setBio(e.target.value);
-            setSaved(false);
-          }}
-          style={{
-            width: "100%",
-            boxSizing: "border-box",
-            resize: "vertical",
-            border: `1px solid ${BB.line}`,
-            borderRadius: 14,
-            background: "#fff",
-            color: BB.ink,
-            fontFamily: BB.body,
-            fontSize: 14,
-            lineHeight: 1.5,
-            padding: "12px 14px",
-            outline: "none",
-          }}
-        />
-        <div
-          style={{
-            fontSize: 11,
-            color: BB.inkSoft,
-            margin: "8px 2px 14px",
-            lineHeight: 1.45,
-          }}
-        >
-          {t("profile.hint")}
+        <div style={{ overflowY: "auto", minHeight: 0, paddingRight: 2 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "12px 12px",
+              marginBottom: 14,
+            }}
+          >
+            <div>
+              <label htmlFor="bb-profile-gender" style={fieldLabel}>
+                {t("profile.gender")}
+              </label>
+              <select
+                id="bb-profile-gender"
+                value={form.gender}
+                onChange={set("gender")}
+                style={{ ...fieldInput, appearance: "none", cursor: "pointer" }}
+              >
+                <option value="">{t("profile.genderPlaceholder")}</option>
+                <option value={t("profile.gender.female")}>{t("profile.gender.female")}</option>
+                <option value={t("profile.gender.male")}>{t("profile.gender.male")}</option>
+                <option value={t("profile.gender.other")}>{t("profile.gender.other")}</option>
+                <option value={t("profile.gender.na")}>{t("profile.gender.na")}</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="bb-profile-age" style={fieldLabel}>
+                {t("profile.age")}
+              </label>
+              <input
+                id="bb-profile-age"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                max="120"
+                value={form.age}
+                placeholder={t("profile.agePlaceholder")}
+                onChange={set("age")}
+                style={fieldInput}
+              />
+            </div>
+            <div>
+              <label htmlFor="bb-profile-profession" style={fieldLabel}>
+                {t("profile.profession")}
+              </label>
+              <input
+                id="bb-profile-profession"
+                type="text"
+                value={form.profession}
+                placeholder={t("profile.professionPlaceholder")}
+                onChange={set("profession")}
+                style={fieldInput}
+              />
+            </div>
+            <div>
+              <label htmlFor="bb-profile-nationality" style={fieldLabel}>
+                {t("profile.nationality")}
+              </label>
+              <input
+                id="bb-profile-nationality"
+                type="text"
+                value={form.nationality}
+                placeholder={t("profile.nationalityPlaceholder")}
+                onChange={set("nationality")}
+                style={fieldInput}
+              />
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label htmlFor="bb-profile-address" style={fieldLabel}>
+                {t("profile.address")}
+              </label>
+              <input
+                id="bb-profile-address"
+                type="text"
+                value={form.address}
+                placeholder={t("profile.addressPlaceholder")}
+                onChange={set("address")}
+                style={fieldInput}
+              />
+            </div>
+          </div>
+
+          <label htmlFor="bb-profile-bio" style={fieldLabel}>
+            {t("profile.label")}
+          </label>
+          <textarea
+            id="bb-profile-bio"
+            value={form.bio}
+            maxLength={600}
+            rows={5}
+            placeholder={t("profile.placeholder")}
+            onChange={set("bio")}
+            style={{
+              ...fieldInput,
+              resize: "vertical",
+              lineHeight: 1.5,
+            }}
+          />
+          <div
+            style={{
+              fontSize: 11,
+              color: BB.inkSoft,
+              margin: "8px 2px 14px",
+              lineHeight: 1.45,
+            }}
+          >
+            {t("profile.hint")}
+          </div>
         </div>
+
         <button
           type="button"
           onClick={save}
@@ -1579,6 +1673,8 @@ function ProfileSheet({ open, onClose }) {
             fontFamily: BB.body,
             fontSize: 14,
             cursor: "pointer",
+            marginTop: 4,
+            flexShrink: 0,
           }}
         >
           {saved ? t("profile.saved") : t("profile.save")}
