@@ -2505,6 +2505,142 @@ select.profile-input {
   flex-shrink: 0;
 }
 
+/* Visual occasion presets */
+.gift-occ-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+}
+.gift-occ {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-elev);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.12s, background 0.12s;
+}
+.gift-occ:hover {
+  border-color: var(--accent);
+}
+.gift-occ.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.gift-occ-emoji {
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* Budget bracket chips + custom min/max */
+.gift-bchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.gift-bchip {
+  appearance: none;
+  padding: 7px 13px;
+  border: 0.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-elev);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.gift-bchip:hover {
+  border-color: var(--accent);
+}
+.gift-bchip.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.gift-budget-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gift-budget-inputs .profile-input {
+  width: 90px;
+}
+.gift-budget-dash,
+.gift-budget-eur {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.gift-surprise {
+  margin-right: auto;
+}
+
+/* Share button (gift results header) */
+.share-btn {
+  white-space: nowrap;
+}
+
+/* Shared gift list page (?share=…) */
+.share-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 40px 20px 60px;
+}
+.share-head {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.share-eyebrow {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.share-title {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  margin: 6px 0 0;
+  color: var(--text);
+}
+.share-for {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.share-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px 0;
+}
+.share-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+.share-cta-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 30px 0 14px;
+}
+.share-cta {
+  padding: 11px 26px;
+  font-size: 14px;
+}
+
 /* ───────────────────────── Language toggle ─────────────────────────── */
 .lang-toggle {
   display: inline-flex;

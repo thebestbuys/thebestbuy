@@ -54,3 +54,29 @@ export function giftTitle(gift, lang = 'fr') {
   const bits = [gift.relationship, gift.occasion].map((s) => String(s || '').trim()).filter(Boolean);
   return [head, ...bits].join(' · ');
 }
+
+// ── Shareable gift lists ───────────────────────────────────────────────────
+// Encode a small gift list (recipient context + a few products) into a URL-safe
+// base64 string carried in ?share=… . No backend needed — the link is fully
+// self-contained. Kept compact (short keys) since it lives in the URL.
+export function encodeGiftShare(payload) {
+  try {
+    const json = JSON.stringify(payload);
+    const b64 = btoa(unescape(encodeURIComponent(json)));
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  } catch {
+    return '';
+  }
+}
+
+export function decodeGiftShare(str) {
+  try {
+    const b64 = String(str).replace(/-/g, '+').replace(/_/g, '/');
+    const json = decodeURIComponent(escape(atob(b64)));
+    const obj = JSON.parse(json);
+    if (!obj || !Array.isArray(obj.items)) return null;
+    return obj;
+  } catch {
+    return null;
+  }
+}

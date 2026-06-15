@@ -8,6 +8,28 @@ import {
   saveRecipient,
 } from '../lib/recipients.js';
 
+// Visual occasion presets (emoji + i18n key).
+const OCCASIONS = [
+  { k: 'birthday', e: '🎂' },
+  { k: 'christmas', e: '🎄' },
+  { k: 'valentine', e: '❤️' },
+  { k: 'wedding', e: '💍' },
+  { k: 'newBaby', e: '👶' },
+  { k: 'housewarming', e: '🏡' },
+  { k: 'thankYou', e: '🙏' },
+  { k: 'justBecause', e: '✨' },
+  { k: 'other', e: '🎁' },
+];
+
+// Quick budget brackets (in €). Empty min/max = open-ended.
+const BUDGET_PRESETS = [
+  { min: '', max: '25', label: '≤ 25 €' },
+  { min: '25', max: '50', label: '25–50 €' },
+  { min: '50', max: '100', label: '50–100 €' },
+  { min: '100', max: '200', label: '100–200 €' },
+  { min: '200', max: '', label: '200 €+' },
+];
+
 // Recipient form for gift mode. Collects relationship, gender, age, interests,
 // occasion and budget, then hands the payload to onSubmit which starts a gift
 // advisor session (reusing the normal recommend/refine pipeline).
@@ -197,53 +219,69 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
             </div>
 
             <div className="profile-field profile-field-wide">
-              <label className="profile-label" htmlFor="gift-occasion">
-                {t('gift.occasion')}
-              </label>
-              <select id="gift-occasion" className="profile-input" value={form.occasion} onChange={set('occasion')}>
-                <option value="">{t('gift.occasionPlaceholder')}</option>
-                <option value={t('gift.occ.birthday')}>{t('gift.occ.birthday')}</option>
-                <option value={t('gift.occ.christmas')}>{t('gift.occ.christmas')}</option>
-                <option value={t('gift.occ.valentine')}>{t('gift.occ.valentine')}</option>
-                <option value={t('gift.occ.wedding')}>{t('gift.occ.wedding')}</option>
-                <option value={t('gift.occ.newBaby')}>{t('gift.occ.newBaby')}</option>
-                <option value={t('gift.occ.housewarming')}>{t('gift.occ.housewarming')}</option>
-                <option value={t('gift.occ.thankYou')}>{t('gift.occ.thankYou')}</option>
-                <option value={t('gift.occ.justBecause')}>{t('gift.occ.justBecause')}</option>
-                <option value={t('gift.occ.other')}>{t('gift.occ.other')}</option>
-              </select>
+              <label className="profile-label">{t('gift.occasion')}</label>
+              <div className="gift-occ-grid">
+                {OCCASIONS.map((o) => {
+                  const label = t('gift.occ.' + o.k);
+                  const active = form.occasion === label;
+                  return (
+                    <button
+                      type="button"
+                      key={o.k}
+                      className={'gift-occ' + (active ? ' is-active' : '')}
+                      onClick={() => setForm((f) => ({ ...f, occasion: active ? '' : label }))}
+                    >
+                      <span className="gift-occ-emoji" aria-hidden="true">{o.e}</span>
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="profile-field">
-              <label className="profile-label" htmlFor="gift-bmin">
-                {t('gift.budgetMin')}
-              </label>
-              <input
-                id="gift-bmin"
-                className="profile-input"
-                type="number"
-                min="0"
-                inputMode="numeric"
-                value={form.budgetMin}
-                placeholder="20"
-                onChange={set('budgetMin')}
-              />
-            </div>
-
-            <div className="profile-field">
-              <label className="profile-label" htmlFor="gift-bmax">
-                {t('gift.budgetMax')}
-              </label>
-              <input
-                id="gift-bmax"
-                className="profile-input"
-                type="number"
-                min="0"
-                inputMode="numeric"
-                value={form.budgetMax}
-                placeholder="80"
-                onChange={set('budgetMax')}
-              />
+            <div className="profile-field profile-field-wide">
+              <label className="profile-label">{t('gift.budget')}</label>
+              <div className="gift-bchips">
+                {BUDGET_PRESETS.map((b, i) => {
+                  const active =
+                    String(form.budgetMin) === String(b.min) &&
+                    String(form.budgetMax) === String(b.max);
+                  return (
+                    <button
+                      type="button"
+                      key={i}
+                      className={'gift-bchip' + (active ? ' is-active' : '')}
+                      onClick={() => setForm((f) => ({ ...f, budgetMin: b.min, budgetMax: b.max }))}
+                    >
+                      {b.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="gift-budget-inputs">
+                <input
+                  className="profile-input"
+                  type="number"
+                  min="0"
+                  inputMode="numeric"
+                  value={form.budgetMin}
+                  placeholder={t('gift.budgetMin')}
+                  aria-label={t('gift.budgetMin')}
+                  onChange={set('budgetMin')}
+                />
+                <span className="gift-budget-dash">–</span>
+                <input
+                  className="profile-input"
+                  type="number"
+                  min="0"
+                  inputMode="numeric"
+                  value={form.budgetMax}
+                  placeholder={t('gift.budgetMax')}
+                  aria-label={t('gift.budgetMax')}
+                  onChange={set('budgetMax')}
+                />
+                <span className="gift-budget-eur">€</span>
+              </div>
             </div>
           </div>
 
@@ -280,6 +318,14 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
           </div>
 
           <div className="profile-actions">
+            <button
+              type="button"
+              className="profile-clear gift-surprise"
+              disabled={!canSubmit}
+              onClick={() => canSubmit && onSubmit?.({ ...form, surprise: true })}
+            >
+              ✨ {t('gift.surprise')}
+            </button>
             <button type="submit" className="profile-save" disabled={!canSubmit}>
               🎁 {t('gift.submit')}
             </button>

@@ -7,6 +7,7 @@ import HistoryPanel from './components/HistoryPanel.jsx';
 import SelectionsPanel from './components/SelectionsPanel.jsx';
 import ProfilePanel from './components/ProfilePanel.jsx';
 import GiftPanel from './components/GiftPanel.jsx';
+import SharedGiftList from './components/SharedGiftList.jsx';
 import FavoriteButton from './components/FavoriteButton.jsx';
 import LegalNotices from './components/LegalNotices.jsx';
 import GuideArticle from './components/GuideArticle.jsx';
@@ -16,7 +17,7 @@ import { AmazonPrice, HeroCard, ProductImage, ScoreRing, SmallCard, Stars } from
 import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './lib/i18n.jsx';
 import { getProfile, profileToPrompt } from './lib/profile.js';
-import { giftToPrompt, giftTitle } from './lib/gift.js';
+import { giftToPrompt, giftTitle, encodeGiftShare, decodeGiftShare } from './lib/gift.js';
 import {
   deriveTitle,
   newConversationId,
@@ -401,6 +402,16 @@ export default function App() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
   const [gift, setGift] = useState(null);   // recipient payload when in gift mode
+  const [shareCopied, setShareCopied] = useState(false);
+  // Read-only shared gift list opened from a ?share=… link (decoded once).
+  const [sharedList, setSharedList] = useState(() => {
+    try {
+      const s = new URLSearchParams(window.location.search).get('share');
+      return s ? decodeGiftShare(s) : null;
+    } catch {
+      return null;
+    }
+  });
   const [legalOpen, setLegalOpen] = useState(false);
   const [activeGuide, setActiveGuide] = useState(null);
   const [objet, setObjet] = useState('');      // human search term sent to the AI
@@ -436,14 +447,15 @@ export default function App() {
     setCurrentQuestion(null);
     const profile = profileToPrompt(getProfile(user?.sub), lang);
     const giftStr = gift ? giftToPrompt(gift, lang) : '';
+    const surprise = !!gift?.surprise;
     try {
       if (shouldRecommendAt(currentAnswers.length)) {
-        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr });
+        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, surprise });
         if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
         loadProducts(rec?.products);
       }
       // Always queue the next refinement question.
-      const q = await askQuestion({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr });
+      const q = await askQuestion({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, surprise });
       if (q?.reply) setMessages((m) => [...m, { role: 'bot', text: q.reply }]);
       setCurrentQuestion(q?.question?.choices ? q.question : null);
       setRefreshKey((k) => k + 1);
@@ -633,6 +645,40 @@ export default function App() {
     navBack();
   };
 
+  // Build a self-contained ?share=… link for the current gift ideas and copy it
+  // (or use the native share sheet when available).
+  const shareGift = async () => {
+    const items = recommendedProducts.slice(0, 3).map((p) => ({
+      b: p.brand,
+      m: p.model,
+      p: p.price ?? null,
+      u: getAmazonUrl(p),
+      i: p.image_url || null,
+      s: p.score ?? null,
+    }));
+    if (!items.length) return;
+    const payload = { r: gift?.relationship || '', o: gift?.occasion || '', items };
+    const url = `${window.location.origin}${window.location.pathname}?share=${encodeGiftShare(payload)}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Oraklia', url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch {
+      /* user cancelled / clipboard blocked */
+    }
+  };
+
+  const closeSharedList = () => {
+    try {
+      window.history.replaceState({}, '', window.location.pathname);
+    } catch { /* noop */ }
+    setSharedList(null);
+  };
+
   const startAdvisorFromGuide = (cat) => {
     setActiveGuide(null);
     setConvoId(newConversationId());
@@ -646,6 +692,11 @@ export default function App() {
     setInitialQuery('');
     setCategory(cat);
   };
+
+  // Shared gift list view (opened from a ?share=… link) — takes precedence.
+  if (sharedList) {
+    return <SharedGiftList data={sharedList} onCreate={closeSharedList} />;
+  }
 
   // Guide article view (accessible before choosing a category)
   if (activeGuide) {
@@ -723,6 +774,12 @@ export default function App() {
             <div className="results-meta">
               {done && !currentQuestion && !isTyping ? tr('results.finalized') : tr('results.refining')}
             </div>
+            {category === 'gift' && recommendedProducts.length > 0 && (
+              <button type="button" className="auth-trigger auth-trigger-results share-btn" onClick={shareGift}>
+                <span aria-hidden="true">🔗</span>
+                {shareCopied ? tr('gift.shareCopied') : tr('gift.share')}
+              </button>
+            )}
             <LangToggle />
             <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} />
           </div>

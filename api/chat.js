@@ -97,15 +97,18 @@ Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 }
 
 // 10 real, varied gift product candidates for the recipient + occasion + budget.
-function buildGiftRecommendPrompt(giftStr, answers, lang, exclude = []) {
+function buildGiftRecommendPrompt(giftStr, answers, lang, exclude = [], surprise = false) {
   const excludeLine = exclude.length
     ? `\nNE propose AUCUN de ces produits (déjà testés, introuvables sur Amazon.fr) : ${exclude.join(', ')}. Propose-en 10 AUTRES, différents.`
+    : '';
+  const surpriseLine = surprise
+    ? "\nMODE SURPRISE : ose des idées ORIGINALES, inattendues et créatives (pas seulement les évidences) tout en restant adaptées à la personne et au budget. Privilégie la nouveauté et l'effet \"waouh\"."
     : '';
   return `Tu es Oraklia, un conseiller en idées cadeaux. ${langLineFor(lang)}
 On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".
 Préférences de raffinement (JSON): ${answersJson(answers)}
 
-Propose EXACTEMENT 10 idées de cadeaux : des produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, qui feraient de bons cadeaux pour CETTE personne, pour cette occasion et DANS le budget indiqué. VARIE les catégories (pas 10 produits du même type). Donne des marques et modèles PRÉCIS. "why" explique en une phrase pourquoi ça correspond à la personne. Score 0-99 = à quel point l'idée lui correspond.${excludeLine}
+Propose EXACTEMENT 10 idées de cadeaux : des produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, qui feraient de bons cadeaux pour CETTE personne, pour cette occasion et DANS le budget indiqué. VARIE les catégories (pas 10 produits du même type). Donne des marques et modèles PRÉCIS. "why" explique en une phrase pourquoi ça correspond à la personne. Score 0-99 = à quel point l'idée lui correspond.${surpriseLine}${excludeLine}
 
 Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 {"reply":"<courte phrase d'introduction>","products":[{"id":"p1","brand":"Marque","model":"Modèle exact","price":999,"score":94,"specs":["Spec 1","Spec 2","Spec 3"],"why":"Pourquoi ce cadeau lui correspond"}]}`;
@@ -286,7 +289,7 @@ export default async function handler(req, res) {
   }
   const t1_ms = ms(t1);
 
-  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '', gift = '' } = body;
+  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '', gift = '', surprise = false } = body;
   // Legacy clients (mobile) send a full transcript in "messages" with no "mode".
   const legacy = Array.isArray(messages) && messages.length > 0 && body.mode == null;
   const isRecommend = mode === 'recommend';
@@ -305,10 +308,10 @@ export default async function handler(req, res) {
     temperature = 0.5;
   } else if (isGift) {
     systemPrompt = isRecommend
-      ? buildGiftRecommendPrompt(gift, answers, lang)
+      ? buildGiftRecommendPrompt(gift, answers, lang, [], surprise)
       : buildGiftAskPrompt(gift, answers, lang);
     contents = [{ role: 'user', parts: [{ text: isRecommend ? 'Donne les idées de cadeaux.' : 'Pose la prochaine question.' }] }];
-    temperature = isRecommend ? 0.7 : 0.5;
+    temperature = isRecommend ? (surprise ? 0.95 : 0.7) : 0.5;
   } else {
     systemPrompt = isRecommend
       ? buildRecommendPrompt(searchTerm, answers, lang, [], profile)
@@ -432,7 +435,7 @@ export default async function handler(req, res) {
           }
         : {
             systemInstruction: { parts: [{ text: isGift
-              ? buildGiftRecommendPrompt(gift, answers, lang, [...triedNames])
+              ? buildGiftRecommendPrompt(gift, answers, lang, [...triedNames], surprise)
               : buildRecommendPrompt(searchTerm, answers, lang, [...triedNames], profile) }] },
             contents: [{ role: 'user', parts: [{ text: 'Donne 10 autres recommandations.' }] }],
             generationConfig: { temperature: 0.6, responseMimeType: 'application/json' },
