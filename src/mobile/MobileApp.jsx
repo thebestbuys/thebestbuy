@@ -13,6 +13,8 @@ import {
 import { listSelections, removeSelection } from "../lib/selections.js";
 import { getProfile, profileToPrompt, saveProfile } from "../lib/profile.js";
 import { getMode, setMode as setThemeMode } from "../lib/theme.js";
+import { GIFT_EMPTY, giftToPrompt, giftTitle, encodeGiftShare } from "../lib/gift.js";
+import { listRecipients, removeRecipient, saveRecipient } from "../lib/recipients.js";
 
 // Which search variant to ship: 'A' = Premium Search, 'B' = Hey-Jordan Hub.
 const VARIANT = "B";
@@ -364,15 +366,18 @@ function ProductCard({ product }) {
   );
 }
 
-function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
+function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore, gift: giftProp }) {
   const { user } = useAuth();
   const { t, lang } = useI18n();
+  const gift = giftProp || restore?.gift || null;
   const category = useMemo(
-    () => restore?.category || detectCategory(query),
-    [query, restore],
+    () => (gift ? "gift" : restore?.category || detectCategory(query)),
+    [query, restore, gift],
   );
+  const giftOpener = gift ? giftTitle(gift, lang) : "";
   const [messages, setMessages] = useState(() => {
     if (restore?.messages?.length) return restore.messages;
+    if (gift) return [{ role: "user", text: giftOpener }];
     return query ? [{ role: "user", text: query }] : [];
   });
   const [preferences, setPreferences] = useState({
@@ -396,7 +401,9 @@ function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
       const result = await askAI({
         messages: history,
         category,
-        profile: profileToPrompt(getProfile(user?.sub), lang),
+        profile: gift ? "" : profileToPrompt(getProfile(user?.sub), lang),
+        gift: gift ? giftToPrompt(gift, lang) : "",
+        surprise: !!gift?.surprise,
       });
       const reply = result?.reply || "…";
       const chips =
@@ -448,7 +455,9 @@ function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
     if (initRan.current) return;
     initRan.current = true;
     if (restore?.messages?.length) return; // restored — skip auto-run
-    const initial = query
+    const initial = gift
+      ? [{ role: "user", text: giftOpener }]
+      : query
       ? [{ role: "user", text: query }]
       : [{ role: "user", text: "I'm looking for a product, can you help?" }];
     runTurn(initial);
@@ -462,14 +471,15 @@ function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
     );
     saveConversation(user?.sub, {
       id: convoId,
-      title: deriveTitle({ initialQuery: query, messages: normalized }),
+      title: gift ? giftTitle(gift, lang) : deriveTitle({ initialQuery: query, messages: normalized }),
       category,
       initialQuery: query,
       messages: normalized,
       recommendedProducts,
       done,
+      gift,
     });
-  }, [convoId, messages, recommendedProducts, done, category, query, user?.sub]);
+  }, [convoId, messages, recommendedProducts, done, category, query, gift, lang, user?.sub]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -495,6 +505,26 @@ function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
     e.preventDefault();
     sendUser(input);
     setInput("");
+  };
+
+  const shareGift = async () => {
+    const items = recommendedProducts.slice(0, 3).map((p) => ({
+      b: p.brand,
+      m: p.model,
+      p: p.price ?? null,
+      u: p.amazon_url || `https://www.amazon.fr/s?k=${encodeURIComponent(`${p.brand} ${p.model}`)}&tag=oraklia123-21`,
+      i: p.image_url || null,
+      s: p.score ?? null,
+    }));
+    if (!items.length) return;
+    const payload = { r: gift?.relationship || "", o: gift?.occasion || "", items };
+    const url = `${window.location.origin}${window.location.pathname}?share=${encodeGiftShare(payload)}`;
+    try {
+      if (navigator.share) await navigator.share({ title: "Oraklia", url });
+      else await navigator.clipboard.writeText(url);
+    } catch {
+      /* cancelled */
+    }
   };
 
   const showInputBar = !done;
@@ -579,6 +609,28 @@ function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore }) {
             {t('m.assistantStatus')}
           </div>
         </div>
+        {gift && recommendedProducts.length > 0 && (
+          <button
+            type="button"
+            onClick={shareGift}
+            aria-label={t('gift.share')}
+            title={t('gift.share')}
+            style={{
+              appearance: "none",
+              border: `1px solid ${BB.line}`,
+              background: "var(--m-card)",
+              borderRadius: 999,
+              padding: "6px 11px",
+              fontSize: 13,
+              fontWeight: 700,
+              color: BB.coralDeep,
+              cursor: "pointer",
+              fontFamily: BB.body,
+            }}
+          >
+            🔗
+          </button>
+        )}
         <Logo size={16} />
       </div>
 
@@ -2165,7 +2217,7 @@ function SearchA({ onSubmit, onOpenAuth }) {
   );
 }
 
-function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onOpenSelections, onLoadConvo, recents }) {
+function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onOpenSelections, onOpenGift, onLoadConvo, recents }) {
   const { t } = useI18n();
   const { user } = useAuth();
   const [q, setQ] = useState("");
@@ -2305,6 +2357,32 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onOpenSelections, onLoad
           {t("m.searchHint")}
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={onOpenGift}
+        style={{
+          marginTop: 14,
+          width: "100%",
+          appearance: "none",
+          border: `1px solid ${BB.coral}`,
+          background: BB.chipBg,
+          color: BB.coralDeep,
+          borderRadius: 16,
+          padding: "13px 16px",
+          fontFamily: BB.body,
+          fontSize: 14,
+          fontWeight: 700,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+        }}
+      >
+        <span aria-hidden="true" style={{ fontSize: 16 }}>🎁</span>
+        {t("home.gift")}
+      </button>
 
       <div style={{ marginTop: 22 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: BB.ink, marginBottom: 10 }}>
@@ -2465,6 +2543,211 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onOpenSelections, onLoad
   );
 }
 
+const GIFT_OCCASIONS = [
+  { k: "birthday", e: "🎂" },
+  { k: "christmas", e: "🎄" },
+  { k: "valentine", e: "❤️" },
+  { k: "wedding", e: "💍" },
+  { k: "newBaby", e: "👶" },
+  { k: "housewarming", e: "🏡" },
+  { k: "thankYou", e: "🙏" },
+  { k: "justBecause", e: "✨" },
+  { k: "other", e: "🎁" },
+];
+const GIFT_BUDGETS = [
+  { min: "", max: "25", label: "≤ 25 €" },
+  { min: "25", max: "50", label: "25–50 €" },
+  { min: "50", max: "100", label: "50–100 €" },
+  { min: "100", max: "200", label: "100–200 €" },
+  { min: "200", max: "", label: "200 €+" },
+];
+
+// Mobile recipient form for gift mode (mirrors the desktop GiftPanel): saved
+// people, occasion presets, budget brackets, "surprise me".
+function GiftSheet({ open, onClose, onSubmit }) {
+  const { user } = useAuth();
+  const { t } = useI18n();
+  const [form, setForm] = useState(GIFT_EMPTY);
+  const [people, setPeople] = useState([]);
+  const [savedId, setSavedId] = useState(null);
+  const [personName, setPersonName] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(GIFT_EMPTY);
+    setPeople(listRecipients(user?.sub));
+    setSavedId(null);
+    setPersonName("");
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open, user?.sub]);
+
+  if (!open) return null;
+
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const canSubmit = form.relationship || form.interests.trim();
+  const canSave = personName.trim() && canSubmit;
+
+  const loadPerson = (r) => {
+    setForm((f) => ({
+      ...f,
+      relationship: r.relationship || "",
+      gender: r.gender || "",
+      age: r.age || "",
+      interests: r.interests || "",
+    }));
+    setSavedId(r.id);
+    setPersonName(r.label || "");
+  };
+  const deletePerson = (id, e) => {
+    e.stopPropagation();
+    removeRecipient(user?.sub, id);
+    setPeople((cur) => cur.filter((r) => r.id !== id));
+    if (savedId === id) {
+      setSavedId(null);
+      setPersonName("");
+    }
+  };
+  const savePerson = () => {
+    if (!canSave) return;
+    const item = saveRecipient(user?.sub, {
+      id: savedId,
+      label: personName,
+      relationship: form.relationship,
+      gender: form.gender,
+      age: form.age,
+      interests: form.interests,
+    });
+    setPeople(listRecipients(user?.sub));
+    setSavedId(item.id);
+  };
+
+  const lbl = { display: "block", fontSize: 12, fontWeight: 700, color: BB.ink, marginBottom: 6 };
+  const inp = {
+    width: "100%", boxSizing: "border-box", border: `1px solid ${BB.line}`, borderRadius: 12,
+    background: "var(--m-card)", color: BB.ink, fontFamily: BB.body, fontSize: 14, padding: "11px 13px", outline: "none",
+  };
+  const chip = (active) => ({
+    appearance: "none", border: `1px solid ${active ? BB.coral : BB.line}`,
+    background: active ? BB.chipBg : "var(--m-card)", color: active ? BB.coralDeep : BB.ink,
+    borderRadius: 999, padding: "8px 12px", fontFamily: BB.body, fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+  });
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, background: "rgba(20,12,8,0.45)", zIndex: 1000, display: "flex", alignItems: "flex-end", justifyContent: "center", animation: "bb-rise 0.22s ease-out" }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: "100%", maxWidth: 480, maxHeight: "92vh", background: BB.paper, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: "12px 22px 24px", boxShadow: "0 -10px 40px rgba(0,0,0,0.18)", animation: "bb-rise 0.28s ease-out", display: "flex", flexDirection: "column" }}
+      >
+        <div style={{ width: 44, height: 4, borderRadius: 4, background: BB.line, margin: "0 auto 12px", flexShrink: 0 }} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14, flexShrink: 0 }}>
+          <div>
+            <div style={{ fontFamily: BB.display, fontSize: 20, fontWeight: 700, color: BB.ink }}>🎁 {t("gift.title")}</div>
+            <div style={{ fontSize: 12, color: BB.inkSoft, marginTop: 2 }}>{t("gift.sub")}</div>
+          </div>
+          <button onClick={onClose} aria-label={t("auth.close")} style={{ appearance: "none", border: 0, background: BB.cream, color: BB.inkSoft, width: 32, height: 32, borderRadius: "50%", fontSize: 14, cursor: "pointer", flexShrink: 0 }}>✕</button>
+        </div>
+
+        <div style={{ overflowY: "auto", minHeight: 0, paddingRight: 2 }}>
+          {people.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={lbl}>{t("gift.saved")}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {people.map((r) => (
+                  <span key={r.id} onClick={() => loadPerson(r)} style={{ ...chip(savedId === r.id), display: "inline-flex", alignItems: "center", gap: 6, paddingRight: 8 }}>
+                    {r.label || "—"}
+                    <button type="button" onClick={(e) => deletePerson(r.id, e)} aria-label={t("gift.deletePerson")} style={{ appearance: "none", border: 0, background: "transparent", color: BB.inkMute, fontSize: 11, cursor: "pointer", padding: 0 }}>✕</button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={lbl}>{t("gift.relationship")}</label>
+              <select value={form.relationship} onChange={set("relationship")} style={{ ...inp, appearance: "none", cursor: "pointer" }}>
+                <option value="">{t("gift.relationshipPlaceholder")}</option>
+                {["partner", "parent", "child", "sibling", "friend", "colleague", "other"].map((k) => (
+                  <option key={k} value={t("gift.rel." + k)}>{t("gift.rel." + k)}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={lbl}>{t("gift.gender")}</label>
+              <select value={form.gender} onChange={set("gender")} style={{ ...inp, appearance: "none", cursor: "pointer" }}>
+                <option value="">{t("profile.genderPlaceholder")}</option>
+                {["female", "male", "other"].map((k) => (
+                  <option key={k} value={t("profile.gender." + k)}>{t("profile.gender." + k)}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={lbl}>{t("gift.age")}</label>
+              <input type="number" inputMode="numeric" min="0" max="120" value={form.age} placeholder={t("gift.agePlaceholder")} onChange={set("age")} style={inp} />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={lbl}>{t("gift.occasion")}</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {GIFT_OCCASIONS.map((o) => {
+                const label = t("gift.occ." + o.k);
+                const active = form.occasion === label;
+                return (
+                  <button key={o.k} type="button" onClick={() => setForm((f) => ({ ...f, occasion: active ? "" : label }))} style={chip(active)}>
+                    <span aria-hidden="true">{o.e}</span> {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={lbl}>{t("gift.budget")}</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+              {GIFT_BUDGETS.map((b, i) => {
+                const active = String(form.budgetMin) === String(b.min) && String(form.budgetMax) === String(b.max);
+                return (
+                  <button key={i} type="button" onClick={() => setForm((f) => ({ ...f, budgetMin: b.min, budgetMax: b.max }))} style={chip(active)}>{b.label}</button>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input type="number" inputMode="numeric" min="0" value={form.budgetMin} placeholder={t("gift.budgetMin")} onChange={set("budgetMin")} style={{ ...inp, width: 90 }} />
+              <span style={{ color: BB.inkSoft }}>–</span>
+              <input type="number" inputMode="numeric" min="0" value={form.budgetMax} placeholder={t("gift.budgetMax")} onChange={set("budgetMax")} style={{ ...inp, width: 90 }} />
+              <span style={{ color: BB.inkSoft }}>€</span>
+            </div>
+          </div>
+
+          <label style={lbl}>{t("gift.interests")}</label>
+          <textarea value={form.interests} maxLength={400} rows={4} placeholder={t("gift.interestsPlaceholder")} onChange={set("interests")} style={{ ...inp, resize: "vertical", lineHeight: 1.5 }} />
+
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <input type="text" value={personName} maxLength={60} placeholder={t("gift.personNamePlaceholder")} aria-label={t("gift.personName")} onChange={(e) => setPersonName(e.target.value)} style={{ ...inp, flex: 1 }} />
+            <button type="button" onClick={savePerson} disabled={!canSave} style={{ appearance: "none", border: `1px solid ${BB.line}`, background: "var(--m-card)", color: BB.ink, borderRadius: 12, padding: "0 14px", fontFamily: BB.body, fontSize: 13, fontWeight: 700, cursor: canSave ? "pointer" : "not-allowed", opacity: canSave ? 1 : 0.5, flexShrink: 0 }}>
+              {savedId ? t("gift.updatePerson") : t("gift.savePerson")}
+            </button>
+          </div>
+
+          <div style={{ fontSize: 11, color: BB.inkSoft, margin: "10px 2px 14px", lineHeight: 1.45 }}>{t("gift.hint")}</div>
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 4, flexShrink: 0 }}>
+          <button type="button" onClick={() => canSubmit && onSubmit?.({ ...form, surprise: true })} disabled={!canSubmit} style={{ flex: 1, appearance: "none", border: `1px solid ${BB.line}`, background: "var(--m-card)", color: BB.ink, padding: "13px 14px", borderRadius: 14, fontWeight: 700, fontFamily: BB.body, fontSize: 14, cursor: canSubmit ? "pointer" : "not-allowed", opacity: canSubmit ? 1 : 0.5 }}>✨ {t("gift.surprise")}</button>
+          <button type="button" onClick={() => canSubmit && onSubmit?.(form)} disabled={!canSubmit} style={{ flex: 1.4, appearance: "none", border: 0, background: BB.coral, color: "#fff", padding: "13px 14px", borderRadius: 14, fontWeight: 700, fontFamily: BB.body, fontSize: 14, cursor: canSubmit ? "pointer" : "not-allowed", opacity: canSubmit ? 1 : 0.5 }}>🎁 {t("gift.submit")}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MobileApp() {
   const { user } = useAuth();
   const [view, setView] = useState("search");
@@ -2474,6 +2757,8 @@ export default function MobileApp() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectionsOpen, setSelectionsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [giftOpen, setGiftOpen] = useState(false);
+  const [gift, setGift] = useState(null);
   const [convoId, setConvoId] = useState(null);
   const [restoreData, setRestoreData] = useState(null);
   const [recents, setRecents] = useState([]);
@@ -2488,8 +2773,21 @@ export default function MobileApp() {
   }, [user?.sub, view, authOpen, historyOpen, selectionsOpen]);
 
   const start = (q) => {
+    setGift(null);
     setConvoId(newConversationId());
     setQuery(q);
+    setRestoreData(null);
+    setTransitioning(true);
+    setTimeout(() => {
+      setView("chat");
+      setTransitioning(false);
+    }, 220);
+  };
+  const startGift = (giftData) => {
+    setGiftOpen(false);
+    setGift(giftData);
+    setConvoId(newConversationId());
+    setQuery("");
     setRestoreData(null);
     setTransitioning(true);
     setTimeout(() => {
@@ -2504,11 +2802,13 @@ export default function MobileApp() {
       setTransitioning(false);
       setRestoreData(null);
       setConvoId(null);
+      setGift(null);
     }, 180);
   };
   const loadConvo = (convo) => {
     if (!convo) return;
     setConvoId(convo.id);
+    setGift(convo.gift || null);
     setQuery(convo.initialQuery || convo.title || "");
     setRestoreData(convo);
     setTransitioning(true);
@@ -2523,6 +2823,7 @@ export default function MobileApp() {
   const openHistory = () => setHistoryOpen(true);
   const openSelections = () => setSelectionsOpen(true);
   const openProfile = () => setProfileOpen(true);
+  const openGift = () => setGiftOpen(true);
 
   return (
     <div className="bb-mobile-root">
@@ -2542,6 +2843,7 @@ export default function MobileApp() {
             onOpenAuth={openAuth}
             onOpenHistory={openHistory}
             onOpenSelections={openSelections}
+            onOpenGift={openGift}
             onLoadConvo={loadConvo}
             recents={recents}
           />
@@ -2551,6 +2853,7 @@ export default function MobileApp() {
             onBack={back}
             convoId={convoId}
             restore={restoreData}
+            gift={gift}
           />
         )}
       </div>
@@ -2572,6 +2875,11 @@ export default function MobileApp() {
       <ProfileSheet
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
+      />
+      <GiftSheet
+        open={giftOpen}
+        onClose={() => setGiftOpen(false)}
+        onSubmit={startGift}
       />
     </div>
   );

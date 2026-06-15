@@ -39,11 +39,14 @@ async function postChat(payload) {
 }
 
 // Legacy transcript-based API — still used by the mobile app.
-export function askAI({ messages, category, lang = 'fr', profile = '' }) {
+// `gift` (when set) switches to gift mode; `surprise` asks for bolder ideas.
+export function askAI({ messages, category, lang = 'fr', profile = '', gift = '', surprise = false }) {
   return postChat({
     category,
     lang,
     profile,
+    gift,
+    surprise,
     messages: messages.map((m) => ({
       role: m.role === 'bot' || m.role === 'ai' ? 'assistant' : 'user',
       content: m.text,

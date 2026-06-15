@@ -146,6 +146,30 @@ FORMAT (JSON uniquement):
 IMPORTANT: "products" null quand action="ask"; 10 produits quand action="recommend".`;
 }
 
+// Gift mode over the legacy transcript contract (used by the mobile app): same
+// action/products/question JSON, but gift-flavoured — recipient/occasion/budget
+// are already known, so it goes straight to recommendations and refines on demand.
+function buildGiftSystemPrompt(giftStr, lang = 'fr', surprise = false) {
+  const langLine = langLineFor(lang);
+  const surpriseLine = surprise
+    ? "\nMODE SURPRISE : ose des idées ORIGINALES, inattendues et créatives (pas seulement les évidences) tout en restant adaptées à la personne et au budget."
+    : '';
+  return `Tu es Oraklia, un conseiller en idées cadeaux conversationnel.
+LANGUE DE RÉPONSE / OUTPUT LANGUAGE: ${langLine}
+On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".${surpriseLine}
+
+DÉROULÉ:
+- À ton PREMIER message: action="recommend" avec EXACTEMENT 10 idées de cadeaux RÉELS vendus sur Amazon.fr, VARIÉES (catégories différentes), adaptées à la personne, à l'occasion et au budget indiqués. Ne pose PAS de question sur le budget/l'occasion (déjà connus).
+- Ensuite, si l'utilisateur veut affiner ou voir d'autres idées: soit action="ask" (UNE question courte, 2-4 choix), soit action="recommend" avec 10 AUTRES idées.
+
+RÈGLES: ${langLine} Marques et modèles PRÉCIS. "why" = pourquoi ce cadeau lui correspond (1 phrase). Score 0-99. Uniquement des produits réels d'Amazon.fr.
+
+FORMAT (JSON uniquement):
+{"reply":"...","action":"ask"|"recommend","question":null|{"id":"slug","text":"...","choices":[{"id":"slug","label":"...","tags":[]}]},"preferences":{"tags":[]},"products":null|[{"id":"p1","brand":"...","model":"...","price":999,"score":94,"specs":["..."],"why":"..."}]}
+
+IMPORTANT: ton premier message DOIT avoir action="recommend" avec 10 produits.`;
+}
+
 function ms(start) {
   return Math.round(performance.now() - start);
 }
@@ -294,7 +318,8 @@ export default async function handler(req, res) {
   const legacy = Array.isArray(messages) && messages.length > 0 && body.mode == null;
   const isRecommend = mode === 'recommend';
   // Gift mode: a recipient description is sent instead of a product "objet".
-  const isGift = !legacy && typeof gift === 'string' && gift.trim().length > 0;
+  // Supported on both the new (desktop) and legacy (mobile) paths.
+  const isGift = typeof gift === 'string' && gift.trim().length > 0;
   // Amazon verification searches by brand+model; in gift mode there is no single
   // product context, so don't prepend one.
   const searchTerm = isGift ? '' : (objet || category || (legacy ? (messages[0]?.content || '') : ''));
@@ -303,9 +328,11 @@ export default async function handler(req, res) {
   const t2 = performance.now();
   let systemPrompt, contents, temperature;
   if (legacy) {
-    systemPrompt = buildSystemPrompt(category, lang, profile);
+    systemPrompt = isGift
+      ? buildGiftSystemPrompt(gift, lang, surprise)
+      : buildSystemPrompt(category, lang, profile);
     contents = toGeminiContents(messages);
-    temperature = 0.5;
+    temperature = isGift ? (surprise ? 0.95 : 0.7) : 0.5;
   } else if (isGift) {
     systemPrompt = isRecommend
       ? buildGiftRecommendPrompt(gift, answers, lang, [], surprise)
