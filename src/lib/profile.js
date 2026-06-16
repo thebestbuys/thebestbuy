@@ -3,6 +3,8 @@
 // match them better. Stored in localStorage, keyed per user (anonymous bucket
 // for guests) — same pattern as selections.js / history.js. A compact text
 // representation is injected into the AI prompts (see api/chat.js).
+import { cloudUpsertProfileData } from './cloud.js';
+
 const ROOT_KEY = 'bb_profile';
 
 // Field name → max length, used both as the schema and for sanitizing on save.
@@ -59,12 +61,29 @@ export function saveProfile(userId, profile) {
     if (!anyValue) localStorage.removeItem(keyFor(userId));
     else localStorage.setItem(keyFor(userId), JSON.stringify(clean));
   } catch {}
+  // Mirror to the cloud so friends' gift suggestions can use it server-side.
+  cloudUpsertProfileData(clean).catch(() => {});
   return clean;
 }
 
 export function hasProfile(userId) {
   const p = getProfile(userId);
   return FIELDS.some((k) => p[k]);
+}
+
+// Local-only overwrite used by cloudSync after pulling the server state.
+export function replaceProfile(userId, data) {
+  const clean = {};
+  let anyValue = false;
+  for (const k of FIELDS) {
+    const v = String(data?.[k] ?? '').trim();
+    clean[k] = v;
+    if (v) anyValue = true;
+  }
+  try {
+    if (!anyValue) localStorage.removeItem(keyFor(userId));
+    else localStorage.setItem(keyFor(userId), JSON.stringify(clean));
+  } catch {}
 }
 
 // Compact representation passed to the AI prompts (empty string when nothing is

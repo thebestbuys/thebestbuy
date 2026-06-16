@@ -99,6 +99,42 @@ export async function cloudFetchRecipients() {
   return (data || []).map((r) => r.data).filter(Boolean);
 }
 
+// ─── Profile (cloud "Mon profil" + public identity) ────────────────────────
+// PostgREST upserts only update the columns present in the payload on conflict,
+// so identity and data can be written independently without clobbering.
+export async function cloudUpsertProfileIdentity({ displayName, avatarUrl, email }) {
+  if (!hasCloudSession()) return;
+  await supabase.from('profiles').upsert(
+    {
+      user_id: uid(),
+      display_name: displayName || null,
+      avatar_url: avatarUrl || null,
+      email: email || null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id' },
+  );
+}
+
+export async function cloudUpsertProfileData(data) {
+  if (!hasCloudSession()) return;
+  await supabase.from('profiles').upsert(
+    { user_id: uid(), data: data || {}, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id' },
+  );
+}
+
+export async function cloudFetchProfileData() {
+  if (!hasCloudSession()) return null;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('data')
+    .eq('user_id', uid())
+    .maybeSingle();
+  if (error) return null;
+  return data?.data ?? null;
+}
+
 // ─── Conversations ───────────────────────────────────────────────────────
 export async function cloudUpsertConversation(convo) {
   if (!hasCloudSession() || !convo?.id) return;

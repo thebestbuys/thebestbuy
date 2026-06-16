@@ -18,10 +18,10 @@ vars are absent, the app runs exactly as before (localStorage only).
 ## 2. Create the tables
 
 Open *SQL Editor*, paste the contents of [`supabase/schema.sql`](supabase/schema.sql)
-and run it. This creates `selections`, `conversations` and `recipients`, all
-protected by Row Level Security (a user can only read/write their own rows).
-The script is idempotent — re-run it to add the `recipients` table to an
-existing project.
+and run it. This creates `selections`, `conversations`, `recipients` and
+`profiles`, all protected by Row Level Security (a user can only read/write their
+own rows). The script is idempotent — re-run it to add new tables (e.g.
+`profiles`) to an existing project.
 
 ## 3. Enable Google sign-in (ID-token flow)
 

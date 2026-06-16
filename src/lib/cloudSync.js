@@ -18,13 +18,16 @@ import {
   cloudFetchSelections,
   cloudFetchConversations,
   cloudFetchRecipients,
+  cloudFetchProfileData,
   cloudUpsertSelection,
   cloudUpsertConversation,
   cloudUpsertRecipient,
+  cloudUpsertProfileData,
 } from './cloud.js';
 import { listSelections, replaceSelections } from './selections.js';
 import { listConversations, replaceConversations } from './history.js';
 import { listRecipients, replaceRecipients } from './recipients.js';
+import { getProfile, replaceProfile, hasProfile } from './profile.js';
 
 async function pullSelections(userId) {
   const server = await cloudFetchSelections();
@@ -41,9 +44,19 @@ async function pullRecipients(userId) {
   if (server) replaceRecipients(userId, server);
 }
 
+async function pullProfile(userId) {
+  const server = await cloudFetchProfileData();
+  if (server) replaceProfile(userId, server);
+}
+
 export async function pullOnly(userId) {
   if (!hasCloudSession()) return;
-  await Promise.all([pullSelections(userId), pullConversations(userId), pullRecipients(userId)]);
+  await Promise.all([
+    pullSelections(userId),
+    pullConversations(userId),
+    pullRecipients(userId),
+    pullProfile(userId),
+  ]);
 }
 
 export async function linkAndSync(userId) {
@@ -61,6 +74,11 @@ export async function linkAndSync(userId) {
   const localRec = dedupeById([...listRecipients(userId), ...listRecipients(null)]);
   for (const rec of localRec) {
     await cloudUpsertRecipient(rec).catch(() => {});
+  }
+  // Push the local profile up only if the account doesn't override it on pull.
+  if (hasProfile(userId) || hasProfile(null)) {
+    const localProfile = hasProfile(userId) ? getProfile(userId) : getProfile(null);
+    await cloudUpsertProfileData(localProfile).catch(() => {});
   }
 
   // 2. Pull the merged server state back down, overwriting the local cache.

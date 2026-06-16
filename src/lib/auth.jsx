@@ -9,7 +9,7 @@ import React, {
 import { Capacitor } from '@capacitor/core';
 import { SocialLogin } from '@capgo/capacitor-social-login';
 import { supabase, isSupabaseConfigured } from './supabase.js';
-import { setCloudSession } from './cloud.js';
+import { setCloudSession, cloudUpsertProfileIdentity } from './cloud.js';
 import { linkAndSync, pullOnly } from './cloudSync.js';
 
 const STORAGE_KEY = 'bb_auth_user';
@@ -108,6 +108,11 @@ export function AuthProvider({ children }) {
             return;
           }
           setCloudSession(data.session);
+          await cloudUpsertProfileIdentity({
+            displayName: u.name,
+            avatarUrl: u.picture,
+            email: u.email,
+          }).catch(() => {});
           await linkAndSync(u.sub);
         } catch (e) {
           console.error('[auth] cloud sync failed', e);
@@ -218,6 +223,11 @@ export function AuthProvider({ children }) {
           });
           if (!error) {
             setCloudSession(data.session);
+            await cloudUpsertProfileIdentity({
+              displayName: u.name,
+              avatarUrl: u.picture,
+              email: u.email,
+            }).catch(() => {});
             await linkAndSync(u.sub);
           } else {
             console.error('[auth] supabase sign-in failed', error);

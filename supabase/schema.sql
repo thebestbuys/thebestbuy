@@ -28,10 +28,24 @@ create table if not exists public.recipients (
   primary key (user_id, recipient_id)
 );
 
+-- ── Profiles (cloud "Mon profil", + identity for the friend directory) ──────
+-- `data` holds the private self-description (bio, age, tastes…) read only by the
+-- owner (client) and the server (gift generation for friends). display_name /
+-- avatar_url are the public identity used by the friend search.
+create table if not exists public.profiles (
+  user_id      uuid        primary key references auth.users (id) on delete cascade,
+  display_name text,
+  avatar_url   text,
+  email        text,
+  data         jsonb       not null default '{}'::jsonb,
+  updated_at   timestamptz not null default now()
+);
+
 -- ── Row Level Security ────────────────────────────────────────────────────
 alter table public.selections    enable row level security;
 alter table public.conversations enable row level security;
 alter table public.recipients    enable row level security;
+alter table public.profiles      enable row level security;
 
 drop policy if exists "own selections" on public.selections;
 create policy "own selections" on public.selections
@@ -47,6 +61,15 @@ create policy "own conversations" on public.conversations
 
 drop policy if exists "own recipients" on public.recipients;
 create policy "own recipients" on public.recipients
+  for all
+  using      (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- A user can read/write only their own profile row. Friend search reads public
+-- fields through a SECURITY DEFINER function (see Phase B), so the table itself
+-- stays private.
+drop policy if exists "own profile" on public.profiles;
+create policy "own profile" on public.profiles
   for all
   using      (auth.uid() = user_id)
   with check (auth.uid() = user_id);
