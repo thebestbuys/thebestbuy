@@ -2587,6 +2587,20 @@ function friendInitials(name = "") {
   return ((p[0]?.[0] || "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase() || "?";
 }
 
+// Small round avatar for friend chips (photo, with initials fallback).
+function FriendChipAva({ name, url, size = 20 }) {
+  const [broken, setBroken] = useState(false);
+  const base = { width: size, height: size, borderRadius: "50%", flexShrink: 0 };
+  if (url && !broken) {
+    return <img src={url} alt="" referrerPolicy="no-referrer" onError={() => setBroken(true)} style={{ ...base, objectFit: "cover" }} />;
+  }
+  return (
+    <span style={{ ...base, background: BB.chipBg, color: BB.coralDeep, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.45, fontWeight: 700 }}>
+      {friendInitials(name)}
+    </span>
+  );
+}
+
 // Mobile "Mes amis": search by name, send/accept requests, see friends.
 function FriendsSheet({ open, onClose }) {
   const { user } = useAuth();
@@ -2866,7 +2880,8 @@ function GiftSheet({ open, onClose, onSubmit }) {
               <div style={lbl}>{t("gift.friendsSection")}</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {friends.map((f) => (
-                  <button key={f.user_id} type="button" onClick={() => setFriend(friend?.id === f.user_id ? null : { id: f.user_id, name: f.display_name })} style={chip(friend?.id === f.user_id)}>
+                  <button key={f.user_id} type="button" onClick={() => setFriend(friend?.id === f.user_id ? null : { id: f.user_id, name: f.display_name })} style={{ ...chip(friend?.id === f.user_id), display: "inline-flex", alignItems: "center", gap: 6, paddingLeft: 6 }}>
+                    <FriendChipAva name={f.display_name} url={f.avatar_url} />
                     {f.display_name}
                   </button>
                 ))}

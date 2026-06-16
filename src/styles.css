@@ -2625,6 +2625,25 @@ select.profile-input {
   background: var(--accent-soft);
   color: var(--accent);
 }
+.gift-chip.has-ava {
+  padding-left: 6px;
+}
+.gift-chip-ava {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.gift-chip-ava-fb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+}
 .gift-chip-x {
   appearance: none;
   border: 0;

@@ -9,6 +9,27 @@ import {
 } from '../lib/recipients.js';
 import { listFriends } from '../lib/cloud.js';
 
+function chipInitials(name = '') {
+  const p = String(name).trim().split(/\s+/).filter(Boolean);
+  return ((p[0]?.[0] || '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase() || '?';
+}
+
+function ChipAvatar({ name, url }) {
+  const [broken, setBroken] = useState(false);
+  if (url && !broken) {
+    return (
+      <img
+        className="gift-chip-ava"
+        src={url}
+        alt=""
+        referrerPolicy="no-referrer"
+        onError={() => setBroken(true)}
+      />
+    );
+  }
+  return <span className="gift-chip-ava gift-chip-ava-fb">{chipInitials(name)}</span>;
+}
+
 // Visual occasion presets (emoji + i18n key).
 const OCCASIONS = [
   { k: 'birthday', e: '🎂' },
@@ -165,11 +186,12 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
                   <button
                     type="button"
                     key={f.user_id}
-                    className={'gift-chip' + (friend?.id === f.user_id ? ' is-active' : '')}
+                    className={'gift-chip has-ava' + (friend?.id === f.user_id ? ' is-active' : '')}
                     onClick={() =>
                       setFriend(friend?.id === f.user_id ? null : { id: f.user_id, name: f.display_name })
                     }
                   >
+                    <ChipAvatar name={f.display_name} url={f.avatar_url} />
                     {f.display_name}
                   </button>
                 ))}
