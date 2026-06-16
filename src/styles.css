@@ -2306,6 +2306,98 @@ ul {
   font-weight: 700;
 }
 
+/* Friends panel */
+.friends-panel {
+  max-width: 480px;
+}
+.friends-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+.friends-search {
+  margin-bottom: 6px;
+}
+.friends-section {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 16px 2px 8px;
+}
+.friends-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.friend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-elev);
+}
+.friend-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.friend-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.friend-tag {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.friend-tag.muted {
+  color: var(--text-muted);
+  background: var(--bg-soft, var(--accent-soft));
+}
+.friend-btn {
+  flex-shrink: 0;
+  appearance: none;
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.friend-btn.ghost {
+  background: transparent;
+  border: 0.5px solid var(--border);
+  color: var(--text-muted);
+}
+.friends-hint {
+  font-size: 12.5px;
+  color: var(--text-faint);
+  padding: 4px 2px;
+}
+
 /* Appearance (theme) switch inside the account dropdown */
 .auth-appearance {
   padding: 8px 12px 10px;

@@ -8,6 +8,7 @@ import SelectionsPanel from './components/SelectionsPanel.jsx';
 import ProfilePanel from './components/ProfilePanel.jsx';
 import GiftPanel from './components/GiftPanel.jsx';
 import SharedGiftList from './components/SharedGiftList.jsx';
+import FriendsPanel from './components/FriendsPanel.jsx';
 import FavoriteButton from './components/FavoriteButton.jsx';
 import LegalNotices from './components/LegalNotices.jsx';
 import GuideArticle from './components/GuideArticle.jsx';
@@ -103,7 +104,7 @@ function ResultsPlaceholder({ category }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenGift, onOpenLegal, onOpenGuide }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenGift, onOpenLegal, onOpenGuide }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -219,7 +220,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           {t('home.gift')}
         </button>
         <LangToggle />
-        <AuthMenu variant="home" onOpenSelections={onOpenSelections} onOpenProfile={onOpenProfile} />
+        <AuthMenu variant="home" onOpenSelections={onOpenSelections} onOpenProfile={onOpenProfile} onOpenFriends={onOpenFriends} />
       </div>
       <main className="home-main">
         <h1 className="home-logo">Oraklia</h1>
@@ -400,6 +401,7 @@ export default function App() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectionsOpen, setSelectionsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [friendsOpen, setFriendsOpen] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
   const [gift, setGift] = useState(null);   // recipient payload when in gift mode
   const [shareCopied, setShareCopied] = useState(false);
@@ -582,6 +584,7 @@ export default function App() {
   const navOpenHistory = () => { pushHistory(); setHistoryOpen(true); };
   const navOpenSelections = () => { pushHistory(); setSelectionsOpen(true); };
   const navOpenProfile = () => { pushHistory(); setProfileOpen(true); };
+  const navOpenFriends = () => { pushHistory(); setFriendsOpen(true); };
   const navOpenGift = () => { pushHistory(); setGiftOpen(true); };
   const navOpenProduct = (p) => { pushHistory(); setSelected(p); };
   // Start a gift advisor session from the recipient form. Reuses the normal
@@ -624,6 +627,7 @@ export default function App() {
       if (selected) { setSelected(null); return; }
       if (legalOpen) { setLegalOpen(false); return; }
       if (giftOpen) { setGiftOpen(false); return; }
+      if (friendsOpen) { setFriendsOpen(false); return; }
       if (profileOpen) { setProfileOpen(false); return; }
       if (selectionsOpen) { setSelectionsOpen(false); return; }
       if (historyOpen) { setHistoryOpen(false); return; }
@@ -633,7 +637,7 @@ export default function App() {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, giftOpen, profileOpen, selectionsOpen, historyOpen, activeGuide, category]);
+  }, [selected, legalOpen, giftOpen, friendsOpen, profileOpen, selectionsOpen, historyOpen, activeGuide, category]);
 
   const getAmazonUrl = (p) => {
     if (p.amazon_url) return p.amazon_url;
@@ -721,6 +725,7 @@ export default function App() {
           onOpenHistory={navOpenHistory}
           onOpenSelections={navOpenSelections}
           onOpenProfile={navOpenProfile}
+          onOpenFriends={navOpenFriends}
           onOpenGift={navOpenGift}
           onOpenLegal={navOpenLegal}
           onOpenGuide={navOpenGuide}
@@ -738,6 +743,7 @@ export default function App() {
           onBuy={handleBuy}
         />
         <ProfilePanel open={profileOpen} onClose={navBack} />
+        <FriendsPanel open={friendsOpen} onClose={navBack} />
         <GiftPanel open={giftOpen} onClose={navBack} onSubmit={startGift} />
         <LegalNotices open={legalOpen} onClose={navBack} />
       </>
@@ -781,7 +787,7 @@ export default function App() {
               </button>
             )}
             <LangToggle />
-            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} />
           </div>
         </header>
 
@@ -843,6 +849,8 @@ export default function App() {
       <ProfilePanel open={profileOpen} onClose={navBack} />
 
       <GiftPanel open={giftOpen} onClose={navBack} onSubmit={startGift} />
+
+      <FriendsPanel open={friendsOpen} onClose={navBack} />
 
       <LegalNotices open={legalOpen} onClose={navBack} />
 

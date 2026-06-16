@@ -101,6 +101,24 @@ const TRANSLATIONS = {
     "appearance.system": "Système",
     "appearance.light": "Clair",
     "appearance.dark": "Sombre",
+    "auth.myFriends": "Mes amis",
+
+    // Friends (social graph)
+    "friends.title": "Mes amis",
+    "friends.sub": "Trouve tes amis et ajoute-les pour leur offrir des cadeaux.",
+    "friends.signedOut": "Connecte-toi pour trouver tes amis.",
+    "friends.searchPlaceholder": "Rechercher par nom…",
+    "friends.searchHint": "Tape au moins 2 lettres.",
+    "friends.noResults": "Aucun utilisateur trouvé.",
+    "friends.add": "Ajouter",
+    "friends.pending": "En attente",
+    "friends.friend": "Ami·e",
+    "friends.requestSent": "Demande envoyée",
+    "friends.requests": "Demandes reçues",
+    "friends.accept": "Accepter",
+    "friends.decline": "Refuser",
+    "friends.myFriends": "Mes amis",
+    "friends.empty": "Pas encore d'amis. Utilise la recherche ci-dessus.",
 
     // Profile (personalization)
     "profile.title": "Mon profil",
@@ -343,6 +361,24 @@ const TRANSLATIONS = {
     "appearance.system": "System",
     "appearance.light": "Light",
     "appearance.dark": "Dark",
+    "auth.myFriends": "My friends",
+
+    // Friends (social graph)
+    "friends.title": "My friends",
+    "friends.sub": "Find your friends and add them to gift them.",
+    "friends.signedOut": "Sign in to find your friends.",
+    "friends.searchPlaceholder": "Search by name…",
+    "friends.searchHint": "Type at least 2 letters.",
+    "friends.noResults": "No user found.",
+    "friends.add": "Add",
+    "friends.pending": "Pending",
+    "friends.friend": "Friend",
+    "friends.requestSent": "Request sent",
+    "friends.requests": "Friend requests",
+    "friends.accept": "Accept",
+    "friends.decline": "Decline",
+    "friends.myFriends": "My friends",
+    "friends.empty": "No friends yet. Use the search above.",
 
     // Profile (personalization)
     "profile.title": "My profile",

@@ -135,6 +135,51 @@ export async function cloudFetchProfileData() {
   return data?.data ?? null;
 }
 
+// ─── Friends (social graph) ────────────────────────────────────────────────
+export async function searchUsers(query) {
+  const q = String(query || '').trim();
+  if (!hasCloudSession() || q.length < 2) return [];
+  const { data, error } = await supabase.rpc('search_users', { q });
+  if (error) return [];
+  return data || [];
+}
+
+export async function sendFriendRequest(addresseeId) {
+  if (!hasCloudSession() || !addresseeId) return { ok: false };
+  const { error } = await supabase
+    .from('friend_requests')
+    .insert({ requester_id: uid(), addressee_id: addresseeId, status: 'pending' });
+  return { ok: !error, error };
+}
+
+export async function listIncomingRequests() {
+  if (!hasCloudSession()) return [];
+  const { data, error } = await supabase.rpc('list_incoming_requests');
+  if (error) return [];
+  return data || [];
+}
+
+export async function listFriends() {
+  if (!hasCloudSession()) return [];
+  const { data, error } = await supabase.rpc('list_friends');
+  if (error) return [];
+  return data || [];
+}
+
+// Accept a request (status -> accepted) or decline/cancel it (delete the row).
+export async function respondFriendRequest(requestId, accept) {
+  if (!hasCloudSession() || !requestId) return { ok: false };
+  if (accept) {
+    const { error } = await supabase
+      .from('friend_requests')
+      .update({ status: 'accepted', updated_at: new Date().toISOString() })
+      .eq('id', requestId);
+    return { ok: !error, error };
+  }
+  const { error } = await supabase.from('friend_requests').delete().eq('id', requestId);
+  return { ok: !error, error };
+}
+
 // ─── Conversations ───────────────────────────────────────────────────────
 export async function cloudUpsertConversation(convo) {
   if (!hasCloudSession() || !convo?.id) return;

@@ -15,6 +15,13 @@ import { getProfile, profileToPrompt, saveProfile } from "../lib/profile.js";
 import { getMode, setMode as setThemeMode } from "../lib/theme.js";
 import { GIFT_EMPTY, giftToPrompt, giftTitle, encodeGiftShare } from "../lib/gift.js";
 import { listRecipients, removeRecipient, saveRecipient } from "../lib/recipients.js";
+import {
+  searchUsers,
+  sendFriendRequest,
+  listIncomingRequests,
+  listFriends,
+  respondFriendRequest,
+} from "../lib/cloud.js";
 
 // Which search variant to ship: 'A' = Premium Search, 'B' = Hey-Jordan Hub.
 const VARIANT = "B";
@@ -956,7 +963,7 @@ function AppearanceSeg() {
   );
 }
 
-function AuthSheet({ open, onClose, onOpenSelections, onOpenProfile }) {
+function AuthSheet({ open, onClose, onOpenSelections, onOpenProfile, onOpenFriends }) {
   const { user, ready, clientId, isNative, signInNative, renderButton, signOut, lastError } = useAuth();
   const { t } = useI18n();
   const btnRef = useRef(null);
@@ -1142,6 +1149,35 @@ function AuthSheet({ open, onClose, onOpenSelections, onOpenProfile }) {
               }}
             >
               {t('auth.myProfile')}
+              <span aria-hidden="true" style={{ color: BB.inkMute }}>→</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenFriends?.();
+              }}
+              style={{
+                width: "100%",
+                appearance: "none",
+                border: `1px solid ${BB.line}`,
+                background: "var(--m-card)",
+                color: BB.ink,
+                padding: "12px 14px",
+                borderRadius: 14,
+                fontWeight: 600,
+                fontFamily: BB.body,
+                fontSize: 13,
+                marginBottom: 8,
+                textAlign: "left",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                cursor: "pointer",
+              }}
+            >
+              {t('auth.myFriends')}
               <span aria-hidden="true" style={{ color: BB.inkMute }}>→</span>
             </button>
 
@@ -2543,6 +2579,166 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onOpenSelections, onOpen
   );
 }
 
+function friendInitials(name = "") {
+  const p = String(name).trim().split(/\s+/).filter(Boolean);
+  return ((p[0]?.[0] || "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase() || "?";
+}
+
+// Mobile "Mes amis": search by name, send/accept requests, see friends.
+function FriendsSheet({ open, onClose }) {
+  const { user } = useAuth();
+  const { t } = useI18n();
+  const [q, setQ] = useState("");
+  const [results, setResults] = useState([]);
+  const [searched, setSearched] = useState(false);
+  const [incoming, setIncoming] = useState([]);
+  const [friends, setFriends] = useState([]);
+  const qRef = useRef("");
+  qRef.current = q;
+
+  const refresh = () => {
+    listIncomingRequests().then(setIncoming);
+    listFriends().then(setFriends);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    setQ("");
+    setResults([]);
+    setSearched(false);
+    refresh();
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open, user?.sub]);
+
+  useEffect(() => {
+    if (!open) return;
+    const term = q.trim();
+    if (term.length < 2) {
+      setResults([]);
+      setSearched(false);
+      return;
+    }
+    const id = setTimeout(async () => {
+      const r = await searchUsers(term);
+      if (qRef.current.trim() === term) {
+        setResults(r);
+        setSearched(true);
+      }
+    }, 300);
+    return () => clearTimeout(id);
+  }, [q, open]);
+
+  if (!open) return null;
+
+  const add = async (u) => {
+    setResults((cur) => cur.map((r) => (r.user_id === u.user_id ? { ...r, status: "pending" } : r)));
+    const { ok } = await sendFriendRequest(u.user_id);
+    if (!ok) setResults((cur) => cur.map((r) => (r.user_id === u.user_id ? { ...r, status: null } : r)));
+  };
+  const respond = async (id, accept) => {
+    setIncoming((cur) => cur.filter((r) => r.id !== id));
+    await respondFriendRequest(id, accept);
+    refresh();
+  };
+
+  const ava = (name, url) =>
+    url ? (
+      <img src={url} alt="" referrerPolicy="no-referrer" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+    ) : (
+      <span style={{ width: 36, height: 36, borderRadius: "50%", background: BB.chipBg, color: BB.coralDeep, display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{friendInitials(name)}</span>
+    );
+  const row = { display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", border: `1px solid ${BB.line}`, borderRadius: 12, background: "var(--m-card)", marginBottom: 6 };
+  const nameStyle = { flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: BB.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+  const btn = { appearance: "none", border: 0, background: BB.coral, color: "#fff", fontFamily: BB.body, fontSize: 12.5, fontWeight: 700, padding: "6px 13px", borderRadius: 999, cursor: "pointer", flexShrink: 0 };
+  const ghost = { ...btn, background: "transparent", border: `1px solid ${BB.line}`, color: BB.inkSoft };
+  const tag = (muted) => ({ flexShrink: 0, fontSize: 11, fontWeight: 700, color: muted ? BB.inkMute : BB.coralDeep, background: muted ? BB.cream : BB.chipBg, padding: "3px 10px", borderRadius: 999 });
+  const sect = { fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: BB.inkMute, margin: "16px 2px 8px" };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(20,12,8,0.45)", zIndex: 1000, display: "flex", alignItems: "flex-end", justifyContent: "center", animation: "bb-rise 0.22s ease-out" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 480, maxHeight: "88vh", background: BB.paper, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: "12px 22px 24px", boxShadow: "0 -10px 40px rgba(0,0,0,0.18)", animation: "bb-rise 0.28s ease-out", display: "flex", flexDirection: "column" }}>
+        <div style={{ width: 44, height: 4, borderRadius: 4, background: BB.line, margin: "0 auto 12px", flexShrink: 0 }} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14, flexShrink: 0 }}>
+          <div>
+            <div style={{ fontFamily: BB.display, fontSize: 20, fontWeight: 700, color: BB.ink }}>{t("friends.title")}</div>
+            <div style={{ fontSize: 12, color: BB.inkSoft, marginTop: 2 }}>{t("friends.sub")}</div>
+          </div>
+          <button onClick={onClose} aria-label={t("auth.close")} style={{ appearance: "none", border: 0, background: BB.cream, color: BB.inkSoft, width: 32, height: 32, borderRadius: "50%", fontSize: 14, cursor: "pointer", flexShrink: 0 }}>✕</button>
+        </div>
+
+        {!user ? (
+          <div style={{ padding: "30px 10px", textAlign: "center", color: BB.inkSoft, fontSize: 13 }}>
+            <div style={{ fontSize: 26, marginBottom: 8 }}>👋</div>
+            {t("friends.signedOut")}
+          </div>
+        ) : (
+          <div style={{ overflowY: "auto", minHeight: 0 }}>
+            <input
+              type="text"
+              value={q}
+              placeholder={t("friends.searchPlaceholder")}
+              onChange={(e) => setQ(e.target.value)}
+              style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${BB.line}`, borderRadius: 12, background: "var(--m-card)", color: BB.ink, fontFamily: BB.body, fontSize: 14, padding: "11px 13px", outline: "none" }}
+            />
+
+            {q.trim().length >= 2 && (
+              <div style={{ marginTop: 10 }}>
+                {results.length === 0 && searched ? (
+                  <div style={{ fontSize: 12.5, color: BB.inkMute, padding: "4px 2px" }}>{t("friends.noResults")}</div>
+                ) : (
+                  results.map((u) => (
+                    <div key={u.user_id} style={row}>
+                      {ava(u.display_name, u.avatar_url)}
+                      <span style={nameStyle}>{u.display_name}</span>
+                      {u.status === "accepted" ? (
+                        <span style={tag(false)}>{t("friends.friend")}</span>
+                      ) : u.status === "pending" ? (
+                        <span style={tag(true)}>{t("friends.pending")}</span>
+                      ) : (
+                        <button type="button" style={btn} onClick={() => add(u)}>{t("friends.add")}</button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {incoming.length > 0 && (
+              <>
+                <div style={sect}>{t("friends.requests")}</div>
+                {incoming.map((r) => (
+                  <div key={r.id} style={row}>
+                    {ava(r.display_name, r.avatar_url)}
+                    <span style={nameStyle}>{r.display_name}</span>
+                    <button type="button" style={btn} onClick={() => respond(r.id, true)}>{t("friends.accept")}</button>
+                    <button type="button" style={ghost} onClick={() => respond(r.id, false)}>{t("friends.decline")}</button>
+                  </div>
+                ))}
+              </>
+            )}
+
+            <div style={sect}>{t("friends.myFriends")}</div>
+            {friends.length === 0 ? (
+              <div style={{ fontSize: 12.5, color: BB.inkMute, padding: "4px 2px" }}>{t("friends.empty")}</div>
+            ) : (
+              friends.map((f) => (
+                <div key={f.user_id} style={row}>
+                  {ava(f.display_name, f.avatar_url)}
+                  <span style={nameStyle}>{f.display_name}</span>
+                  <span style={tag(false)}>{t("friends.friend")}</span>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const GIFT_OCCASIONS = [
   { k: "birthday", e: "🎂" },
   { k: "christmas", e: "🎄" },
@@ -2757,6 +2953,7 @@ export default function MobileApp() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectionsOpen, setSelectionsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [friendsOpen, setFriendsOpen] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
   const [gift, setGift] = useState(null);
   const [convoId, setConvoId] = useState(null);
@@ -2823,6 +3020,7 @@ export default function MobileApp() {
   const openHistory = () => setHistoryOpen(true);
   const openSelections = () => setSelectionsOpen(true);
   const openProfile = () => setProfileOpen(true);
+  const openFriends = () => setFriendsOpen(true);
   const openGift = () => setGiftOpen(true);
 
   return (
@@ -2862,6 +3060,7 @@ export default function MobileApp() {
         onClose={() => setAuthOpen(false)}
         onOpenSelections={openSelections}
         onOpenProfile={openProfile}
+        onOpenFriends={openFriends}
       />
       <HistorySheet
         open={historyOpen}
@@ -2880,6 +3079,10 @@ export default function MobileApp() {
         open={giftOpen}
         onClose={() => setGiftOpen(false)}
         onSubmit={startGift}
+      />
+      <FriendsSheet
+        open={friendsOpen}
+        onClose={() => setFriendsOpen(false)}
       />
     </div>
   );
