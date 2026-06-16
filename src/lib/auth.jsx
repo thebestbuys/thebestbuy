@@ -125,13 +125,23 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     let active = true;
-    let storedSub = null;
+    let storedUser = null;
     try {
-      storedSub = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')?.sub || null;
+      storedUser = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     } catch {}
+    const storedSub = storedUser?.sub || null;
     supabase.auth.getSession().then(({ data }) => {
       if (!active || !data?.session) return;
       setCloudSession(data.session);
+      // Refresh the public identity on every session restore, so users who were
+      // already signed in before profiles existed become discoverable.
+      if (storedUser) {
+        cloudUpsertProfileIdentity({
+          displayName: storedUser.name,
+          avatarUrl: storedUser.picture,
+          email: storedUser.email,
+        }).catch(() => {});
+      }
       pullOnly(storedSub).catch(() => {});
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, sess) => {
