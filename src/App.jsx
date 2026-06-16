@@ -9,6 +9,7 @@ import ProfilePanel from './components/ProfilePanel.jsx';
 import GiftPanel from './components/GiftPanel.jsx';
 import SharedGiftList from './components/SharedGiftList.jsx';
 import FriendsPanel from './components/FriendsPanel.jsx';
+import FriendRequestsBell from './components/FriendRequestsBell.jsx';
 import FavoriteButton from './components/FavoriteButton.jsx';
 import LegalNotices from './components/LegalNotices.jsx';
 import GuideArticle from './components/GuideArticle.jsx';
@@ -105,7 +106,7 @@ function ResultsPlaceholder({ category }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenGift, onOpenLegal, onOpenGuide }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, friendsOpen, onOpenGift, onOpenLegal, onOpenGuide }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -220,6 +221,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           <span aria-hidden="true">🎁</span>
           {t('home.gift')}
         </button>
+        <FriendRequestsBell onOpen={onOpenFriends} pingKey={friendsOpen} />
         <LangToggle />
         <AuthMenu variant="home" onOpenSelections={onOpenSelections} onOpenProfile={onOpenProfile} onOpenFriends={onOpenFriends} />
       </div>
@@ -729,6 +731,7 @@ export default function App() {
           onOpenSelections={navOpenSelections}
           onOpenProfile={navOpenProfile}
           onOpenFriends={navOpenFriends}
+          friendsOpen={friendsOpen}
           onOpenGift={navOpenGift}
           onOpenLegal={navOpenLegal}
           onOpenGuide={navOpenGuide}
@@ -789,6 +792,7 @@ export default function App() {
                 {shareCopied ? tr('gift.shareCopied') : tr('gift.share')}
               </button>
             )}
+            <FriendRequestsBell onOpen={navOpenFriends} pingKey={friendsOpen} />
             <LangToggle />
             <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} />
           </div>

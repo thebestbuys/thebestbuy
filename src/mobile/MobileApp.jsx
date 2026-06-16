@@ -2256,7 +2256,7 @@ function SearchA({ onSubmit, onOpenAuth }) {
   );
 }
 
-function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onOpenSelections, onOpenGift, onLoadConvo, recents }) {
+function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onOpenSelections, onOpenGift, onOpenFriends, friendsOpen, onLoadConvo, recents }) {
   const { t } = useI18n();
   const { user } = useAuth();
   const [q, setQ] = useState("");
@@ -2317,6 +2317,7 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onOpenSelections, onOpen
           >
             <HeartIcon size={16} color={BB.coral} />
           </button>
+          <MobileBell onOpen={onOpenFriends} pingKey={friendsOpen} />
           <AccountAvatar size={32} variant="B" onClick={onOpenAuth} />
         </div>
       </div>
@@ -2585,6 +2586,51 @@ function SearchB({ onSubmit, onOpenAuth, onOpenHistory, onOpenSelections, onOpen
 function friendInitials(name = "") {
   const p = String(name).trim().split(/\s+/).filter(Boolean);
   return ((p[0]?.[0] || "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase() || "?";
+}
+
+// Bell with a badge counting pending friend requests; opens the Friends sheet.
+function MobileBell({ onOpen, pingKey }) {
+  const { user } = useAuth();
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!user) {
+      setCount(0);
+      return;
+    }
+    let active = true;
+    const load = () =>
+      listIncomingRequests()
+        .then((r) => active && setCount(Array.isArray(r) ? r.length : 0))
+        .catch(() => {});
+    load();
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
+    const id = setInterval(load, 60000);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", onFocus);
+      clearInterval(id);
+    };
+  }, [user, pingKey]);
+  if (!user) return null;
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={"Demandes reçues"}
+      style={{ position: "relative", appearance: "none", width: 32, height: 32, borderRadius: "50%", border: `1px solid ${BB.line}`, background: "var(--m-card)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+    >
+      <svg width="16" height="16" viewBox="0 0 18 18" fill="none" style={{ color: BB.inkSoft }}>
+        <path d="M9 2.4a4 4 0 0 0-4 4c0 3-1.1 4.2-1.6 4.7-.25.25-.07.65.28.65h10.64c.35 0 .53-.4.28-.65C14.1 10.6 13 9.4 13 6.4a4 4 0 0 0-4-4Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+        <path d="M7.5 14a1.5 1.5 0 0 0 3 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      </svg>
+      {count > 0 && (
+        <span style={{ position: "absolute", top: -3, right: -3, minWidth: 16, height: 16, padding: "0 4px", boxSizing: "border-box", borderRadius: 999, background: "#e5484d", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", border: `1.5px solid ${BB.paper}` }}>
+          {count > 9 ? "9+" : count}
+        </span>
+      )}
+    </button>
+  );
 }
 
 // Small round avatar for friend chips (photo, with initials fallback).
@@ -3094,6 +3140,8 @@ export default function MobileApp() {
             onOpenHistory={openHistory}
             onOpenSelections={openSelections}
             onOpenGift={openGift}
+            onOpenFriends={openFriends}
+            friendsOpen={friendsOpen}
             onLoadConvo={loadConvo}
             recents={recents}
           />
