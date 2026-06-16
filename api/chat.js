@@ -1,5 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
-
 const GEMINI_MODEL = 'gemini-3.1-flash-lite';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 const AFFILIATE_TAG = 'oraklia123-21';
@@ -31,21 +29,36 @@ function profileDataToString(data, lang = 'fr') {
 
 // Resolve a friend's PRIVATE profile on the requester's behalf, but only after
 // verifying (a) the bearer token is valid and (b) an accepted friendship exists.
-// Returns the compact profile string, or '' (never leaks anything otherwise).
+// Returns { text, debug } — text is the compact profile string ('' if anything
+// is missing/unverified); debug carries only booleans/lengths (never the data).
 async function resolveFriendProfile(req, friendId, lang) {
+  const debug = {
+    env: { url: !!SUPA_URL, anon: !!SUPA_ANON, service: !!SUPA_SERVICE },
+    hasToken: false,
+    userOk: false,
+    verified: false,
+    profileLen: 0,
+    error: null,
+  };
   try {
-    if (!friendId || !SUPA_URL || !SUPA_SERVICE || !SUPA_ANON) return '';
     const auth = req.headers?.authorization || req.headers?.Authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    if (!token) return '';
+    debug.hasToken = !!token;
+    if (!friendId || !SUPA_URL || !SUPA_SERVICE || !SUPA_ANON || !token) return { text: '', debug };
+
+    const { createClient } = await import('@supabase/supabase-js');
 
     const anon = createClient(SUPA_URL, SUPA_ANON);
     const { data: userData, error: userErr } = await anon.auth.getUser(token);
     const requesterId = userData?.user?.id;
-    if (userErr || !requesterId || requesterId === friendId) return '';
+    debug.userOk = !!requesterId;
+    if (userErr || !requesterId || requesterId === friendId) {
+      debug.error = userErr ? 'getUser: ' + (userErr.message || 'failed') : 'no requester';
+      return { text: '', debug };
+    }
 
     const admin = createClient(SUPA_URL, SUPA_SERVICE, { auth: { persistSession: false } });
-    const { data: link } = await admin
+    const { data: link, error: linkErr } = await admin
       .from('friend_requests')
       .select('id')
       .eq('status', 'accepted')
@@ -54,16 +67,22 @@ async function resolveFriendProfile(req, friendId, lang) {
           `and(requester_id.eq.${friendId},addressee_id.eq.${requesterId})`,
       )
       .maybeSingle();
-    if (!link) return ''; // not friends → never use their profile
+    if (linkErr) debug.error = 'link: ' + (linkErr.message || 'failed');
+    if (!link) return { text: '', debug }; // not friends → never use their profile
+    debug.verified = true;
 
-    const { data: prof } = await admin
+    const { data: prof, error: profErr } = await admin
       .from('profiles')
       .select('data')
       .eq('user_id', friendId)
       .maybeSingle();
-    return profileDataToString(prof?.data, lang);
-  } catch {
-    return '';
+    if (profErr) debug.error = 'profile: ' + (profErr.message || 'failed');
+    const text = profileDataToString(prof?.data, lang);
+    debug.profileLen = text.length;
+    return { text, debug };
+  } catch (e) {
+    debug.error = 'exception: ' + (e?.message || String(e));
+    return { text: '', debug };
   }
 }
 
@@ -385,7 +404,8 @@ export default async function handler(req, res) {
   // Gift mode: a recipient description is sent instead of a product "objet".
   // For a friend, resolve their PRIVATE profile server-side (verified friendship)
   // and fold it into the recipient description — it never reaches the client.
-  const friendProfile = friendId ? await resolveFriendProfile(req, friendId, lang) : '';
+  const friendRes = friendId ? await resolveFriendProfile(req, friendId, lang) : { text: '', debug: null };
+  const friendProfile = friendRes.text;
   const giftStr = [gift, friendProfile].map((s) => String(s || '').trim()).filter(Boolean).join('; ');
   // Supported on both the new (desktop) and legacy (mobile) paths.
   const isGift = giftStr.length > 0 || !!friendId;
@@ -593,6 +613,7 @@ export default async function handler(req, res) {
     },
     amazon_blocked: amazonBlocked,
     direct_links: directCount,
+    friend: friendRes.debug,
     ...debugTokens,
   };
 
