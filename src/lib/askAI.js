@@ -2,10 +2,14 @@
 // Set VITE_API_BASE_URL=https://your-app.vercel.app for the native APK build.
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
-async function postChat(payload) {
+async function postChat(payload, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  // For gifting to a friend, the bearer token lets the server resolve the
+  // friend's private profile after verifying the friendship.
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(payload),
   });
 
@@ -40,31 +44,33 @@ async function postChat(payload) {
 
 // Legacy transcript-based API — still used by the mobile app.
 // `gift` (when set) switches to gift mode; `surprise` asks for bolder ideas.
-export function askAI({ messages, category, lang = 'fr', profile = '', gift = '', surprise = false }) {
+// `friendId` + `token`: gift for a friend whose profile is resolved server-side.
+export function askAI({ messages, category, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', token = '' }) {
   return postChat({
     category,
     lang,
     profile,
     gift,
     surprise,
+    friendId,
     messages: messages.map((m) => ({
       role: m.role === 'bot' || m.role === 'ai' ? 'assistant' : 'user',
       content: m.text,
     })),
-  });
+  }, token);
 }
 
 // Ask for the next question, given the compact criteria gathered so far.
 // `profile` is an optional free-form user self-description for personalization.
 // `gift` (when set) switches to gift mode: a compact recipient description.
-export function askQuestion({ objet, answers, lang = 'fr', profile = '', gift = '', surprise = false }) {
-  return postChat({ mode: 'ask', objet, answers, lang, profile, gift, surprise });
+export function askQuestion({ objet, answers, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', token = '' }) {
+  return postChat({ mode: 'ask', objet, answers, lang, profile, gift, surprise, friendId }, token);
 }
 
 // Ask for product recommendations from the accumulated criteria.
 // `surprise` (gift mode) asks for bolder, more unexpected ideas.
-export function recommend({ objet, answers, lang = 'fr', profile = '', gift = '', surprise = false }) {
-  return postChat({ mode: 'recommend', objet, answers, lang, profile, gift, surprise });
+export function recommend({ objet, answers, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', token = '' }) {
+  return postChat({ mode: 'recommend', objet, answers, lang, profile, gift, surprise, friendId }, token);
 }
 
 // Enrich a product with real Amazon data (image, URL, rating, reviews).

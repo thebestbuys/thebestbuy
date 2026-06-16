@@ -21,6 +21,7 @@ import {
   listIncomingRequests,
   listFriends,
   respondFriendRequest,
+  getAccessToken,
 } from "../lib/cloud.js";
 
 // Which search variant to ship: 'A' = Premium Search, 'B' = Hey-Jordan Hub.
@@ -411,6 +412,8 @@ function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore, gift: 
         profile: gift ? "" : profileToPrompt(getProfile(user?.sub), lang),
         gift: gift ? giftToPrompt(gift, lang) : "",
         surprise: !!gift?.surprise,
+        friendId: gift?.friendId || "",
+        token: gift?.friendId ? getAccessToken() : "",
       });
       const reply = result?.reply || "…";
       const chips =
@@ -2767,6 +2770,8 @@ function GiftSheet({ open, onClose, onSubmit }) {
   const [people, setPeople] = useState([]);
   const [savedId, setSavedId] = useState(null);
   const [personName, setPersonName] = useState("");
+  const [friends, setFriends] = useState([]);
+  const [friend, setFriend] = useState(null);
 
   useEffect(() => {
     if (!open) return;
@@ -2774,6 +2779,8 @@ function GiftSheet({ open, onClose, onSubmit }) {
     setPeople(listRecipients(user?.sub));
     setSavedId(null);
     setPersonName("");
+    setFriend(null);
+    listFriends().then(setFriends).catch(() => {});
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
@@ -2783,8 +2790,12 @@ function GiftSheet({ open, onClose, onSubmit }) {
   if (!open) return null;
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-  const canSubmit = form.relationship || form.interests.trim();
-  const canSave = personName.trim() && canSubmit;
+  const canSubmit = friend || form.relationship || form.interests.trim();
+  const canSave = personName.trim() && (form.relationship || form.interests.trim());
+  const payload = (extra = {}) =>
+    friend
+      ? { friendId: friend.id, friendName: friend.name, occasion: form.occasion, budgetMin: form.budgetMin, budgetMax: form.budgetMax, ...extra }
+      : { ...form, ...extra };
 
   const loadPerson = (r) => {
     setForm((f) => ({
@@ -2850,7 +2861,27 @@ function GiftSheet({ open, onClose, onSubmit }) {
         </div>
 
         <div style={{ overflowY: "auto", minHeight: 0, paddingRight: 2 }}>
-          {people.length > 0 && (
+          {friends.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={lbl}>{t("gift.friendsSection")}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {friends.map((f) => (
+                  <button key={f.user_id} type="button" onClick={() => setFriend(friend?.id === f.user_id ? null : { id: f.user_id, name: f.display_name })} style={chip(friend?.id === f.user_id)}>
+                    {f.display_name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {friend && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "11px 13px", marginBottom: 14, border: `1px solid ${BB.coral}`, background: BB.chipBg, borderRadius: 12, fontSize: 12.5, fontWeight: 600, color: BB.coralDeep }}>
+              <span>🎁 {t("gift.friendPrivate", { name: friend.name })}</span>
+              <button type="button" onClick={() => setFriend(null)} style={{ appearance: "none", border: 0, background: "transparent", color: BB.coralDeep, fontWeight: 700, fontSize: 12, textDecoration: "underline", cursor: "pointer", flexShrink: 0, fontFamily: BB.body }}>{t("gift.changeRecipient")}</button>
+            </div>
+          )}
+
+          {!friend && people.length > 0 && (
             <div style={{ marginBottom: 14 }}>
               <div style={lbl}>{t("gift.saved")}</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -2864,6 +2895,7 @@ function GiftSheet({ open, onClose, onSubmit }) {
             </div>
           )}
 
+          {!friend && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={lbl}>{t("gift.relationship")}</label>
@@ -2888,6 +2920,7 @@ function GiftSheet({ open, onClose, onSubmit }) {
               <input type="number" inputMode="numeric" min="0" max="120" value={form.age} placeholder={t("gift.agePlaceholder")} onChange={set("age")} style={inp} />
             </div>
           </div>
+          )}
 
           <div style={{ marginBottom: 14 }}>
             <label style={lbl}>{t("gift.occasion")}</label>
@@ -2922,6 +2955,8 @@ function GiftSheet({ open, onClose, onSubmit }) {
             </div>
           </div>
 
+          {!friend && (
+          <>
           <label style={lbl}>{t("gift.interests")}</label>
           <textarea value={form.interests} maxLength={400} rows={4} placeholder={t("gift.interestsPlaceholder")} onChange={set("interests")} style={{ ...inp, resize: "vertical", lineHeight: 1.5 }} />
 
@@ -2931,13 +2966,15 @@ function GiftSheet({ open, onClose, onSubmit }) {
               {savedId ? t("gift.updatePerson") : t("gift.savePerson")}
             </button>
           </div>
+          </>
+          )}
 
           <div style={{ fontSize: 11, color: BB.inkSoft, margin: "10px 2px 14px", lineHeight: 1.45 }}>{t("gift.hint")}</div>
         </div>
 
         <div style={{ display: "flex", gap: 8, marginTop: 4, flexShrink: 0 }}>
-          <button type="button" onClick={() => canSubmit && onSubmit?.({ ...form, surprise: true })} disabled={!canSubmit} style={{ flex: 1, appearance: "none", border: `1px solid ${BB.line}`, background: "var(--m-card)", color: BB.ink, padding: "13px 14px", borderRadius: 14, fontWeight: 700, fontFamily: BB.body, fontSize: 14, cursor: canSubmit ? "pointer" : "not-allowed", opacity: canSubmit ? 1 : 0.5 }}>✨ {t("gift.surprise")}</button>
-          <button type="button" onClick={() => canSubmit && onSubmit?.(form)} disabled={!canSubmit} style={{ flex: 1.4, appearance: "none", border: 0, background: BB.coral, color: "#fff", padding: "13px 14px", borderRadius: 14, fontWeight: 700, fontFamily: BB.body, fontSize: 14, cursor: canSubmit ? "pointer" : "not-allowed", opacity: canSubmit ? 1 : 0.5 }}>🎁 {t("gift.submit")}</button>
+          <button type="button" onClick={() => canSubmit && onSubmit?.(payload({ surprise: true }))} disabled={!canSubmit} style={{ flex: 1, appearance: "none", border: `1px solid ${BB.line}`, background: "var(--m-card)", color: BB.ink, padding: "13px 14px", borderRadius: 14, fontWeight: 700, fontFamily: BB.body, fontSize: 14, cursor: canSubmit ? "pointer" : "not-allowed", opacity: canSubmit ? 1 : 0.5 }}>✨ {t("gift.surprise")}</button>
+          <button type="button" onClick={() => canSubmit && onSubmit?.(payload())} disabled={!canSubmit} style={{ flex: 1.4, appearance: "none", border: 0, background: BB.coral, color: "#fff", padding: "13px 14px", borderRadius: 14, fontWeight: 700, fontFamily: BB.body, fontSize: 14, cursor: canSubmit ? "pointer" : "not-allowed", opacity: canSubmit ? 1 : 0.5 }}>🎁 {t("gift.submit")}</button>
         </div>
       </div>
     </div>

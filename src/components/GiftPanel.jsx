@@ -7,6 +7,7 @@ import {
   removeRecipient,
   saveRecipient,
 } from '../lib/recipients.js';
+import { listFriends } from '../lib/cloud.js';
 
 // Visual occasion presets (emoji + i18n key).
 const OCCASIONS = [
@@ -44,6 +45,8 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
   const [people, setPeople] = useState([]);
   const [savedId, setSavedId] = useState(null);   // id of the loaded saved person
   const [personName, setPersonName] = useState('');
+  const [friends, setFriends] = useState([]);
+  const [friend, setFriend] = useState(null);     // { id, name } when gifting a friend
 
   useEffect(() => {
     if (!open) return;
@@ -51,6 +54,8 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
     setPeople(listRecipients(user?.sub));
     setSavedId(null);
     setPersonName('');
+    setFriend(null);
+    listFriends().then(setFriends).catch(() => {});
     const onKey = (e) => {
       if (e.key === 'Escape') onClose();
     };
@@ -101,13 +106,27 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
     setSavedId(item.id);
   };
 
+  // Build the payload: for a friend, only occasion/budget travel (the profile is
+  // resolved server-side and never touches the client).
+  const payload = (extra = {}) =>
+    friend
+      ? {
+          friendId: friend.id,
+          friendName: friend.name,
+          occasion: form.occasion,
+          budgetMin: form.budgetMin,
+          budgetMax: form.budgetMax,
+          ...extra,
+        }
+      : { ...form, ...extra };
+
   const submit = (e) => {
     e.preventDefault();
-    if (!form.relationship && !form.interests.trim()) return;
-    onSubmit?.(form);
+    if (!canSubmit) return;
+    onSubmit?.(payload());
   };
 
-  const canSubmit = form.relationship || form.interests.trim();
+  const canSubmit = friend || form.relationship || form.interests.trim();
   const canSave = personName.trim() && (form.relationship || form.interests.trim());
 
   return (
@@ -138,7 +157,36 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
         </header>
 
         <div className="profile-form">
-          {people.length > 0 && (
+          {friends.length > 0 && (
+            <div className="gift-people">
+              <div className="profile-label">{t('gift.friendsSection')}</div>
+              <div className="gift-people-row">
+                {friends.map((f) => (
+                  <button
+                    type="button"
+                    key={f.user_id}
+                    className={'gift-chip' + (friend?.id === f.user_id ? ' is-active' : '')}
+                    onClick={() =>
+                      setFriend(friend?.id === f.user_id ? null : { id: f.user_id, name: f.display_name })
+                    }
+                  >
+                    {f.display_name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {friend && (
+            <div className="gift-friend-banner">
+              <span>🎁 {t('gift.friendPrivate', { name: friend.name })}</span>
+              <button type="button" className="gift-friend-change" onClick={() => setFriend(null)}>
+                {t('gift.changeRecipient')}
+              </button>
+            </div>
+          )}
+
+          {!friend && people.length > 0 && (
             <div className="gift-people">
               <div className="profile-label">{t('gift.saved')}</div>
               <div className="gift-people-row">
@@ -173,6 +221,8 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
           )}
 
           <div className="profile-grid">
+            {!friend && (
+            <>
             <div className="profile-field profile-field-wide">
               <label className="profile-label" htmlFor="gift-rel">
                 {t('gift.relationship')}
@@ -217,6 +267,8 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
                 onChange={set('age')}
               />
             </div>
+            </>
+            )}
 
             <div className="profile-field profile-field-wide">
               <label className="profile-label">{t('gift.occasion')}</label>
@@ -285,6 +337,8 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
             </div>
           </div>
 
+          {!friend && (
+          <>
           <label className="profile-label profile-bio-label" htmlFor="gift-interests">
             {t('gift.interests')}
           </label>
@@ -312,6 +366,8 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
               {savedId ? t('gift.updatePerson') : t('gift.savePerson')}
             </button>
           </div>
+          </>
+          )}
 
           <div className="profile-meta">
             <span className="profile-hint">{t('gift.hint')}</span>
@@ -322,7 +378,7 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
               type="button"
               className="profile-clear gift-surprise"
               disabled={!canSubmit}
-              onClick={() => canSubmit && onSubmit?.({ ...form, surprise: true })}
+              onClick={() => canSubmit && onSubmit?.(payload({ surprise: true }))}
             >
               ✨ {t('gift.surprise')}
             </button>

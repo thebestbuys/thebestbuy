@@ -19,6 +19,7 @@ import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './lib/i18n.jsx';
 import { getProfile, profileToPrompt } from './lib/profile.js';
 import { giftToPrompt, giftTitle, encodeGiftShare, decodeGiftShare } from './lib/gift.js';
+import { getAccessToken } from './lib/cloud.js';
 import {
   deriveTitle,
   newConversationId,
@@ -450,14 +451,16 @@ export default function App() {
     const profile = profileToPrompt(getProfile(user?.sub), lang);
     const giftStr = gift ? giftToPrompt(gift, lang) : '';
     const surprise = !!gift?.surprise;
+    const friendId = gift?.friendId || '';
+    const token = friendId ? getAccessToken() : '';
     try {
       if (shouldRecommendAt(currentAnswers.length)) {
-        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, surprise });
+        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, surprise, friendId, token });
         if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
         loadProducts(rec?.products);
       }
       // Always queue the next refinement question.
-      const q = await askQuestion({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, surprise });
+      const q = await askQuestion({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, surprise, friendId, token });
       if (q?.reply) setMessages((m) => [...m, { role: 'bot', text: q.reply }]);
       setCurrentQuestion(q?.question?.choices ? q.question : null);
       setRefreshKey((k) => k + 1);

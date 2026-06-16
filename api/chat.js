@@ -1,6 +1,71 @@
+import { createClient } from '@supabase/supabase-js';
+
 const GEMINI_MODEL = 'gemini-3.1-flash-lite';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 const AFFILIATE_TAG = 'oraklia123-21';
+
+// Server-side Supabase config for friend-gift profile resolution.
+const SUPA_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const SUPA_ANON = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+const SUPA_SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+const PROFILE_LABELS = {
+  gender: { fr: 'Genre', en: 'Gender' },
+  age: { fr: 'Âge', en: 'Age' },
+  profession: { fr: 'Profession', en: 'Profession' },
+  nationality: { fr: 'Nationalité', en: 'Nationality' },
+  address: { fr: 'Adresse', en: 'Address' },
+  bio: { fr: 'À propos', en: 'About' },
+};
+
+function profileDataToString(data, lang = 'fr') {
+  if (!data || typeof data !== 'object') return '';
+  const parts = [];
+  for (const k of Object.keys(PROFILE_LABELS)) {
+    const v = String(data[k] ?? '').trim();
+    if (!v) continue;
+    parts.push(`${PROFILE_LABELS[k][lang] || PROFILE_LABELS[k].fr}: ${v}`);
+  }
+  return parts.join('; ');
+}
+
+// Resolve a friend's PRIVATE profile on the requester's behalf, but only after
+// verifying (a) the bearer token is valid and (b) an accepted friendship exists.
+// Returns the compact profile string, or '' (never leaks anything otherwise).
+async function resolveFriendProfile(req, friendId, lang) {
+  try {
+    if (!friendId || !SUPA_URL || !SUPA_SERVICE || !SUPA_ANON) return '';
+    const auth = req.headers?.authorization || req.headers?.Authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+    if (!token) return '';
+
+    const anon = createClient(SUPA_URL, SUPA_ANON);
+    const { data: userData, error: userErr } = await anon.auth.getUser(token);
+    const requesterId = userData?.user?.id;
+    if (userErr || !requesterId || requesterId === friendId) return '';
+
+    const admin = createClient(SUPA_URL, SUPA_SERVICE, { auth: { persistSession: false } });
+    const { data: link } = await admin
+      .from('friend_requests')
+      .select('id')
+      .eq('status', 'accepted')
+      .or(
+        `and(requester_id.eq.${requesterId},addressee_id.eq.${friendId}),` +
+          `and(requester_id.eq.${friendId},addressee_id.eq.${requesterId})`,
+      )
+      .maybeSingle();
+    if (!link) return ''; // not friends → never use their profile
+
+    const { data: prof } = await admin
+      .from('profiles')
+      .select('data')
+      .eq('user_id', friendId)
+      .maybeSingle();
+    return profileDataToString(prof?.data, lang);
+  } catch {
+    return '';
+  }
+}
 
 // Precise brand+model affiliate search link — used as a last resort when we
 // can't scrape a direct product (ASIN) link. Tight query so Amazon's first
@@ -313,13 +378,17 @@ export default async function handler(req, res) {
   }
   const t1_ms = ms(t1);
 
-  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '', gift = '', surprise = false } = body;
+  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '' } = body;
   // Legacy clients (mobile) send a full transcript in "messages" with no "mode".
   const legacy = Array.isArray(messages) && messages.length > 0 && body.mode == null;
   const isRecommend = mode === 'recommend';
   // Gift mode: a recipient description is sent instead of a product "objet".
+  // For a friend, resolve their PRIVATE profile server-side (verified friendship)
+  // and fold it into the recipient description — it never reaches the client.
+  const friendProfile = friendId ? await resolveFriendProfile(req, friendId, lang) : '';
+  const giftStr = [gift, friendProfile].map((s) => String(s || '').trim()).filter(Boolean).join('; ');
   // Supported on both the new (desktop) and legacy (mobile) paths.
-  const isGift = typeof gift === 'string' && gift.trim().length > 0;
+  const isGift = giftStr.length > 0 || !!friendId;
   // Amazon verification searches by brand+model; in gift mode there is no single
   // product context, so don't prepend one.
   const searchTerm = isGift ? '' : (objet || category || (legacy ? (messages[0]?.content || '') : ''));
@@ -329,14 +398,14 @@ export default async function handler(req, res) {
   let systemPrompt, contents, temperature;
   if (legacy) {
     systemPrompt = isGift
-      ? buildGiftSystemPrompt(gift, lang, surprise)
+      ? buildGiftSystemPrompt(giftStr, lang, surprise)
       : buildSystemPrompt(category, lang, profile);
     contents = toGeminiContents(messages);
     temperature = isGift ? (surprise ? 0.95 : 0.7) : 0.5;
   } else if (isGift) {
     systemPrompt = isRecommend
-      ? buildGiftRecommendPrompt(gift, answers, lang, [], surprise)
-      : buildGiftAskPrompt(gift, answers, lang);
+      ? buildGiftRecommendPrompt(giftStr, answers, lang, [], surprise)
+      : buildGiftAskPrompt(giftStr, answers, lang);
     contents = [{ role: 'user', parts: [{ text: isRecommend ? 'Donne les idées de cadeaux.' : 'Pose la prochaine question.' }] }];
     temperature = isRecommend ? (surprise ? 0.95 : 0.7) : 0.5;
   } else {
@@ -462,7 +531,7 @@ export default async function handler(req, res) {
           }
         : {
             systemInstruction: { parts: [{ text: isGift
-              ? buildGiftRecommendPrompt(gift, answers, lang, [...triedNames], surprise)
+              ? buildGiftRecommendPrompt(giftStr, answers, lang, [...triedNames], surprise)
               : buildRecommendPrompt(searchTerm, answers, lang, [...triedNames], profile) }] },
             contents: [{ role: 'user', parts: [{ text: 'Donne 10 autres recommandations.' }] }],
             generationConfig: { temperature: 0.6, responseMimeType: 'application/json' },

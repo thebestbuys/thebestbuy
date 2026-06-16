@@ -2640,6 +2640,34 @@ select.profile-input {
   color: var(--accent);
 }
 
+/* Gift-for-a-friend banner (profile stays private) */
+.gift-friend-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 11px 14px;
+  margin-bottom: 16px;
+  border: 0.5px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.gift-friend-change {
+  flex-shrink: 0;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* Save-this-person row */
 .gift-save-row {
   display: flex;

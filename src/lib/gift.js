@@ -51,7 +51,8 @@ export function giftToPrompt(gift, lang = 'fr') {
 export function giftTitle(gift, lang = 'fr') {
   if (!gift) return lang === 'en' ? 'Gift' : 'Cadeau';
   const head = lang === 'en' ? 'Gift' : 'Cadeau';
-  const bits = [gift.relationship, gift.occasion].map((s) => String(s || '').trim()).filter(Boolean);
+  const who = gift.friendName || gift.relationship;
+  const bits = [who, gift.occasion].map((s) => String(s || '').trim()).filter(Boolean);
   return [head, ...bits].join(' · ');
 }
 

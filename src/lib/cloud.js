@@ -23,6 +23,12 @@ function uid() {
   return session?.user?.id || null;
 }
 
+// Current access token, sent to /api/chat so the server can resolve a friend's
+// (private) profile on the user's behalf. Null when not signed in to the cloud.
+export function getAccessToken() {
+  return session?.access_token || null;
+}
+
 // ─── Selections ──────────────────────────────────────────────────────────
 export async function cloudUpsertSelection(item) {
   if (!hasCloudSession() || item?.id == null) return;
