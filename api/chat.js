@@ -400,7 +400,7 @@ export default async function handler(req, res) {
   }
   const t1_ms = ms(t1);
 
-  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '' } = body;
+  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', conversationId = '', requestId = '' } = body;
   // Legacy clients (mobile) send a full transcript in "messages" with no "mode".
   const legacy = Array.isArray(messages) && messages.length > 0 && body.mode == null;
   const isRecommend = mode === 'recommend';
@@ -611,6 +611,10 @@ export default async function handler(req, res) {
   const totalMs = ms(t0);
 
   parsed._debug = {
+    // Echo the caller's ids so every exchange is traceable end to end and
+    // concurrent conversations can't be confused (client logs match server).
+    conversation_id: conversationId || null,
+    request_id: requestId || null,
     model: GEMINI_MODEL,
     timings_ms: {
       parse_body:        t1_ms,

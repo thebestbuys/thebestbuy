@@ -430,6 +430,7 @@ function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore, gift: 
         surprise: !!gift?.surprise,
         friendId: gift?.friendId || "",
         token: gift?.friendId ? getAccessToken() : "",
+        conversationId: convoId,
       });
       const reply = result?.reply || "…";
       const chips =

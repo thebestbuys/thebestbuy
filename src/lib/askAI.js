@@ -2,15 +2,30 @@
 // Set VITE_API_BASE_URL=https://your-app.vercel.app for the native APK build.
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
+// Unique id for a single backend exchange (one /api/chat round-trip). Combined
+// with the caller's conversationId, it makes every Gemini call traceable end to
+// end — so concurrent conversations (e.g. two browser tabs) never get confused.
+function genRequestId() {
+  return `r_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 async function postChat(payload, token) {
+  const requestId = genRequestId();
+  const conversationId = payload.conversationId || '';
+  // Tag every exchange so two conversations running at once are easy to tell
+  // apart in the console / Network tab. Echoed back by the server in _debug.
+  const body = { ...payload, requestId };
   const headers = { 'Content-Type': 'application/json' };
   // For gifting to a friend, the bearer token lets the server resolve the
   // friend's private profile after verifying the friendship.
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (typeof console !== 'undefined') {
+    console.debug(`[chat →] conv=${conversationId || '?'} req=${requestId} mode=${payload.mode || 'legacy'}`);
+  }
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
     headers,
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -39,13 +54,18 @@ async function postChat(payload, token) {
     throw new Error(`erreur ${res.status}`);
   }
 
-  return res.json();
+  const json = await res.json();
+  if (typeof console !== 'undefined') {
+    const d = json?._debug || {};
+    console.debug(`[chat ←] conv=${d.conversation_id || conversationId || '?'} req=${d.request_id || requestId}`);
+  }
+  return json;
 }
 
 // Legacy transcript-based API — still used by the mobile app.
 // `gift` (when set) switches to gift mode; `surprise` asks for bolder ideas.
 // `friendId` + `token`: gift for a friend whose profile is resolved server-side.
-export function askAI({ messages, category, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', token = '' }) {
+export function askAI({ messages, category, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', token = '', conversationId = '' }) {
   return postChat({
     category,
     lang,
@@ -53,6 +73,7 @@ export function askAI({ messages, category, lang = 'fr', profile = '', gift = ''
     gift,
     surprise,
     friendId,
+    conversationId,
     messages: messages.map((m) => ({
       role: m.role === 'bot' || m.role === 'ai' ? 'assistant' : 'user',
       content: m.text,
@@ -63,14 +84,14 @@ export function askAI({ messages, category, lang = 'fr', profile = '', gift = ''
 // Ask for the next question, given the compact criteria gathered so far.
 // `profile` is an optional free-form user self-description for personalization.
 // `gift` (when set) switches to gift mode: a compact recipient description.
-export function askQuestion({ objet, answers, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', token = '' }) {
-  return postChat({ mode: 'ask', objet, answers, lang, profile, gift, surprise, friendId }, token);
+export function askQuestion({ objet, answers, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', token = '', conversationId = '' }) {
+  return postChat({ mode: 'ask', objet, answers, lang, profile, gift, surprise, friendId, conversationId }, token);
 }
 
 // Ask for product recommendations from the accumulated criteria.
 // `surprise` (gift mode) asks for bolder, more unexpected ideas.
-export function recommend({ objet, answers, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', token = '' }) {
-  return postChat({ mode: 'recommend', objet, answers, lang, profile, gift, surprise, friendId }, token);
+export function recommend({ objet, answers, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', token = '', conversationId = '' }) {
+  return postChat({ mode: 'recommend', objet, answers, lang, profile, gift, surprise, friendId, conversationId }, token);
 }
 
 // Enrich a product with real Amazon data (image, URL, rating, reviews).
