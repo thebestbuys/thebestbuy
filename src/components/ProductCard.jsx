@@ -1,8 +1,11 @@
 import { useI18n } from '../lib/i18n.jsx';
 import FavoriteButton from './FavoriteButton.jsx';
 
+// Only show a real product photo when it comes from a verified Amazon result.
+// Gemini-sourced candidates must never display a scraped/guessed Amazon image
+// (Amazon Associates Operating Agreement, art. 1 — Program Content).
 export function ProductImage({ product, size = 'normal' }) {
-  if (product.image_url) {
+  if (product.amazon_verified && product.image_url) {
     return (
       <div className="prod-img-wrap" data-size={size}>
         <img
@@ -87,6 +90,63 @@ export function Stars({ rating }) {
   );
 }
 
+// Rating + review count are only authoritative when sourced from a real Amazon
+// result. For Gemini-only candidates we hide them entirely rather than show
+// AI-invented stars/review counts (misleading + Amazon community rules).
+export function VerifiedRating({ product, size = 'normal', locale }) {
+  if (!product.amazon_verified || product.rating == null) return null;
+  return (
+    <div className={size === 'small' ? 'small-rating' : 'hero-rating'}>
+      <Stars rating={product.rating} />
+      <span className={'rating-num' + (size === 'small' ? ' small' : '')}>{product.rating.toFixed(1)}</span>
+      {size !== 'small' && product.reviews != null && (
+        <span className="rating-count">({product.reviews.toLocaleString(locale)})</span>
+      )}
+    </div>
+  );
+}
+
+// Round to a human-friendly value for the estimated range bounds.
+function roundNice(v) {
+  if (v >= 1000) return Math.round(v / 50) * 50;
+  if (v >= 100) return Math.round(v / 10) * 10;
+  return Math.round(v / 5) * 5;
+}
+
+// Price display. Verified Amazon products show the exact scraped price. Gemini
+// estimates are shown as a clearly-labelled indicative range — never as a firm
+// Amazon price (Amazon Program Policies forbid showing non-API prices as exact).
+export function PriceTag({ product, locale, t, variant = 'small' }) {
+  if (product.amazon_verified && product.price != null) {
+    if (variant === 'small') {
+      return <div className="small-price"><AmazonPrice price={product.price} /></div>;
+    }
+    return (
+      <div className="hero-price">
+        <AmazonPrice price={product.price} />
+      </div>
+    );
+  }
+
+  if (product.price == null) return null;
+  const low = roundNice(product.price * 0.9);
+  const high = roundNice(product.price * 1.1);
+  const range = `≈ ${low.toLocaleString(locale)} – ${high.toLocaleString(locale)} €`;
+  if (variant === 'small') {
+    return (
+      <div className="small-price small-price-est" title={t('product.priceEstimateNote')}>
+        {range}
+      </div>
+    );
+  }
+  return (
+    <div className="hero-price hero-price-est">
+      <span className="price-est-label">{t('product.priceEstimate')}</span>
+      <span className="price-est-range">{range}</span>
+    </div>
+  );
+}
+
 export function ScoreRing({ score, size = 64 }) {
   const r = (size - 8) / 2;
   const circ = 2 * Math.PI * r;
@@ -130,25 +190,15 @@ export function HeroCard({ product, density, onSelect }) {
         <div className="hero-meta">
           <div className="hero-brand">{product.brand}</div>
           <h2 className="hero-model">{product.model}</h2>
-          {product.rating != null && (
-            <div className="hero-rating">
-              <Stars rating={product.rating} />
-              <span className="rating-num">{product.rating.toFixed(1)}</span>
-              {product.reviews != null && (
-                <span className="rating-count">({t('product.reviews', { n: product.reviews.toLocaleString(locale) })})</span>
-              )}
-            </div>
-          )}
-          {product.why && !product.rating && (
+          <VerifiedRating product={product} locale={locale} />
+          {product.why && !(product.amazon_verified && product.rating != null) && (
             <div className="hero-why">{product.why}</div>
           )}
           <ul className="hero-specs">
             {product.specs.map((s, i) => <li key={i}>{s}</li>)}
           </ul>
           <div className="hero-bottom">
-            <div className="hero-price">
-              <AmazonPrice price={product.price} />
-            </div>
+            <PriceTag product={product} locale={locale} t={t} variant="hero" />
             <button className="btn-primary" onClick={(e) => { e.stopPropagation(); onSelect(product); }}>
               {t('product.viewDetails')}
               <span className="btn-arrow">→</span>
@@ -165,6 +215,8 @@ export function HeroCard({ product, density, onSelect }) {
 }
 
 export function SmallCard({ product, rank, density, onSelect }) {
+  const { t, lang } = useI18n();
+  const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   return (
     <article className={'small-card density-' + density} onClick={() => onSelect(product)}>
       <div className="small-rank">#{rank}</div>
@@ -173,17 +225,12 @@ export function SmallCard({ product, rank, density, onSelect }) {
       <div className="small-info">
         <div className="small-brand">{product.brand}</div>
         <div className="small-model">{product.model}</div>
-        {product.rating != null && (
-          <div className="small-rating">
-            <Stars rating={product.rating} />
-            <span className="rating-num small">{product.rating.toFixed(1)}</span>
-          </div>
-        )}
+        <VerifiedRating product={product} size="small" locale={locale} />
         <ul className="small-specs">
           {product.specs.slice(0, density === 'compact' ? 2 : 3).map((s, i) => <li key={i}>{s}</li>)}
         </ul>
         <div className="small-bottom">
-          <div className="small-price"><AmazonPrice price={product.price} /></div>
+          <PriceTag product={product} locale={locale} t={t} variant="small" />
           <div className="small-score">
             <span className="small-score-num">{product.score}</span>
             <span className="small-score-pct">% match</span>

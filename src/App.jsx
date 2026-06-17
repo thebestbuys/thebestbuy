@@ -15,7 +15,7 @@ import LegalNotices from './components/LegalNotices.jsx';
 import GuideArticle from './components/GuideArticle.jsx';
 import LangToggle from './components/LangToggle.jsx';
 import { GUIDES, localizeGuide } from './data/guides.js';
-import { AmazonPrice, HeroCard, ProductImage, ScoreRing, SmallCard, Stars } from './components/ProductCard.jsx';
+import { HeroCard, PriceTag, ProductImage, ScoreRing, SmallCard, VerifiedRating } from './components/ProductCard.jsx';
 import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './lib/i18n.jsx';
 import { getProfile, profileToPrompt } from './lib/profile.js';
@@ -324,13 +324,9 @@ function ProductDetail({ product, onClose, onBuy }) {
           <div className="modal-right">
             <div className="modal-brand">{product.brand}</div>
             <h2 className="modal-title">{product.model}</h2>
-            {product.rating != null && (
+            {product.amazon_verified && product.rating != null && (
               <div className="modal-rating">
-                <Stars rating={product.rating} />
-                <span className="rating-num">{product.rating.toFixed(1)}</span>
-                {product.reviews != null && (
-                  <span className="rating-count">({t('product.reviews', { n: product.reviews.toLocaleString(locale) })})</span>
-                )}
+                <VerifiedRating product={product} locale={locale} />
               </div>
             )}
             <div className="modal-score-row">
@@ -352,10 +348,15 @@ function ProductDetail({ product, onClose, onBuy }) {
             </ul>
             <div className="modal-bottom">
               <div>
-                <div className="modal-price-label">{t('product.price')}</div>
-                <div className="modal-price">
-                  <AmazonPrice price={product.price} />
+                <div className="modal-price-label">
+                  {product.amazon_verified ? t('product.price') : t('product.priceEstimate')}
                 </div>
+                <div className="modal-price">
+                  <PriceTag product={product} locale={locale} t={t} variant="hero" />
+                </div>
+                {!product.amazon_verified && product.price != null && (
+                  <div className="modal-price-note">{t('product.priceEstimateNote')}</div>
+                )}
                 <div className="modal-shipping">{t('product.shipping')}</div>
               </div>
               <div className="modal-buy">

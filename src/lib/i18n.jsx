@@ -76,8 +76,11 @@ const TRANSLATIONS = {
     "product.why": "Pourquoi ce produit ?",
     "product.features": "Caractéristiques principales",
     "product.price": "Prix",
+    "product.priceEstimate": "Prix estimé",
+    "product.priceEstimateNote": "Estimation indicative · prix réel sur Amazon",
     "product.shipping": "Livraison gratuite · 30 jours d'essai",
     "product.viewAmazon": "Voir sur Amazon",
+    "product.viewPriceAmazon": "Voir le prix sur Amazon",
     "product.matchLabel": "match",
 
     // Auth
@@ -341,8 +344,11 @@ const TRANSLATIONS = {
     "product.why": "Why this product?",
     "product.features": "Key features",
     "product.price": "Price",
+    "product.priceEstimate": "Estimated price",
+    "product.priceEstimateNote": "Indicative estimate · real price on Amazon",
     "product.shipping": "Free delivery · 30-day trial",
     "product.viewAmazon": "View on Amazon",
+    "product.viewPriceAmazon": "See price on Amazon",
     "product.matchLabel": "match",
 
     // Auth

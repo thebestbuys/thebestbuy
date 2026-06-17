@@ -357,6 +357,234 @@ export const GUIDES = [
       },
     },
   },
+
+  {
+    slug: 'choisir-televiseur-2026',
+    category: 'tv',
+    content: {
+      fr: {
+        title: 'Comment choisir son téléviseur en 2026',
+        subtitle: 'OLED, QLED, Mini-LED, taille, HDMI 2.1 : décryptage des critères qui comptent vraiment.',
+        readTime: '7 min',
+        updated: 'Juin 2026',
+        intro:
+          "Acheter une télé en 2026 revient à naviguer dans une jungle d'acronymes : OLED, QLED, Mini-LED, HDR10+, Dolby Vision… Pourtant, derrière le jargon, seuls quelques critères déterminent réellement la qualité d'image perçue dans votre salon. Ce guide vous aide à choisir la bonne dalle, la bonne taille et les bonnes fonctions selon votre usage (films, sport, jeu vidéo).",
+        sections: [
+          {
+            heading: '1. La technologie de dalle : OLED, QLED ou Mini-LED ?',
+            body: [
+              "L'OLED offre les meilleurs noirs (chaque pixel s'éteint individuellement) et un contraste infini — idéal pour les films dans une pièce sombre. Son point faible : une luminosité plus modérée et un risque théorique de marquage en usage intensif d'images fixes.",
+              "Le QLED et surtout le Mini-LED montent beaucoup plus haut en luminosité, ce qui les rend excellents dans une pièce lumineuse et en HDR. Le Mini-LED, grâce à ses milliers de zones de rétroéclairage, se rapproche du contraste de l'OLED tout en restant plus abordable en grand format.",
+            ],
+          },
+          {
+            heading: '2. La taille : plus grand qu\'on ne le pense',
+            body: [
+              "L'erreur la plus fréquente est de voir trop petit. Avec les définitions 4K actuelles, on peut s'asseoir bien plus près sans voir les pixels. Règle pratique : pour un recul de 2,5 à 3 m, un écran de 55 à 65 pouces est un excellent point de départ.",
+              "Mesurez la distance entre votre canapé et l'emplacement de la télé, puis choisissez la plus grande diagonale qui reste confortable. On regrette rarement d'avoir pris trop grand.",
+            ],
+          },
+          {
+            heading: '3. HDR et luminosité : le vrai saut de qualité',
+            body: [
+              "Le HDR (High Dynamic Range) élargit la plage entre les zones sombres et lumineuses : c'est souvent plus spectaculaire que la simple résolution. Privilégiez les formats Dolby Vision et HDR10+, mieux gérés par les contenus Netflix, Disney+ ou les Blu-ray.",
+              "Pour que le HDR soit convaincant, la télé doit être suffisamment lumineuse : visez au moins 600 nits, idéalement 1 000 nits et plus sur les modèles haut de gamme.",
+            ],
+          },
+          {
+            heading: '4. Le jeu vidéo : HDMI 2.1 et 120 Hz',
+            body: [
+              "Si vous jouez sur PS5, Xbox Series ou PC récent, vérifiez la présence de ports HDMI 2.1, du 120 Hz, du VRR (taux de rafraîchissement variable) et de l'ALLM (mode faible latence automatique). Ces fonctions rendent le jeu nettement plus fluide et réactif.",
+              "Regardez aussi l'input lag annoncé (idéalement sous 15 ms en mode jeu). Toutes les télés ne se valent pas sur ce point, même à prix équivalent.",
+            ],
+          },
+          {
+            heading: '5. Son et système : ne négligez pas l\'ensemble',
+            body: [
+              "Les télés ultra-fines ont souvent un son décevant. Si le cinéma compte pour vous, prévoyez une barre de son — l'amélioration est immédiate. Vérifiez la présence de la sortie eARC (HDMI) pour la brancher facilement.",
+              "Côté logiciel, les systèmes (Google TV, Tizen, webOS) sont tous corrects aujourd'hui. Vérifiez surtout que vos applications favorites sont disponibles et que l'interface reste fluide dans le temps.",
+            ],
+          },
+        ],
+        checklist: [
+          'Dalle adaptée : OLED en pièce sombre, Mini-LED/QLED en pièce lumineuse',
+          'Taille généreuse selon le recul (55–65" pour 2,5–3 m)',
+          'HDR Dolby Vision / HDR10+ et au moins 600 nits',
+          'HDMI 2.1 + 120 Hz + VRR si vous jouez sur console récente',
+          'Barre de son prévue + sortie eARC pour le home cinéma',
+        ],
+        picks: [
+          { budget: 'Petit budget · ~500 €', name: 'TV 4K LED 55" Samsung Crystal', note: 'Bon rapport taille/prix pour un salon lumineux.', query: 'TV Samsung Crystal 4K 55 pouces' },
+          { budget: 'Polyvalent · ~1000 €', name: 'TV Mini-LED 65" (HDMI 2.1, 120 Hz)', note: 'Excellente luminosité HDR et fonctions gaming.', query: 'TV Mini-LED 65 pouces 120Hz HDMI 2.1' },
+          { budget: 'Premium · ~1800 €', name: 'TV OLED 65" Dolby Vision', note: "Noirs parfaits et contraste infini pour le cinéma.", query: 'TV OLED 65 pouces Dolby Vision' },
+        ],
+      },
+      en: {
+        title: 'How to choose your TV in 2026',
+        subtitle: 'OLED, QLED, Mini-LED, size, HDMI 2.1: decoding the criteria that truly matter.',
+        readTime: '7 min',
+        updated: 'June 2026',
+        intro:
+          "Buying a TV in 2026 means navigating a jungle of acronyms: OLED, QLED, Mini-LED, HDR10+, Dolby Vision… Yet behind the jargon, only a handful of criteria actually determine the picture quality you perceive in your living room. This guide helps you pick the right panel, the right size and the right features for your use (movies, sport, gaming).",
+        sections: [
+          {
+            heading: '1. Panel technology: OLED, QLED or Mini-LED?',
+            body: [
+              "OLED delivers the best blacks (each pixel turns off individually) and infinite contrast — ideal for movies in a dark room. Its weakness: more moderate brightness and a theoretical risk of burn-in with heavy static-image use.",
+              "QLED and especially Mini-LED reach much higher brightness, making them excellent in a bright room and in HDR. Thanks to its thousands of backlight zones, Mini-LED approaches OLED contrast while staying more affordable in large sizes.",
+            ],
+          },
+          {
+            heading: '2. Size: bigger than you think',
+            body: [
+              "The most common mistake is going too small. With today's 4K resolutions, you can sit much closer without seeing pixels. Rule of thumb: for a 2.5 to 3 m viewing distance, a 55 to 65-inch screen is an excellent starting point.",
+              "Measure the distance between your sofa and the TV location, then choose the largest diagonal that stays comfortable. People rarely regret going too big.",
+            ],
+          },
+          {
+            heading: '3. HDR and brightness: the real quality leap',
+            body: [
+              "HDR (High Dynamic Range) widens the range between dark and bright areas: it's often more spectacular than resolution alone. Favour Dolby Vision and HDR10+ formats, better handled by Netflix, Disney+ content or Blu-rays.",
+              "For HDR to be convincing, the TV must be bright enough: aim for at least 600 nits, ideally 1,000 nits and up on high-end models.",
+            ],
+          },
+          {
+            heading: '4. Gaming: HDMI 2.1 and 120 Hz',
+            body: [
+              "If you game on PS5, Xbox Series or a recent PC, check for HDMI 2.1 ports, 120 Hz, VRR (variable refresh rate) and ALLM (automatic low-latency mode). These features make gaming noticeably smoother and more responsive.",
+              "Also look at the stated input lag (ideally under 15 ms in game mode). Not all TVs are equal here, even at the same price.",
+            ],
+          },
+          {
+            heading: '5. Sound and system: don\'t overlook the whole',
+            body: [
+              "Ultra-thin TVs often have disappointing sound. If cinema matters to you, plan for a soundbar — the improvement is immediate. Check for an eARC (HDMI) output to connect it easily.",
+              "On software, the systems (Google TV, Tizen, webOS) are all decent today. Mainly check that your favourite apps are available and that the interface stays smooth over time.",
+            ],
+          },
+        ],
+        checklist: [
+          'Right panel: OLED in a dark room, Mini-LED/QLED in a bright room',
+          'Generous size for your distance (55–65" for 2.5–3 m)',
+          'HDR Dolby Vision / HDR10+ and at least 600 nits',
+          'HDMI 2.1 + 120 Hz + VRR if you game on a recent console',
+          'Plan a soundbar + eARC output for home cinema',
+        ],
+        picks: [
+          { budget: 'Small budget · ~€500', name: 'Samsung Crystal 4K LED 55"', note: 'Good size-to-price ratio for a bright living room.', query: 'Samsung Crystal 4K TV 55 inch' },
+          { budget: 'All-round · ~€1000', name: 'Mini-LED 65" TV (HDMI 2.1, 120 Hz)', note: 'Excellent HDR brightness and gaming features.', query: 'Mini-LED TV 65 inch 120Hz HDMI 2.1' },
+          { budget: 'Premium · ~€1800', name: 'OLED 65" TV Dolby Vision', note: 'Perfect blacks and infinite contrast for cinema.', query: 'OLED TV 65 inch Dolby Vision' },
+        ],
+      },
+    },
+  },
+
+  {
+    slug: 'choisir-aspirateur-robot',
+    category: 'vacuum',
+    content: {
+      fr: {
+        title: "Bien choisir son aspirateur robot",
+        subtitle: 'Navigation laser, aspiration, lavage, station auto-vidage : ce qui justifie (ou non) le prix.',
+        readTime: '6 min',
+        updated: 'Juin 2026',
+        intro:
+          "L'aspirateur robot est passé du gadget au véritable assistant ménager. Mais entre un modèle à 200 € et un autre à 1 200 €, les écarts de prix recouvrent des différences réelles : navigation, puissance d'aspiration, fonction lavage et surtout station d'entretien. Ce guide vous aide à payer pour les fonctions qui changent vraiment votre quotidien.",
+        sections: [
+          {
+            heading: '1. La navigation : le critère numéro un',
+            body: [
+              "C'est ce qui sépare un bon robot d'un robot frustrant. Fuyez les modèles à navigation aléatoire (qui rebondissent au hasard) : préférez une navigation laser (LiDAR) qui cartographie votre logement, planifie son trajet et nettoie pièce par pièce.",
+              "Une bonne cartographie permet aussi de créer des zones interdites, de cibler une seule pièce et de mémoriser plusieurs étages — un confort qui justifie largement le surcoût par rapport à l'entrée de gamme.",
+            ],
+          },
+          {
+            heading: "2. L'aspiration et la gestion des tapis",
+            body: [
+              "La puissance s'exprime en Pa (pascals). Pour des sols durs et un peu de moquette, 2 500–4 000 Pa suffisent ; au-delà de 5 000 Pa, le robot gère mieux les tapis épais et les poils d'animaux.",
+              "Vérifiez la brosse principale : les modèles anti-emmêlement (caoutchouc plutôt que poils) évitent la corvée de démêler les cheveux. Un détail qui change tout si vous avez les cheveux longs ou un animal.",
+            ],
+          },
+          {
+            heading: '3. La fonction lavage : utile mais à nuancer',
+            body: [
+              "Beaucoup de robots aspirent ET lavent. C'est pratique pour un entretien léger, mais ne remplace pas une vraie serpillière sur des taches incrustées. Les meilleurs modèles relèvent ou retirent la serpillière sur les tapis pour ne pas les mouiller.",
+              "Les versions premium lavent les patins à l'eau chaude et les sèchent automatiquement, évitant les odeurs. Si vous avez beaucoup de carrelage ou de parquet, c'est un vrai plus.",
+            ],
+          },
+          {
+            heading: '4. La station : le confort qui fait la différence',
+            body: [
+              "La station d'auto-vidage transvase la poussière du robot dans un grand sac : vous ne videz le bac que toutes les quelques semaines au lieu de chaque passage. Pour beaucoup d'utilisateurs, c'est LA fonction qui rend le robot vraiment autonome.",
+              "Les stations « tout-en-un » vont plus loin : remplissage d'eau, lavage et séchage des patins. Elles expliquent une grande partie de l'écart de prix sur le haut de gamme — à vous de juger si ce confort vaut l'investissement.",
+            ],
+          },
+        ],
+        checklist: [
+          'Navigation laser (LiDAR) avec cartographie, jamais aléatoire',
+          'Aspiration adaptée : 2 500 Pa+ (sols durs), 5 000 Pa+ (tapis/animaux)',
+          'Brosse anti-emmêlement si cheveux longs ou animaux',
+          'Station auto-vidage pour une vraie autonomie',
+          'Lavage avec relevage de serpillière si vous avez des tapis',
+        ],
+        picks: [
+          { budget: 'Petit budget · ~250 €', name: 'Aspirateur robot à navigation laser', note: 'Cartographie fiable et aspiration correcte à petit prix.', query: 'aspirateur robot navigation laser LiDAR' },
+          { budget: 'Polyvalent · ~500 €', name: 'Robot aspirateur + lavage avec station', note: 'Aspiration, lavage et auto-vidage : le bon équilibre.', query: 'aspirateur robot lavage station auto-vidage' },
+          { budget: 'Premium · ~1000 €', name: 'Robot haut de gamme station tout-en-un', note: 'Lavage eau chaude, séchage et entretien automatiques.', query: 'aspirateur robot station tout-en-un lavage eau chaude' },
+        ],
+      },
+      en: {
+        title: 'How to choose a robot vacuum',
+        subtitle: 'Laser navigation, suction, mopping, auto-empty dock: what justifies (or not) the price.',
+        readTime: '6 min',
+        updated: 'June 2026',
+        intro:
+          "The robot vacuum has gone from gadget to genuine household assistant. But between a €200 model and a €1,200 one, the price gap reflects real differences: navigation, suction power, mopping and above all the maintenance dock. This guide helps you pay for the features that truly change your daily life.",
+        sections: [
+          {
+            heading: '1. Navigation: the number-one criterion',
+            body: [
+              "This is what separates a good robot from a frustrating one. Avoid random-navigation models (bouncing around at random): prefer laser navigation (LiDAR) that maps your home, plans its route and cleans room by room.",
+              "Good mapping also lets you set no-go zones, target a single room and remember multiple floors — a convenience that easily justifies the premium over entry-level.",
+            ],
+          },
+          {
+            heading: '2. Suction and carpet handling',
+            body: [
+              "Power is expressed in Pa (pascals). For hard floors and a bit of carpet, 2,500–4,000 Pa is enough; above 5,000 Pa the robot handles thick rugs and pet hair better.",
+              "Check the main brush: anti-tangle models (rubber rather than bristles) avoid the chore of untangling hair. A detail that changes everything if you have long hair or a pet.",
+            ],
+          },
+          {
+            heading: '3. The mopping function: useful but nuanced',
+            body: [
+              "Many robots vacuum AND mop. It's handy for light upkeep but doesn't replace a real mop on stuck-on stains. The best models lift or remove the mop pad on carpets to avoid wetting them.",
+              "Premium versions wash the pads with hot water and dry them automatically, avoiding odours. If you have a lot of tile or hard flooring, it's a real plus.",
+            ],
+          },
+          {
+            heading: '4. The dock: the convenience that makes the difference',
+            body: [
+              "The auto-empty dock transfers dust from the robot into a large bag: you empty it only every few weeks instead of after every run. For many users, this is THE feature that makes the robot truly autonomous.",
+              "All-in-one docks go further: water refill, pad washing and drying. They explain much of the price gap at the high end — it's up to you to judge whether that convenience is worth the investment.",
+            ],
+          },
+        ],
+        checklist: [
+          'Laser (LiDAR) navigation with mapping, never random',
+          'Suction to match: 2,500 Pa+ (hard floors), 5,000 Pa+ (carpets/pets)',
+          'Anti-tangle brush if long hair or pets',
+          'Auto-empty dock for genuine autonomy',
+          'Mopping with mop-lift if you have carpets',
+        ],
+        picks: [
+          { budget: 'Small budget · ~€250', name: 'Laser-navigation robot vacuum', note: 'Reliable mapping and decent suction at a low price.', query: 'robot vacuum laser navigation LiDAR' },
+          { budget: 'All-round · ~€500', name: 'Robot vacuum + mop with dock', note: 'Vacuuming, mopping and auto-empty: the right balance.', query: 'robot vacuum mop auto-empty dock' },
+          { budget: 'Premium · ~€1000', name: 'High-end robot with all-in-one dock', note: 'Hot-water washing, drying and automatic maintenance.', query: 'robot vacuum all-in-one dock hot water mop' },
+        ],
+      },
+    },
+  },
 ];
 
 // Renvoie le contenu d'un guide localisé pour la langue donnée.

@@ -237,10 +237,19 @@ function Chip({ children, onClick, variant = "soft", icon }) {
 function ProductCard({ product }) {
   const brand = product?.brand || "";
   const model = product?.model || "";
+  const verified = !!product?.amazon_verified;
   const price = product?.price;
-  const rating = product?.rating ?? null;
-  const reviews = product?.reviews ?? null;
+  // Only trust rating/reviews/image when they come from a real Amazon result.
+  const rating = verified ? (product?.rating ?? null) : null;
+  const reviews = verified ? (product?.reviews ?? null) : null;
   const why = product?.why;
+  // Indicative price range for non-verified (Gemini) estimates.
+  const roundNice = (v) => (v >= 1000 ? Math.round(v / 50) * 50 : v >= 100 ? Math.round(v / 10) * 10 : Math.round(v / 5) * 5);
+  const priceLabel = price == null
+    ? null
+    : verified
+      ? `${price.toLocaleString("fr-FR")} €`
+      : `≈ ${roundNice(price * 0.9).toLocaleString("fr-FR")} – ${roundNice(price * 1.1).toLocaleString("fr-FR")} €`;
   return (
     <div
       style={{
@@ -263,15 +272,15 @@ function ProductCard({ product }) {
           overflow: "hidden",
         }}
       >
-        {product?.image_url ? (
+        {verified && product?.image_url ? (
           <img
             src={product.image_url}
             alt={model}
             style={{ maxHeight: 110, maxWidth: "90%", objectFit: "contain", filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.1))" }}
           />
         ) : (
-          <div style={{ fontFamily: "ui-monospace, monospace", fontSize: 10, color: BB.inkMute, background: "rgba(255,255,255,0.85)", padding: "4px 8px", borderRadius: 6 }}>
-            chargement…
+          <div style={{ fontFamily: BB.body, fontSize: 13, fontWeight: 700, color: BB.inkMute, background: "rgba(255,255,255,0.85)", padding: "6px 10px", borderRadius: 8, textAlign: "center" }}>
+            {[brand, model].filter(Boolean).join(" ") || "Produit"}
           </div>
         )}
         <div
@@ -346,9 +355,16 @@ function ProductCard({ product }) {
           }}
         >
           <div>
-            <span style={{ fontSize: 18, fontWeight: 800, color: BB.ink }}>
-              {price != null ? `${price.toLocaleString("fr-FR")} €` : "$229"}
-            </span>
+            {priceLabel && (
+              <span style={{ fontSize: verified ? 18 : 15, fontWeight: verified ? 800 : 600, color: verified ? BB.ink : BB.inkSoft }}>
+                {priceLabel}
+              </span>
+            )}
+            {!verified && priceLabel && (
+              <div style={{ fontSize: 10, color: BB.inkMute, fontStyle: "italic", marginTop: 1 }}>
+                Estimation · prix réel sur Amazon
+              </div>
+            )}
           </div>
           <button
             onClick={() => product?.amazon_url && window.open(product.amazon_url, '_blank', 'noopener,noreferrer')}
