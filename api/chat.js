@@ -1,3 +1,5 @@
+import { searchFirstItem, creatorsConfigured } from './_creators.js';
+
 const GEMINI_MODEL = 'gemini-3.1-flash-lite';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 const AFFILIATE_TAG = 'oraklia123-21';
@@ -271,92 +273,40 @@ function isCoherent(geminiBrand, geminiModel, amazonTitle) {
 
 // Searches Amazon, returns first real result with full data — null = blocked.
 async function checkAmazon(brand, model, searchContext) {
-  const q = encodeURIComponent(`${searchContext ? searchContext + ' ' : ''}${brand} ${model}`);
+  // Not configured (e.g. local dev without creds) -> behave like "blocked": the
+  // handler bails fast and the UI shows estimates. No network call.
+  if (!creatorsConfigured()) return { found: null, error: 'creators_not_configured' };
+
+  const keywords = `${searchContext ? searchContext + ' ' : ''}${brand} ${model}`.trim();
   try {
-    const res = await fetch(`https://www.amazon.fr/s?k=${q}&language=fr_FR`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept-Language': 'fr-FR,fr;q=0.9',
-      },
-      signal: AbortSignal.timeout(2500),
-    });
-    if (!res.ok) return { found: null };
-    const html = await res.text();
-    // Amazon's AWS WAF bot challenge answers with HTTP 202 (still 2xx) and a tiny
-    // JS-challenge page. Detect it (and CAPTCHA pages) and treat as BLOCKED so we
-    // bail immediately instead of probing every candidate for 3s each.
-    if (
-      res.status !== 200 ||
-      html.length < 10000 ||
-      html.includes('awsWaf') ||
-      html.includes('AwsWafIntegration') ||
-      html.includes('validateCaptcha') ||
-      html.includes('robot check')
-    ) {
-      return { found: null };
-    }
+    const item = await searchFirstItem(keywords);
+    if (!item || !item.asin) return { found: false };
 
-    const resultIdx = html.indexOf('data-component-type="s-search-result"');
-    if (resultIdx === -1) return { found: false };
-
-    const ctx = html.slice(Math.max(0, resultIdx - 400), resultIdx + 400);
-    const asinMatch = ctx.match(/data-asin="([A-Z0-9]{10})"/);
-    if (!asinMatch?.[1]) return { found: false };
-
-    const asin = asinMatch[1];
-    const chunk = html.slice(resultIdx, resultIdx + 12000);
-
-    // Image
-    const imgMatch =
-      chunk.match(/class="s-image"[^>]*src="(https:\/\/m\.media-amazon\.com[^"]+)"/) ||
-      chunk.match(/class="s-image"[^>]*data-src="(https:\/\/m\.media-amazon\.com[^"]+)"/);
-
-    // Title — first matching span class Amazon uses for product titles
-    const titleRaw =
-      chunk.match(/class="a-size-base-plus a-color-base a-text-normal">([^<]+)</)?.at(1)?.trim() ||
-      chunk.match(/class="a-size-medium a-color-base a-text-normal">([^<]+)</)?.at(1)?.trim() ||
-      null;
-
-    // Split "ASUS Zenbook S 13 OLED..." → brand=ASUS, model=Zenbook S 13 OLED...
-    const titleWords = titleRaw ? titleRaw.split(' ') : [];
+    // Brand/model for display: prefer the real Amazon title. Split the same way
+    // the old scraper did - "ASUS Zenbook S 13..." -> brand=ASUS, model=rest.
+    const titleWords = item.title ? item.title.split(' ') : [];
     const amazonBrand = titleWords[0] || brand;
     const amazonModel = titleWords.slice(1).join(' ') || model;
 
-    // Price — the most reliable source is the fully-formatted "a-offscreen" span
-    // (e.g. "1 199,00 €"). Take the integer euros before the decimal comma; fall
-    // back to "a-price-whole". Strip spaces/NBSP/thousands separators.
-    let price = null;
-    const offscreen = chunk.match(/class="a-offscreen">\s*([\d.,\s]+?)\s*€/);
-    if (offscreen) {
-      const intPart = offscreen[1].replace(/[\s €]/g, '').split(',')[0];
-      price = parseInt(intPart.replace(/\D/g, ''), 10) || null;
-    }
-    if (price == null) {
-      const pw = chunk.match(/class="a-price-whole">\s*([^<]+)/);
-      price = pw ? (parseInt(pw[1].replace(/\D/g, ''), 10) || null) : null;
-    }
-
-    // Rating: "4,5 sur 5"
-    const ratingMatch = chunk.match(/(\d[,.]\d)\s+sur\s+5/);
-    const rating = ratingMatch ? parseFloat(ratingMatch[1].replace(',', '.')) : null;
-
-    // Reviews
-    const reviewMatch = chunk.match(/aria-label="([\d][\d ]*)\s*évaluation/);
-    const reviews = reviewMatch ? (parseInt(reviewMatch[1].replace(/\D/g, ''), 10) || null) : null;
-
     return {
       found: true,
-      title: titleRaw,
-      amazon_url: `https://www.amazon.fr/dp/${asin}?tag=${AFFILIATE_TAG}`,
-      image_url: imgMatch?.[1] ?? null,
+      title: item.title,
+      // Build the /dp/ASIN link ourselves so our affiliate tag is guaranteed.
+      amazon_url: `https://www.amazon.fr/dp/${item.asin}?tag=${AFFILIATE_TAG}`,
+      image_url: item.image ?? null,
       brand: amazonBrand,
       model: amazonModel,
-      price,
-      rating,
-      reviews,
+      price: item.price ?? null,
+      // Amazon's API does not expose numeric star ratings / review counts, so
+      // these stay null -> the UI keeps them hidden (amazon_verified rules).
+      rating: null,
+      reviews: null,
     };
-  } catch {
-    return { found: null };
+  } catch (e) {
+    // Auth failure, 403 (account not yet eligible), 429 (1 TPS / daily-cap
+    // throttle), 5xx, network - treat as BLOCKED so we bail fast and show
+    // estimates, like the old WAF guard. Surfaced via _debug.amazon_error.
+    return { found: null, error: e?.message || String(e) };
   }
 }
 
@@ -499,6 +449,7 @@ export default async function handler(req, res) {
   };
   let amazonVerifyMs = 0;
   let amazonBlocked = false;
+  let amazonError = null;
   let directCount = 0;
 
   // New path: recommend decided by mode. Legacy path: decided by parsed.action.
@@ -516,7 +467,7 @@ export default async function handler(req, res) {
         if (verifiedProducts.length >= 3) break;
         triedNames.add(`${p.brand} ${p.model}`);
         const check = await checkAmazon(p.brand, p.model, searchContext);
-        if (check.found === null) { amazonBlocked = true; break; }
+        if (check.found === null) { amazonBlocked = true; amazonError = check.error || null; break; }
         if (check.found === true && isCoherent(p.brand, p.model, check.title)) {
           verifiedProducts.push({
             ...p,
@@ -612,6 +563,7 @@ export default async function handler(req, res) {
       total:             totalMs,
     },
     amazon_blocked: amazonBlocked,
+    amazon_error: amazonError,
     direct_links: directCount,
     friend: friendRes.debug,
     ...debugTokens,

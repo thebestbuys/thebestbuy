@@ -49,10 +49,13 @@ The client builds a compact **criteria object**, not a chat transcript: `objet` 
 - Model `gemini-3.1-flash-lite`, `responseMimeType: 'application/json'`. Response includes a `_debug` block (timings, token counts, `amazon_blocked`, `direct_links`).
 
 ### Amazon verification, affiliate links & the `amazon_verified` flag
-`checkAmazon()` in `api/chat.js` (and `api/amazon.js`) scrapes Amazon.fr to confirm a product exists and pull its **real** price/rating/reviews/image plus a direct `/dp/ASIN` affiliate link.
+`checkAmazon()` in `api/chat.js` (and `searchAmazonFr()` in `api/amazon.js`) verifies a product exists and pulls its **real** price + image + direct `/dp/ASIN` affiliate link via the **Amazon Creators API** (`api/_creators.js`).
 
-- **Server-side scraping is currently blocked**: Amazon's AWS WAF returns HTTP 202 + a JS challenge. Detection (`status !== 200 || html.length < 10000 || awsWaf markers`) returns `{found:null}`, which sets `amazonBlocked` and bails fast (this is a deliberate latency guard — without it the handler probes all candidates and hangs 30–60s). So in practice verification currently returns nothing.
-- Every product carries an **`amazon_verified` boolean** — `true` only when its data came from a successful scrape. **The UI must only show the exact price, star rating, review count, and product image when `amazon_verified === true`.** Otherwise: show an indicative price *range* labelled as an estimate, no stars, no Amazon image (CSS placeholder instead). This is enforced in `src/components/ProductCard.jsx` (`PriceTag`, `VerifiedRating`, `ProductImage`) and mirrored in `MobileApp.jsx`. Do not regress this.
+- **The old HTML scraping was replaced by the Creators API** (the AWS-WAF block — HTTP 202 + JS challenge — made scraping unusable; the legacy PA-API 5.0 was retired 2026-05-15). `api/_creators.js` does OAuth 2.0 client-credentials (Credential ID/Secret → cached bearer token), then `POST {base}/searchItems`. Configured via `AMAZON_CREATORS_*` env vars (see `.env.example`); the dev middleware reads them from `.env.local`.
+- **Graceful degradation is the contract**: if creds are missing, the account isn't yet API-eligible (403), the quota throttles (429 — starts at 1 TPS / 8,640 req/day), or any error/network failure, `checkAmazon()` returns `{found:null}` → `amazonBlocked` → the UI shows estimates. The failure reason is surfaced in `_debug.amazon_error`. So a broken/unconfigured API never breaks the app, it just falls back to estimates — same UX as the old WAF block.
+- **Star rating & review count are NOT available** from Amazon's API → `rating`/`reviews` stay `null` and the UI keeps them hidden. Only price/image/link get verified.
+- Endpoint details (`AMAZON_CREATORS_API_BASE`, token URL, `offersV2` price path) come partly from third-party docs and are **env-overridable** in case a call fails — check `_debug.amazon_error` first.
+- Every product carries an **`amazon_verified` boolean** — `true` only when its data came from a successful Creators API hit. **The UI must only show the exact price, star rating, review count, and product image when `amazon_verified === true`.** Otherwise: show an indicative price *range* labelled as an estimate, no stars, no Amazon image (CSS placeholder instead). This is enforced in `src/components/ProductCard.jsx` (`PriceTag`, `VerifiedRating`, `ProductImage`) and mirrored in `MobileApp.jsx`. Do not regress this.
 - Affiliate tag `oraklia123-21` lives in `api/chat.js`, `api/amazon.js`, and `src/data/guides.js`. **Every** Amazon URL must carry `&tag=`. Direct `/dp/ASIN` links are preferred; `searchLink(brand, model)` is the commission-eligible fallback.
 
 ### Amazon Associates compliance (the site was rejected once — don't reintroduce violations)
@@ -70,4 +73,4 @@ The client builds a compact **criteria object**, not a chat transcript: `objet` 
 
 ## Gotchas
 - The `Edit` tool can fail to match lines containing `€` or non-breaking spaces. Edit a nearby clean line, or rewrite the block.
-- After changing recommendation/verification logic, watch latency: the WAF block-detection early-return is what keeps responses fast.
+- After changing recommendation/verification logic, watch latency: verification calls the Creators API sequentially per candidate, so any error must fast-fail to `{found:null}` (which bails the loop) — that early-return is what keeps responses fast. Per-request token caching + the 6h result cache in `api/_creators.js` protect the low daily quota; don't remove them.
