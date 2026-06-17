@@ -29,7 +29,9 @@ const MARKETPLACE = process.env.AMAZON_MARKETPLACE || 'www.amazon.fr';
 // Login-with-Amazon security profile lives in the EU region, so the NA endpoint
 // (api.amazon.com) returns a 400. Override via env for NA/FE accounts.
 const TOKEN_URL = process.env.AMAZON_CREATORS_TOKEN_URL || 'https://api.amazon.co.uk/auth/o2/token';
-const SCOPE = process.env.AMAZON_CREATORS_SCOPE || 'creatorsapi/default';
+// v3.x credentials (LWA direct) use the double-colon scope; the older v2.x
+// Cognito-fronted creds used 'creatorsapi/default'. Wrong form → invalid_scope.
+const SCOPE = process.env.AMAZON_CREATORS_SCOPE || 'creatorsapi::default';
 const API_BASE = (process.env.AMAZON_CREATORS_API_BASE || 'https://creatorsapi.amazon/catalog/v1').replace(/\/+$/, '');
 
 // Conservative default: only resources confirmed by a working Creators API
