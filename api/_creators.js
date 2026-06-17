@@ -14,8 +14,9 @@
 //   AMAZON_CREATORS_CLIENT_SECRET  (required)  Credential Secret
 //   AMAZON_PARTNER_TAG             default oraklia123-21
 //   AMAZON_MARKETPLACE            default www.amazon.fr
-//   AMAZON_CREATORS_TOKEN_URL     default https://api.amazon.com/auth/o2/token
-//                                 (EU/v3 alt: https://api.amazon.co.uk/auth/o2/token)
+//   AMAZON_CREATORS_TOKEN_URL     default https://api.amazon.co.uk/auth/o2/token
+//                                 (EU region — FR/DE/etc. The security profile's
+//                                 region decides this; NA alt: https://api.amazon.com/auth/o2/token)
 //   AMAZON_CREATORS_SCOPE         default creatorsapi/default
 //   AMAZON_CREATORS_API_BASE      default https://creatorsapi.amazon/catalog/v1
 //   AMAZON_CREATORS_RESOURCES     comma-separated override of the fields below
@@ -24,7 +25,10 @@ const CLIENT_ID = process.env.AMAZON_CREATORS_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.AMAZON_CREATORS_CLIENT_SECRET || '';
 export const PARTNER_TAG = process.env.AMAZON_PARTNER_TAG || 'oraklia123-21';
 const MARKETPLACE = process.env.AMAZON_MARKETPLACE || 'www.amazon.fr';
-const TOKEN_URL = process.env.AMAZON_CREATORS_TOKEN_URL || 'https://api.amazon.com/auth/o2/token';
+// EU region by default — this app's marketplace is www.amazon.fr and the
+// Login-with-Amazon security profile lives in the EU region, so the NA endpoint
+// (api.amazon.com) returns a 400. Override via env for NA/FE accounts.
+const TOKEN_URL = process.env.AMAZON_CREATORS_TOKEN_URL || 'https://api.amazon.co.uk/auth/o2/token';
 const SCOPE = process.env.AMAZON_CREATORS_SCOPE || 'creatorsapi/default';
 const API_BASE = (process.env.AMAZON_CREATORS_API_BASE || 'https://creatorsapi.amazon/catalog/v1').replace(/\/+$/, '');
 
@@ -75,7 +79,14 @@ async function getAccessToken() {
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`token ${res.status}: ${text.slice(0, 180)}`);
+    // LWA errors are JSON: {error, error_description, error_index}. Surface the
+    // meaningful fields instead of a blob truncated mid-error_index.
+    let detail = text.slice(0, 200);
+    try {
+      const j = JSON.parse(text);
+      if (j.error) detail = `${j.error}${j.error_description ? ': ' + j.error_description : ''}`;
+    } catch { /* keep raw */ }
+    throw new Error(`token ${res.status}: ${detail}`);
   }
   const json = await res.json();
   if (!json.access_token) throw new Error('token: no access_token in response');

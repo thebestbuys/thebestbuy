@@ -94,8 +94,13 @@ export default async function handler(req, res) {
     // Translate the status embedded in the thrown message into a clear cause.
     let diag = '❓ Erreur API non catégorisée — voir search.error.';
     if (isToken || /\b401\b/.test(msg)) {
-      diag =
-        '🔑 Échec du token OAuth : CLIENT_ID/SECRET invalides, ou TOKEN_URL/scope incorrects (essaie AMAZON_CREATORS_TOKEN_URL=https://api.amazon.co.uk/auth/o2/token).';
+      if (/invalid_scope/i.test(msg)) {
+        diag = '🔑 invalid_scope : la valeur AMAZON_CREATORS_SCOPE ne correspond pas à ce que le profil autorise.';
+      } else if (/invalid_client|unauthorized_client/i.test(msg)) {
+        diag = '🔑 invalid_client : CLIENT_ID/SECRET erronés, ou mauvaise région de token endpoint pour ce profil.';
+      } else {
+        diag = '🔑 Échec du token OAuth : vérifie la région de AMAZON_CREATORS_TOKEN_URL (EU=api.amazon.co.uk, NA=api.amazon.com) et le scope.';
+      }
     } else if (/\b403\b/.test(msg)) {
       diag =
         "⛔ HTTP 403 : le compte n'est pas (encore) éligible à la Creators API, ou le partnerTag n'est pas rattaché à ces identifiants.";
