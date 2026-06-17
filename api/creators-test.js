@@ -103,7 +103,7 @@ export default async function handler(req, res) {
       }
     } else if (/AssociateNotEligible|eligibility requirements/i.test(msg)) {
       diag =
-        "⛔ Compte Associates PAS éligible (AssociateNotEligible). L'auth est OK, mais Amazon n'ouvre l'accès API qu'une fois les conditions remplies (≈3 ventes qualifiantes / 180 j, compte validé). Rien à corriger côté code — l'app bascule en 'verified' automatiquement dès que le compte devient éligible.";
+        "⛔ Compte Associates PAS éligible (AssociateNotEligible). L'auth est OK, mais Amazon n'ouvre l'accès Creators API qu'à partir de 10 ventes qualifiantes sur les 30 derniers jours glissants. Rien à corriger côté code — l'app bascule en 'verified' automatiquement dès que le compte devient éligible.";
     } else if (/\b403\b/.test(msg)) {
       diag =
         "⛔ HTTP 403 : accès refusé. Le partnerTag n'est peut-être pas rattaché à ces identifiants, ou le compte n'est pas éligible.";
