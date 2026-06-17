@@ -42,6 +42,22 @@ export function creatorsConfigured() {
   return !!(CLIENT_ID && CLIENT_SECRET);
 }
 
+// Non-secret view of the resolved config — for the diagnostic endpoint only.
+// Never exposes the actual id/secret, just whether they're present plus the
+// endpoints/params in effect, so a wrong env override is easy to spot.
+export function creatorsDebugConfig() {
+  return {
+    hasClientId: !!CLIENT_ID,
+    hasClientSecret: !!CLIENT_SECRET,
+    partnerTag: PARTNER_TAG,
+    marketplace: MARKETPLACE,
+    tokenUrl: TOKEN_URL,
+    scope: SCOPE,
+    apiBase: API_BASE,
+    resources: RESOURCES,
+  };
+}
+
 // --- token cache (module scope → survives warm serverless invocations) ---
 let _token = null; // { value, expiresAt }
 
