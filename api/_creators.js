@@ -105,6 +105,12 @@ function mapItem(item) {
     item.images?.primary?.small?.url ||
     null;
 
+  // Canonical affiliate product URL provided by the API — it already carries
+  // our partner tag + tracking params, so it's the *proper* link to use and is
+  // preferred over a hand-built /dp/ASIN?tag= URL. Returned by default (not a
+  // requestable resource). camelCase in the Creators API (PA-API: DetailPageURL).
+  const detailPageURL = item.detailPageURL || item.DetailPageURL || null;
+
   const listing = item.offersV2?.listings?.[0] || item.offers?.listings?.[0] || null;
   const rawPrice =
     listing?.price?.money?.amount ??
@@ -113,7 +119,7 @@ function mapItem(item) {
     null;
   const price = rawPrice != null ? Math.round(Number(rawPrice)) || null : null;
 
-  return { asin, title, image, price };
+  return { asin, title, image, price, detailPageURL };
 }
 
 // In-process result cache to protect the daily quota (8,640/day for the first
@@ -122,16 +128,34 @@ function mapItem(item) {
 const _cache = new Map();
 const CACHE_TTL = 6 * 60 * 60 * 1000; // 6h
 
-export async function searchFirstItem(keywords) {
+// Search Amazon.fr and return up to 3 mapped candidates (best-of-N is decided
+// by the caller, which has the expected brand/model/price to score against).
+// `minPrice`/`maxPrice` are budget bounds in CENTS (PA-API/Creators units —
+// 3241 = 32.41€): minPrice keeps items with ≥1 offer above it, maxPrice ≤ it.
+// Cache key folds in the price bounds so two budgets don't share a result.
+export async function searchItems(keywords, { minPrice, maxPrice } = {}) {
   const key = String(keywords || '').toLowerCase().replace(/\s+/g, ' ').trim();
-  if (!key) return null;
-  const hit = _cache.get(key);
-  if (hit && hit.expiresAt > Date.now()) return hit.item;
+  if (!key) return [];
+  const lo = Number.isFinite(minPrice) && minPrice > 0 ? Math.round(minPrice) : undefined;
+  const hi = Number.isFinite(maxPrice) && maxPrice > 0 ? Math.round(maxPrice) : undefined;
+  const cacheKey = `${key}|${lo ?? ''}|${hi ?? ''}`;
+  const hit = _cache.get(cacheKey);
+  if (hit && hit.expiresAt > Date.now()) return hit.items;
 
-  const json = await catalog('searchItems', { keywords: key, itemCount: 3, resources: RESOURCES });
-  const items = json.searchResult?.items || json.itemsResult?.items || json.items || [];
-  const item = items.length ? mapItem(items[0]) : null;
+  const body = { keywords: key, itemCount: 3, resources: RESOURCES };
+  if (lo !== undefined) body.minPrice = lo;
+  if (hi !== undefined) body.maxPrice = hi;
 
-  _cache.set(key, { item, expiresAt: Date.now() + CACHE_TTL });
-  return item;
+  const json = await catalog('searchItems', body);
+  const raw = json.searchResult?.items || json.itemsResult?.items || json.items || [];
+  const items = raw.map(mapItem).filter(Boolean);
+
+  _cache.set(cacheKey, { items, expiresAt: Date.now() + CACHE_TTL });
+  return items;
+}
+
+// Back-compat thin wrapper: first candidate only (used by /api/amazon enrich).
+export async function searchFirstItem(keywords, opts) {
+  const items = await searchItems(keywords, opts);
+  return items[0] || null;
 }

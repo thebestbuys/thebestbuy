@@ -22,7 +22,9 @@ async function searchAmazonFr(query) {
     const item = await searchFirstItem(query);
     if (!item || !item.asin) return null;
     return {
-      amazon_url: `https://www.amazon.fr/dp/${item.asin}?tag=${AFFILIATE_TAG}`,
+      // Prefer the API's canonical affiliate URL (proper tag + tracking, direct
+      // product page); fall back to a hand-built /dp/ASIN link with our tag.
+      amazon_url: item.detailPageURL || `https://www.amazon.fr/dp/${item.asin}?tag=${AFFILIATE_TAG}`,
       image_url: item.image ?? null,
       // Amazon's API does not expose numeric star ratings / review counts.
       rating: null,

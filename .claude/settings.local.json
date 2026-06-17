@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npm install *)",
       "Bash(cd /d \"e:\\\\WS\\\\git\\\\thebestbuy\")",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(git -c user.email=thebestbuyersclub@gmail.com commit --allow-empty -m ' *)",
+      "Bash(git pull *)"
     ]
   }
 }

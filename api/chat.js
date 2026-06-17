@@ -1,4 +1,4 @@
-import { searchFirstItem, creatorsConfigured } from './_creators.js';
+import { searchItems, creatorsConfigured } from './_creators.js';
 
 const GEMINI_MODEL = 'gemini-3.1-flash-lite';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
@@ -128,6 +128,27 @@ function langLineFor(lang) {
 function answersJson(answers) {
   if (!Array.isArray(answers) || answers.length === 0) return '[]';
   return JSON.stringify(answers.map((a) => ({ q: a.q || '', r: a.a ?? a.label ?? '' })));
+}
+
+// The budget question (always the first one) carries €-bounds on the chosen
+// choice. Turn them into Creators API minPrice/maxPrice (in CENTS), with a 10%
+// tolerance so a near-budget deal isn't filtered out, and so the lowest/highest
+// open-ended brackets (min=null / max=null) stay unbounded on that side.
+function budgetBoundsCents(answers) {
+  if (!Array.isArray(answers)) return {};
+  for (const a of answers) {
+    const min = Number(a?.min);
+    const max = Number(a?.max);
+    const hasMin = Number.isFinite(min) && min > 0;
+    const hasMax = Number.isFinite(max) && max > 0;
+    if (hasMin || hasMax) {
+      return {
+        minPrice: hasMin ? Math.round(min * 100 * 0.9) : undefined,
+        maxPrice: hasMax ? Math.round(max * 100 * 1.1) : undefined,
+      };
+    }
+  }
+  return {};
 }
 
 // Optional user profile block — a free-form self-description used to tailor
@@ -271,15 +292,45 @@ function isCoherent(geminiBrand, geminiModel, amazonTitle) {
   return (brandMatch && matched >= 1) || (!brandMatch && matched >= 2);
 }
 
-// Searches Amazon, returns first real result with full data — null = blocked.
-async function checkAmazon(brand, model, searchContext) {
+// Among the few candidates Amazon returns for a query, pick the best match for
+// what Gemini asked for — instead of blindly trusting result[0]. A coherent
+// title dominates; ties break on closeness to Gemini's expected price, then on
+// having an image. If none is coherent, the caller's isCoherent() gate still
+// rejects the top pick, preserving the old "must match" behaviour.
+function pickBestItem(items, brand, model, expectedPrice) {
+  let best = null;
+  let bestScore = -Infinity;
+  for (const it of items) {
+    if (!it || !it.asin) continue;
+    let score = 0;
+    if (isCoherent(brand, model, it.title)) score += 100;
+    if (it.image) score += 5;
+    if (it.price != null) {
+      score += 3;
+      if (expectedPrice > 0) {
+        // up to +20 for an on-target price, decaying with relative deviation
+        const dev = Math.abs(it.price - expectedPrice) / expectedPrice;
+        score += Math.max(0, 20 - dev * 20);
+      }
+    }
+    if (score > bestScore) { bestScore = score; best = it; }
+  }
+  return best;
+}
+
+// Searches Amazon, returns the best real result with full data — null = blocked.
+// `opts`: { minPrice, maxPrice } budget bounds in CENTS; `expectedPrice` (euros)
+// is Gemini's guess, used only to rank the candidates.
+async function checkAmazon(brand, model, searchContext, opts = {}) {
   // Not configured (e.g. local dev without creds) -> behave like "blocked": the
   // handler bails fast and the UI shows estimates. No network call.
   if (!creatorsConfigured()) return { found: null, error: 'creators_not_configured' };
 
+  const { minPrice, maxPrice, expectedPrice = 0 } = opts;
   const keywords = `${searchContext ? searchContext + ' ' : ''}${brand} ${model}`.trim();
   try {
-    const item = await searchFirstItem(keywords);
+    const items = await searchItems(keywords, { minPrice, maxPrice });
+    const item = pickBestItem(items, brand, model, expectedPrice);
     if (!item || !item.asin) return { found: false };
 
     // Brand/model for display: prefer the real Amazon title. Split the same way
@@ -291,8 +342,10 @@ async function checkAmazon(brand, model, searchContext) {
     return {
       found: true,
       title: item.title,
-      // Build the /dp/ASIN link ourselves so our affiliate tag is guaranteed.
-      amazon_url: `https://www.amazon.fr/dp/${item.asin}?tag=${AFFILIATE_TAG}`,
+      // Prefer the API's canonical affiliate URL (proper tag + tracking, lands
+      // straight on the product page); fall back to a hand-built /dp/ASIN link
+      // with our tag if the API didn't return one.
+      amazon_url: item.detailPageURL || `https://www.amazon.fr/dp/${item.asin}?tag=${AFFILIATE_TAG}`,
       image_url: item.image ?? null,
       brand: amazonBrand,
       model: amazonModel,
@@ -461,12 +514,18 @@ export default async function handler(req, res) {
     const triedNames = new Set();
     let verifiedProducts = [];
     const searchContext = searchTerm;
+    // Filter Amazon results to the user's budget bracket (gift mode keeps its
+    // budget in free text, not structured answers, so this is simply empty there).
+    const budget = budgetBoundsCents(answers);
 
     const verifyCandidates = async (candidates) => {
       for (const p of candidates) {
         if (verifiedProducts.length >= 3) break;
         triedNames.add(`${p.brand} ${p.model}`);
-        const check = await checkAmazon(p.brand, p.model, searchContext);
+        const check = await checkAmazon(p.brand, p.model, searchContext, {
+          ...budget,
+          expectedPrice: Number(p.price) || 0,
+        });
         if (check.found === null) { amazonBlocked = true; amazonError = check.error || null; break; }
         if (check.found === true && isCoherent(p.brand, p.model, check.title)) {
           verifiedProducts.push({
