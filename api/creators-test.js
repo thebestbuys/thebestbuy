@@ -101,9 +101,12 @@ export default async function handler(req, res) {
       } else {
         diag = '🔑 Échec du token OAuth : vérifie la région de AMAZON_CREATORS_TOKEN_URL (EU=api.amazon.co.uk, NA=api.amazon.com) et le scope.';
       }
+    } else if (/AssociateNotEligible|eligibility requirements/i.test(msg)) {
+      diag =
+        "⛔ Compte Associates PAS éligible (AssociateNotEligible). L'auth est OK, mais Amazon n'ouvre l'accès API qu'une fois les conditions remplies (≈3 ventes qualifiantes / 180 j, compte validé). Rien à corriger côté code — l'app bascule en 'verified' automatiquement dès que le compte devient éligible.";
     } else if (/\b403\b/.test(msg)) {
       diag =
-        "⛔ HTTP 403 : le compte n'est pas (encore) éligible à la Creators API, ou le partnerTag n'est pas rattaché à ces identifiants.";
+        "⛔ HTTP 403 : accès refusé. Le partnerTag n'est peut-être pas rattaché à ces identifiants, ou le compte n'est pas éligible.";
     } else if (/\b429\b/.test(msg)) {
       diag = '⏳ HTTP 429 : quota dépassé (démarre à 1 TPS / 8 640 req/jour). Réessaie plus tard.';
     } else if (/\b400\b/.test(msg)) {
