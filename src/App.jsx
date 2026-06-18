@@ -134,12 +134,16 @@ function ResultsPlaceholder({ category }) {
 // for guests and when the circle has nothing to show yet.
 function TrendingCircle({ onOpen }) {
   const { t } = useI18n();
-  const { user } = useAuth();
+  const { user, cloudReady } = useAuth();
   const [items, setItems] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
+  // Wait for the Supabase session (cloudReady), not just `user`: `user` is
+  // restored synchronously from localStorage but the cloud session is set a tick
+  // later, so fetching on `user` alone would call circleTrending() before
+  // hasCloudSession() is true and silently get an empty result (no RPC call).
   useEffect(() => {
-    if (!user) {
+    if (!user || !cloudReady) {
       setItems([]);
       setLoaded(false);
       return;
@@ -154,10 +158,10 @@ function TrendingCircle({ onOpen }) {
     return () => {
       alive = false;
     };
-  }, [user?.sub]);
+  }, [user?.sub, cloudReady]);
 
   // Hidden for guests, and until the first fetch resolves (no empty flash).
-  if (!user || !loaded) return null;
+  if (!user || !cloudReady || !loaded) return null;
 
   return (
     <section className="home-trending">

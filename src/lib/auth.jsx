@@ -56,6 +56,7 @@ function loadGisScript() {
 const AuthContext = createContext({
   user: null,
   ready: false,
+  cloudReady: false,
   clientId: '',
   isNative: false,
   lastError: null,
@@ -75,8 +76,19 @@ export function AuthProvider({ children }) {
     }
   });
   const [ready, setReady] = useState(false);
+  // Reactive mirror of cloud.js's session: true once a Supabase session exists.
+  // `user` is restored synchronously from localStorage, but the Supabase session
+  // is set asynchronously after getSession() — consumers that need the cloud
+  // (e.g. circle_trending) must wait for this rather than for `user`.
+  const [cloudReady, setCloudReady] = useState(false);
   const [lastError, setLastError] = useState(null);
   const initializedRef = useRef(false);
+
+  // Single place to set both the module-level session and the reactive flag.
+  const applyCloudSession = useCallback((sess) => {
+    setCloudSession(sess);
+    setCloudReady(Boolean(sess));
+  }, []);
 
   const handleCredential = useCallback((response) => {
     const payload = decodeJwt(response?.credential);
@@ -107,7 +119,7 @@ export function AuthProvider({ children }) {
             console.error('[auth] supabase sign-in failed', error);
             return;
           }
-          setCloudSession(data.session);
+          applyCloudSession(data.session);
           await cloudUpsertProfileIdentity({
             displayName: u.name,
             avatarUrl: u.picture,
@@ -132,7 +144,7 @@ export function AuthProvider({ children }) {
     const storedSub = storedUser?.sub || null;
     supabase.auth.getSession().then(({ data }) => {
       if (!active || !data?.session) return;
-      setCloudSession(data.session);
+      applyCloudSession(data.session);
       // Refresh the public identity on every session restore, so users who were
       // already signed in before profiles existed become discoverable.
       if (storedUser) {
@@ -145,7 +157,7 @@ export function AuthProvider({ children }) {
       pullOnly(storedSub).catch(() => {});
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, sess) => {
-      setCloudSession(sess);
+      applyCloudSession(sess);
     });
     return () => {
       active = false;
@@ -232,7 +244,7 @@ export function AuthProvider({ children }) {
             token: r.idToken,
           });
           if (!error) {
-            setCloudSession(data.session);
+            applyCloudSession(data.session);
             await cloudUpsertProfileIdentity({
               displayName: u.name,
               avatarUrl: u.picture,
@@ -260,7 +272,7 @@ export function AuthProvider({ children }) {
     } catch {}
     // End the cloud session (keeps the account's server data intact).
     if (isSupabaseConfigured) {
-      setCloudSession(null);
+      applyCloudSession(null);
       try {
         await supabase.auth.signOut();
       } catch {}
@@ -305,6 +317,7 @@ export function AuthProvider({ children }) {
       value={{
         user,
         ready,
+        cloudReady,
         clientId: CLIENT_ID,
         isNative: IS_NATIVE,
         lastError,
