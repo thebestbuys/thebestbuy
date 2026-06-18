@@ -122,6 +122,8 @@ const TRANSLATIONS = {
     "friends.decline": "Refuser",
     "friends.myFriends": "Mes amis",
     "friends.empty": "Pas encore d'amis. Utilise la recherche ci-dessus.",
+    "friends.remove": "Retirer",
+    "friends.removeConfirm": "Retirer {name} de tes amis ?",
 
     // Profile (personalization)
     "profile.title": "Mon profil",
@@ -389,6 +391,8 @@ const TRANSLATIONS = {
     "friends.decline": "Decline",
     "friends.myFriends": "My friends",
     "friends.empty": "No friends yet. Use the search above.",
+    "friends.remove": "Remove",
+    "friends.removeConfirm": "Remove {name} from your friends?",
 
     // Profile (personalization)
     "profile.title": "My profile",

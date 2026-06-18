@@ -7,6 +7,7 @@ import {
   listIncomingRequests,
   listFriends,
   respondFriendRequest,
+  removeFriend,
 } from '../lib/cloud.js';
 
 function initials(name = '') {
@@ -98,6 +99,13 @@ export default function FriendsPanel({ open, onClose }) {
     refresh();
   };
 
+  const remove = async (f) => {
+    if (!window.confirm(t('friends.removeConfirm', { name: f.display_name }))) return;
+    setFriends((cur) => cur.filter((x) => x.user_id !== f.user_id));
+    await removeFriend(f.user_id);
+    refresh();
+  };
+
   return (
     <div className="auth-modal-bg" onClick={onClose}>
       <div
@@ -186,7 +194,9 @@ export default function FriendsPanel({ open, onClose }) {
                   <li key={f.user_id} className="friend-row">
                     <Avatar name={f.display_name} url={f.avatar_url} />
                     <span className="friend-name">{f.display_name}</span>
-                    <span className="friend-tag">{t('friends.friend')}</span>
+                    <button type="button" className="friend-btn ghost" onClick={() => remove(f)}>
+                      {t('friends.remove')}
+                    </button>
                   </li>
                 ))}
               </ul>

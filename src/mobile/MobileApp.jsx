@@ -21,6 +21,7 @@ import {
   listIncomingRequests,
   listFriends,
   respondFriendRequest,
+  removeFriend,
   getAccessToken,
 } from "../lib/cloud.js";
 
@@ -2723,6 +2724,12 @@ function FriendsSheet({ open, onClose }) {
     await respondFriendRequest(id, accept);
     refresh();
   };
+  const remove = async (f) => {
+    if (!window.confirm(t("friends.removeConfirm", { name: f.display_name }))) return;
+    setFriends((cur) => cur.filter((x) => x.user_id !== f.user_id));
+    await removeFriend(f.user_id);
+    refresh();
+  };
 
   const ava = (name, url) =>
     url ? (
@@ -2808,7 +2815,7 @@ function FriendsSheet({ open, onClose }) {
                 <div key={f.user_id} style={row}>
                   {ava(f.display_name, f.avatar_url)}
                   <span style={nameStyle}>{f.display_name}</span>
-                  <span style={tag(false)}>{t("friends.friend")}</span>
+                  <button type="button" style={ghost} onClick={() => remove(f)}>{t("friends.remove")}</button>
                 </div>
               ))
             )}

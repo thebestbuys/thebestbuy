@@ -172,6 +172,21 @@ export async function listFriends() {
   return data || [];
 }
 
+// Remove an existing friendship (delete the row in either direction). RLS only
+// lets a user delete rows that involve them.
+export async function removeFriend(friendUserId) {
+  if (!hasCloudSession() || !friendUserId) return { ok: false };
+  const me = uid();
+  const { error } = await supabase
+    .from('friend_requests')
+    .delete()
+    .or(
+      `and(requester_id.eq.${me},addressee_id.eq.${friendUserId}),` +
+        `and(requester_id.eq.${friendUserId},addressee_id.eq.${me})`,
+    );
+  return { ok: !error, error };
+}
+
 // Accept a request (status -> accepted) or decline/cancel it (delete the row).
 export async function respondFriendRequest(requestId, accept) {
   if (!hasCloudSession() || !requestId) return { ok: false };
