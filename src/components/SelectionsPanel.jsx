@@ -16,6 +16,7 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
   const { t, lang } = useI18n();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   const [items, setItems] = useState([]);
+  const [shared, setShared] = useState(false);
   // Signature of the data currently held in `items` (user + store revision).
   // We only reload when it changes, so reopening with no edits is a no-op.
   const loadedSig = useRef(null);
@@ -38,8 +39,6 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
   }, [open, onClose]);
 
   if (!open) return null;
-
-  const [shared, setShared] = useState(false);
 
   const remove = (id, e) => {
     e.stopPropagation();
