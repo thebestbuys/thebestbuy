@@ -223,7 +223,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
         </button>
         <FriendRequestsBell onOpen={onOpenFriends} pingKey={friendsOpen} />
         <LangToggle />
-        <AuthMenu variant="home" onOpenSelections={onOpenSelections} onOpenProfile={onOpenProfile} onOpenFriends={onOpenFriends} />
+        <AuthMenu variant="home" onOpenSelections={onOpenSelections} onOpenProfile={onOpenProfile} onOpenFriends={onOpenFriends} onOpenHistory={onOpenHistory} />
       </div>
       <main className="home-main">
         <h1 className="home-logo">Oraklia</h1>
@@ -795,7 +795,7 @@ export default function App() {
             )}
             <FriendRequestsBell onOpen={navOpenFriends} pingKey={friendsOpen} />
             <LangToggle />
-            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} />
           </div>
         </header>
 
