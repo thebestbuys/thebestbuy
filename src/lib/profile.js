@@ -20,6 +20,12 @@ const FIELD_MAX = {
 
 const FIELDS = Object.keys(FIELD_MAX);
 
+// Extra persisted keys that are NOT part of the AI prompt (e.g. birthday, used
+// for occasion reminders and shared with friends).
+const EXTRA_MAX = { birthday: 10 }; // 'YYYY-MM-DD' or 'MM-DD'
+const ALL_KEYS = [...FIELDS, ...Object.keys(EXTRA_MAX)];
+const MAX_FOR = { ...FIELD_MAX, ...EXTRA_MAX };
+
 // Order + French/English labels used when building the prompt string.
 const PROMPT_LABELS = {
   gender: { fr: 'Genre', en: 'Gender' },
@@ -30,7 +36,7 @@ const PROMPT_LABELS = {
   bio: { fr: 'À propos', en: 'About' },
 };
 
-const EMPTY = FIELDS.reduce((o, k) => ((o[k] = ''), o), {});
+const EMPTY = ALL_KEYS.reduce((o, k) => ((o[k] = ''), o), {});
 
 function keyFor(userId) {
   return userId ? `${ROOT_KEY}:${userId}` : `${ROOT_KEY}:_anon`;
@@ -43,7 +49,7 @@ export function getProfile(userId) {
     const obj = JSON.parse(raw);
     if (!obj || typeof obj !== 'object') return { ...EMPTY };
     // Migrate old shape (bio-only) and ignore unknown keys.
-    return { ...EMPTY, ...Object.fromEntries(FIELDS.map((k) => [k, String(obj[k] ?? '')])) };
+    return { ...EMPTY, ...Object.fromEntries(ALL_KEYS.map((k) => [k, String(obj[k] ?? '')])) };
   } catch {
     return { ...EMPTY };
   }
@@ -52,8 +58,8 @@ export function getProfile(userId) {
 export function saveProfile(userId, profile) {
   const clean = {};
   let anyValue = false;
-  for (const k of FIELDS) {
-    const v = String(profile?.[k] ?? '').slice(0, FIELD_MAX[k]).trim();
+  for (const k of ALL_KEYS) {
+    const v = String(profile?.[k] ?? '').slice(0, MAX_FOR[k]).trim();
     clean[k] = v;
     if (v) anyValue = true;
   }
@@ -75,7 +81,7 @@ export function hasProfile(userId) {
 export function replaceProfile(userId, data) {
   const clean = {};
   let anyValue = false;
-  for (const k of FIELDS) {
+  for (const k of ALL_KEYS) {
     const v = String(data?.[k] ?? '').trim();
     clean[k] = v;
     if (v) anyValue = true;

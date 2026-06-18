@@ -141,6 +141,36 @@ export async function cloudFetchProfileData() {
   return data?.data ?? null;
 }
 
+// ─── Occasions (reminders) ──────────────────────────────────────────────────
+export async function cloudUpsertOccasion(o) {
+  if (!hasCloudSession() || !o?.id) return;
+  await supabase.from('occasions').upsert(
+    {
+      id: String(o.id),
+      user_id: uid(),
+      label: o.label || '',
+      date: o.date || '',
+      recurring: o.recurring !== false,
+    },
+    { onConflict: 'id' },
+  );
+}
+
+export async function cloudDeleteOccasion(id) {
+  if (!hasCloudSession() || id == null) return;
+  await supabase.from('occasions').delete().eq('user_id', uid()).eq('id', String(id));
+}
+
+export async function cloudFetchOccasions() {
+  if (!hasCloudSession()) return null;
+  const { data, error } = await supabase
+    .from('occasions')
+    .select('id, label, date, recurring')
+    .order('created_at', { ascending: true });
+  if (error) return null;
+  return data || [];
+}
+
 // ─── Lists (named collections) ──────────────────────────────────────────────
 export async function cloudUpsertList(list) {
   if (!hasCloudSession() || !list?.id) return;

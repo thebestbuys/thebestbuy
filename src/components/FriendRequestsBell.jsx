@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
-import { listIncomingRequests } from '../lib/cloud.js';
+import { listIncomingRequests, listFriends } from '../lib/cloud.js';
+import { listOccasions, daysUntil } from '../lib/occasions.js';
+
+const SOON_DAYS = 14;
 
 // Bell with a badge counting pending incoming friend requests. Clicking opens
 // the Friends panel. Refreshes on mount, on window focus, every 60s, and
@@ -17,12 +20,26 @@ export default function FriendRequestsBell({ onOpen, pingKey }) {
       return;
     }
     let active = true;
-    const load = () =>
-      listIncomingRequests()
-        .then((r) => {
-          if (active) setCount(Array.isArray(r) ? r.length : 0);
-        })
-        .catch(() => {});
+    const load = async () => {
+      try {
+        const [reqs, friends] = await Promise.all([listIncomingRequests(), listFriends()]);
+        if (!active) return;
+        let n = Array.isArray(reqs) ? reqs.length : 0;
+        for (const f of friends || []) {
+          if (f.birthday) {
+            const d = daysUntil(f.birthday, true);
+            if (d != null && d <= SOON_DAYS) n += 1;
+          }
+        }
+        for (const o of listOccasions(user?.sub)) {
+          const d = daysUntil(o.date, o.recurring);
+          if (d != null && d >= 0 && d <= SOON_DAYS) n += 1;
+        }
+        setCount(n);
+      } catch {
+        /* ignore */
+      }
+    };
     load();
     const onFocus = () => load();
     window.addEventListener('focus', onFocus);
@@ -41,8 +58,8 @@ export default function FriendRequestsBell({ onOpen, pingKey }) {
       type="button"
       className="bell-btn"
       onClick={onOpen}
-      aria-label={t('friends.requests')}
-      title={t('friends.requests')}
+      aria-label={t('notif.title')}
+      title={t('notif.title')}
     >
       <svg width="17" height="17" viewBox="0 0 18 18" fill="none" aria-hidden="true">
         <path

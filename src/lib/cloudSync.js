@@ -20,17 +20,20 @@ import {
   cloudFetchRecipients,
   cloudFetchProfileData,
   cloudFetchLists,
+  cloudFetchOccasions,
   cloudUpsertSelection,
   cloudUpsertConversation,
   cloudUpsertRecipient,
   cloudUpsertProfileData,
   cloudUpsertList,
+  cloudUpsertOccasion,
 } from './cloud.js';
 import { listSelections, replaceSelections } from './selections.js';
 import { listConversations, replaceConversations } from './history.js';
 import { listRecipients, replaceRecipients } from './recipients.js';
 import { getProfile, replaceProfile, hasProfile } from './profile.js';
 import { listLists, replaceLists } from './lists.js';
+import { listOccasions, replaceOccasions } from './occasions.js';
 
 async function pullSelections(userId) {
   const server = await cloudFetchSelections();
@@ -57,6 +60,11 @@ async function pullLists(userId) {
   if (server) replaceLists(userId, server);
 }
 
+async function pullOccasions(userId) {
+  const server = await cloudFetchOccasions();
+  if (server) replaceOccasions(userId, server.map((o) => ({ ...o, recurring: o.recurring !== false })));
+}
+
 export async function pullOnly(userId) {
   if (!hasCloudSession()) return;
   await Promise.all([
@@ -65,6 +73,7 @@ export async function pullOnly(userId) {
     pullRecipients(userId),
     pullProfile(userId),
     pullLists(userId),
+    pullOccasions(userId),
   ]);
 }
 
@@ -92,6 +101,10 @@ export async function linkAndSync(userId) {
   const localLists = [...listLists(userId), ...listLists(null)];
   for (const l of localLists) {
     await cloudUpsertList(l).catch(() => {});
+  }
+  const localOccasions = [...listOccasions(userId), ...listOccasions(null)];
+  for (const o of localOccasions) {
+    await cloudUpsertOccasion(o).catch(() => {});
   }
 
   // 2. Pull the merged server state back down, overwriting the local cache.

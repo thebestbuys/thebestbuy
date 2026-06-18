@@ -2700,6 +2700,48 @@ ul {
   color: var(--text-faint);
   padding: 4px 2px;
 }
+.notif-panel {
+  max-width: 480px;
+}
+.occ-row {
+  align-items: center;
+}
+.occ-emoji {
+  font-size: 20px;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+}
+.occ-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  white-space: normal;
+  overflow: visible;
+}
+.occ-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.occ-when {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.occ-add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.occ-add .profile-input {
+  flex: 1;
+  min-width: 0;
+}
+.occ-add .occ-date {
+  flex: 0 0 auto;
+  width: 150px;
+}
 .friends-back {
   appearance: none;
   border: 0;

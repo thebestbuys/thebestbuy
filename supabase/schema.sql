@@ -77,6 +77,16 @@ create table if not exists public.lists (
   updated_at timestamptz not null default now()
 );
 
+-- ── Occasions (manual reminders: birthdays, etc.) ──────────────────────────
+create table if not exists public.occasions (
+  id         text        primary key,
+  user_id    uuid        not null references auth.users (id) on delete cascade,
+  label      text        not null,
+  date       text        not null,           -- 'MM-DD' or 'YYYY-MM-DD'
+  recurring  boolean     not null default true,
+  created_at timestamptz not null default now()
+);
+
 -- ── Shared lists (short share links) ───────────────────────────────────────
 -- A gift/wishlist snapshot stored under a short id, so share links stay tiny
 -- (?s=ab12cd34) instead of carrying the whole payload in the URL.
@@ -94,6 +104,7 @@ alter table public.profiles      enable row level security;
 alter table public.friend_requests enable row level security;
 alter table public.shared_lists  enable row level security;
 alter table public.lists         enable row level security;
+alter table public.occasions     enable row level security;
 
 drop policy if exists "own selections" on public.selections;
 create policy "own selections" on public.selections
@@ -156,6 +167,12 @@ create policy "create shared lists" on public.shared_lists
   for insert
   with check (auth.uid() is not null);
 
+drop policy if exists "own occasions" on public.occasions;
+create policy "own occasions" on public.occasions
+  for all
+  using      (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
 -- Lists: owner-only read/write. Friends read PUBLIC lists via SECURITY DEFINER
 -- functions (Phase 2), so the table itself stays private.
 drop policy if exists "own lists" on public.lists;
@@ -192,10 +209,11 @@ grant execute on function public.search_users(text) to authenticated;
 -- Drop first: the return columns changed (can't be done by CREATE OR REPLACE).
 drop function if exists public.list_friends();
 create function public.list_friends()
-returns table (user_id uuid, display_name text, avatar_url text, wishlist_count integer)
+returns table (user_id uuid, display_name text, avatar_url text, wishlist_count integer, birthday text)
 language sql security definer set search_path = public as $$
   select p.user_id, p.display_name, p.avatar_url,
-    (select count(*)::int from public.selections s where s.user_id = p.user_id) as wishlist_count
+    (select count(*)::int from public.selections s where s.user_id = p.user_id) as wishlist_count,
+    (p.data->>'birthday') as birthday
   from public.friend_requests fr
   join public.profiles p
     on p.user_id = case when fr.requester_id = auth.uid()

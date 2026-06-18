@@ -141,6 +141,19 @@ export default function ProfilePanel({ open, onClose }) {
               />
             </div>
 
+            <div className="profile-field">
+              <label className="profile-label" htmlFor="profile-birthday">
+                {t('profile.birthday')}
+              </label>
+              <input
+                id="profile-birthday"
+                className="profile-input"
+                type="date"
+                value={form.birthday || ''}
+                onChange={set('birthday')}
+              />
+            </div>
+
             <div className="profile-field profile-field-wide">
               <label className="profile-label" htmlFor="profile-address">
                 {t('profile.address')}

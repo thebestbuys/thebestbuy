@@ -10,6 +10,7 @@ import GiftPanel from './components/GiftPanel.jsx';
 import SharedGiftList from './components/SharedGiftList.jsx';
 import FriendsPanel from './components/FriendsPanel.jsx';
 import FriendRequestsBell from './components/FriendRequestsBell.jsx';
+import NotificationsPanel from './components/NotificationsPanel.jsx';
 import FavoriteButton from './components/FavoriteButton.jsx';
 import LegalNotices from './components/LegalNotices.jsx';
 import GuideArticle from './components/GuideArticle.jsx';
@@ -108,7 +109,7 @@ function ResultsPlaceholder({ category }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, friendsOpen, onOpenGift, onOpenLegal, onOpenGuide, onLoadConvo }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenNotifications, notifPing, onOpenGift, onOpenLegal, onOpenGuide, onLoadConvo }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -201,7 +202,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           </svg>
           {t('home.selections')}
         </button>
-        <FriendRequestsBell onOpen={onOpenFriends} pingKey={friendsOpen} />
+        <FriendRequestsBell onOpen={onOpenNotifications} pingKey={notifPing} />
         <LangToggle />
         <AuthMenu variant="home" onOpenSelections={onOpenSelections} onOpenProfile={onOpenProfile} onOpenFriends={onOpenFriends} onOpenHistory={onOpenHistory} />
       </div>
@@ -418,6 +419,7 @@ export default function App() {
   const [selectionsOpen, setSelectionsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [friendsOpen, setFriendsOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
   const [gift, setGift] = useState(null);   // recipient payload when in gift mode
   const [shareCopied, setShareCopied] = useState(false);
@@ -610,6 +612,7 @@ export default function App() {
   const navOpenSelections = () => { pushHistory(); setSelectionsOpen(true); };
   const navOpenProfile = () => { pushHistory(); setProfileOpen(true); };
   const navOpenFriends = () => { pushHistory(); setFriendsOpen(true); };
+  const navOpenNotifications = () => { pushHistory(); setNotifOpen(true); };
   const navOpenGift = () => { pushHistory(); setGiftOpen(true); };
   const navOpenProduct = (p) => { pushHistory(); setSelected(p); };
   // Start a gift advisor session from the recipient form. Reuses the normal
@@ -652,6 +655,7 @@ export default function App() {
       if (selected) { setSelected(null); return; }
       if (legalOpen) { setLegalOpen(false); return; }
       if (giftOpen) { setGiftOpen(false); return; }
+      if (notifOpen) { setNotifOpen(false); return; }
       if (friendsOpen) { setFriendsOpen(false); return; }
       if (profileOpen) { setProfileOpen(false); return; }
       if (selectionsOpen) { setSelectionsOpen(false); return; }
@@ -662,7 +666,7 @@ export default function App() {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, giftOpen, friendsOpen, profileOpen, selectionsOpen, historyOpen, activeGuide, category]);
+  }, [selected, legalOpen, giftOpen, notifOpen, friendsOpen, profileOpen, selectionsOpen, historyOpen, activeGuide, category]);
 
   const getAmazonUrl = (p) => {
     if (p.amazon_url) return p.amazon_url;
@@ -755,7 +759,8 @@ export default function App() {
           onOpenSelections={navOpenSelections}
           onOpenProfile={navOpenProfile}
           onOpenFriends={navOpenFriends}
-          friendsOpen={friendsOpen}
+          onOpenNotifications={navOpenNotifications}
+          notifPing={notifOpen}
           onOpenGift={navOpenGift}
           onOpenLegal={navOpenLegal}
           onOpenGuide={navOpenGuide}
@@ -775,6 +780,7 @@ export default function App() {
         />
         <ProfilePanel open={profileOpen} onClose={navBack} />
         <FriendsPanel open={friendsOpen} onClose={navBack} />
+        <NotificationsPanel open={notifOpen} onClose={navBack} onGift={startGift} />
         <GiftPanel open={giftOpen} onClose={navBack} onSubmit={startGift} />
         <LegalNotices open={legalOpen} onClose={navBack} />
       </>
@@ -817,7 +823,7 @@ export default function App() {
                 {shareCopied ? tr('gift.shareCopied') : tr('gift.share')}
               </button>
             )}
-            <FriendRequestsBell onOpen={navOpenFriends} pingKey={friendsOpen} />
+            <FriendRequestsBell onOpen={navOpenNotifications} pingKey={notifOpen} />
             <LangToggle />
             <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} />
           </div>
@@ -883,6 +889,8 @@ export default function App() {
       <GiftPanel open={giftOpen} onClose={navBack} onSubmit={startGift} />
 
       <FriendsPanel open={friendsOpen} onClose={navBack} />
+
+      <NotificationsPanel open={notifOpen} onClose={navBack} onGift={startGift} />
 
       <LegalNotices open={legalOpen} onClose={navBack} />
 

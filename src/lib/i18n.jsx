@@ -130,6 +130,22 @@ const TRANSLATIONS = {
     "friends.noPublicLists": "Aucune liste publique.",
     "friends.back": "← Retour",
 
+    // Notifications / occasions
+    "notif.title": "Notifications",
+    "notif.requests": "Demandes d'amis",
+    "notif.occasions": "Occasions à venir",
+    "notif.empty": "Rien de neuf pour l'instant.",
+    "occ.birthdayOf": "Anniversaire de {name}",
+    "occ.today": "aujourd'hui",
+    "occ.tomorrow": "demain",
+    "occ.inDays": "dans {n} j",
+    "occ.turns": "{age} ans",
+    "occ.addTitle": "Ajouter une occasion",
+    "occ.labelPlaceholder": "Pour qui / quoi ? (ex : Maman)",
+    "occ.add": "Ajouter",
+    "occ.recurring": "Chaque année",
+    "occ.delete": "Supprimer",
+
     // Profile (personalization)
     "profile.title": "Mon profil",
     "profile.sub": "Décrivez-vous pour des suggestions plus adaptées.",
@@ -149,6 +165,8 @@ const TRANSLATIONS = {
     "profile.nationalityPlaceholder": "Ex : française",
     "profile.address": "Adresse",
     "profile.addressPlaceholder": "Ex : Lyon, France",
+    "profile.birthday": "Date de naissance",
+    "profile.birthdayHint": "Partagée avec tes amis pour les rappels d'anniversaire.",
     "profile.label": "À propos de vous",
     "profile.placeholder":
       "Ex : famille de 4, deux jeunes enfants. J'aime les marques durables, je privilégie la simplicité et le rapport qualité-prix. Plutôt écosystème Apple. Sensible à l'écologie.",
@@ -428,6 +446,22 @@ const TRANSLATIONS = {
     "friends.noPublicLists": "No public list.",
     "friends.back": "← Back",
 
+    // Notifications / occasions
+    "notif.title": "Notifications",
+    "notif.requests": "Friend requests",
+    "notif.occasions": "Upcoming occasions",
+    "notif.empty": "Nothing new yet.",
+    "occ.birthdayOf": "{name}'s birthday",
+    "occ.today": "today",
+    "occ.tomorrow": "tomorrow",
+    "occ.inDays": "in {n}d",
+    "occ.turns": "turns {age}",
+    "occ.addTitle": "Add an occasion",
+    "occ.labelPlaceholder": "For whom / what? (e.g. Mom)",
+    "occ.add": "Add",
+    "occ.recurring": "Every year",
+    "occ.delete": "Delete",
+
     // Profile (personalization)
     "profile.title": "My profile",
     "profile.sub": "Describe yourself for better-tailored suggestions.",
@@ -447,6 +481,8 @@ const TRANSLATIONS = {
     "profile.nationalityPlaceholder": "e.g. French",
     "profile.address": "Address",
     "profile.addressPlaceholder": "e.g. Lyon, France",
+    "profile.birthday": "Birthday",
+    "profile.birthdayHint": "Shared with your friends for birthday reminders.",
     "profile.label": "About you",
     "profile.placeholder":
       "E.g. family of 4 with two young kids. I like durable brands, prefer simplicity and value for money. Mostly Apple ecosystem. I care about sustainability.",
