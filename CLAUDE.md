@@ -29,10 +29,12 @@ The `api/` functions are Vercel serverless handlers (ESM, `export default handle
 
 ## Architecture
 
-### Two parallel UIs — keep both in sync
-`src/main.jsx` renders **either** `src/App.jsx` (desktop/web) **or** `src/mobile/MobileApp.jsx` based on: Capacitor native → mobile; else viewport `< 768px` → mobile; `?view=mobile|web` query param overrides. The two UIs **barely share code** — `MobileApp.jsx` is a large self-contained file with inline styles and **does not use** the i18n system or the shared `ProductCard` components. **A feature/compliance change usually has to be applied in both `App.jsx` and `MobileApp.jsx`.**
+### Single responsive UI
+`src/main.jsx` always renders `src/App.jsx`, for every viewport (desktop / tablet / phone) and the native Capacitor build. There is **one** UI now — the old self-contained `src/mobile/MobileApp.jsx` (FR-hardcoded, inline styles, legacy backend) was retired. `App.jsx` adapts via CSS media queries plus a `useIsNarrow()` hook (matchMedia `(max-width: 979px)`):
+- **Wide (≥980px)**: the advisor is a two-pane split — `ChatPanel` (left) + `.results-panel` (right, `HeroCard` + `SmallCard`).
+- **Narrow (<980px)**: a single chat column. Recommendations render **inside the chat stream** as Amazon "shared link" cards (`ProductLinkCard` in `ProductCard.jsx`), like a link unfurled in WhatsApp/Messenger; no side results panel. The account controls (notif bell, lang, account menu) move into the chat header via `ChatPanel`'s `headerExtras` prop.
 
-Providers (both UIs): `LanguageProvider` → `AuthProvider` (see `src/main.jsx`).
+Providers: `LanguageProvider` → `AuthProvider` (see `src/main.jsx`).
 
 ### The advisor loop (core of the app)
 The client builds a compact **criteria object**, not a chat transcript: `objet` (the thing being searched) + `answers` = `[{id, q, a, tags, min, max}]`. `src/lib/askAI.js` exposes the two backend calls:
@@ -41,11 +43,11 @@ The client builds a compact **criteria object**, not a chat transcript: `objet` 
 
 `App.jsx` decides when to recommend via `shouldRecommendAt(n)`: at `n >= 5` answers, then every 3rd answer.
 
-`askAI({messages,...})` is the **legacy transcript-based** call — still used by the mobile app. Keep it working.
+`askAI({messages,...})` is the **legacy transcript-based** call. It used to power the old mobile UI; since `MobileApp.jsx` was retired it is **no longer called by the app** (dead but kept for now — safe to remove later, along with the legacy backend path).
 
 ### Backend `api/chat.js` — one handler, two prompt paths
 - **New path** (web): compact criteria JSON → prompts from `buildAskPrompt` / `buildRecommendPrompt`.
-- **Legacy path** (mobile): full transcript in `messages` with **no** `mode` field → `buildSystemPrompt` + `toGeminiContents`. The `legacy` flag (`messages.length > 0 && body.mode == null`) branches everything. **Don't break this — mobile depends on it.**
+- **Legacy path**: full transcript in `messages` with **no** `mode` field → `buildSystemPrompt` + `toGeminiContents`. The `legacy` flag (`messages.length > 0 && body.mode == null`) branches everything. This path is **no longer exercised by the app** (it backed the retired mobile UI); leave it in place but don't build new features on it.
 - Model `gemini-3.1-flash-lite`, `responseMimeType: 'application/json'`. Response includes a `_debug` block (timings, token counts, `amazon_blocked`, `direct_links`).
 
 ### Amazon verification, affiliate links & the `amazon_verified` flag
@@ -55,7 +57,7 @@ The client builds a compact **criteria object**, not a chat transcript: `objet` 
 - **Graceful degradation is the contract**: if creds are missing, the account isn't yet API-eligible (403), the quota throttles (429 — starts at 1 TPS / 8,640 req/day), or any error/network failure, `checkAmazon()` returns `{found:null}` → `amazonBlocked` → the UI shows estimates. The failure reason is surfaced in `_debug.amazon_error`. So a broken/unconfigured API never breaks the app, it just falls back to estimates — same UX as the old WAF block.
 - **Star rating & review count are NOT available** from Amazon's API → `rating`/`reviews` stay `null` and the UI keeps them hidden. Only price/image/link get verified.
 - Endpoint details (`AMAZON_CREATORS_API_BASE`, token URL, `offersV2` price path) come partly from third-party docs and are **env-overridable** in case a call fails — check `_debug.amazon_error` first.
-- Every product carries an **`amazon_verified` boolean** — `true` only when its data came from a successful Creators API hit. **The UI must only show the exact price, star rating, review count, and product image when `amazon_verified === true`.** Otherwise: show an indicative price *range* labelled as an estimate, no stars, no Amazon image (CSS placeholder instead). This is enforced in `src/components/ProductCard.jsx` (`PriceTag`, `VerifiedRating`, `ProductImage`) and mirrored in `MobileApp.jsx`. Do not regress this.
+- Every product carries an **`amazon_verified` boolean** — `true` only when its data came from a successful Creators API hit. **The UI must only show the exact price, star rating, review count, and product image when `amazon_verified === true`.** Otherwise: show an indicative price *range* labelled as an estimate, no stars, no Amazon image (CSS placeholder instead). This is enforced in `src/components/ProductCard.jsx` (`PriceTag`, `VerifiedRating`, `ProductImage`) — including the inline `ProductLinkCard`, which reuses them so the rules hold for free. Do not regress this.
 - Affiliate tag `oraklia123-21` lives in `api/chat.js`, `api/amazon.js`, and `src/data/guides.js`. **Every** Amazon URL must carry the `tag=`. The API's canonical **`detailPageURL`** (already tagged + tracked, lands on the product page) is preferred; a hand-built `/dp/ASIN?tag=` link is the fallback when the API omits it; `searchLink(brand, model)` is the last-resort commission-eligible fallback for unverified products.
 
 ### Amazon Associates compliance (the site was rejected once — don't reintroduce violations)
@@ -65,7 +67,7 @@ The client builds a compact **criteria object**, not a chat transcript: `objet` 
 - `src/data/guides.js` holds original bilingual editorial buying guides — they exist partly to satisfy Amazon's "site of value" content requirement.
 
 ### Cross-cutting pieces
-- **i18n** (`src/lib/i18n.jsx`): `useI18n()` → `{t, lang, setLang}`; `t(key, vars)` interpolates `{var}`. FR + EN dictionaries are in this one file — **add new keys to both languages**. (Mobile UI is hardcoded FR and ignores this.)
+- **i18n** (`src/lib/i18n.jsx`): `useI18n()` → `{t, lang, setLang}`; `t(key, vars)` interpolates `{var}`. FR + EN dictionaries are in this one file — **add new keys to both languages**.
 - **Routing**: there is no router. `App.jsx` is state-driven (home / advisor / product / legal / history / guide layers) and **intercepts the browser Back button** via the History API (`pushState`/`popstate`).
 - **Persistence**: localStorage only, no backend DB — conversations (`src/lib/history.js`, keys `bb_conversations*`), favorites/selections (`src/lib/selections.js`), language, auth.
 - `src/scoring.js` is an intentional stub (ranking/scoring is done by the AI now); `src/data.js` `CATEGORIES` is minimal/legacy.

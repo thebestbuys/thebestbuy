@@ -214,6 +214,32 @@ export function HeroCard({ product, density, onSelect }) {
   );
 }
 
+// Compact "shared link" card, à la WhatsApp/Messenger link unfurl — used inside
+// the chat stream on narrow viewports. Reuses ProductImage + PriceTag so the
+// amazon_verified rules hold automatically (placeholder + estimated range when
+// the product wasn't verified against Amazon; never a fake price/image/stars).
+export function ProductLinkCard({ product, rank, onSelect }) {
+  const { t, lang } = useI18n();
+  const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
+  return (
+    <button type="button" className="product-link-card" onClick={() => onSelect(product)}>
+      {rank != null && <span className="plc-rank">#{rank}</span>}
+      <span className="plc-thumb">
+        <ProductImage product={product} size="small" />
+      </span>
+      <span className="plc-body">
+        <span className="plc-brand">{product.brand}</span>
+        <span className="plc-model">{product.model}</span>
+        <span className="plc-bottom">
+          <PriceTag product={product} locale={locale} t={t} variant="small" />
+          <span className="plc-domain">amazon.fr</span>
+        </span>
+      </span>
+      <span className="plc-chevron" aria-hidden="true">›</span>
+    </button>
+  );
+}
+
 export function SmallCard({ product, rank, density, onSelect }) {
   const { t, lang } = useI18n();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';

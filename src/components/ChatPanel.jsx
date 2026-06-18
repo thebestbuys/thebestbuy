@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../lib/i18n.jsx';
+import { ProductLinkCard } from './ProductCard.jsx';
 
 function ChatBubble({ role, children, layout }) {
   const { t } = useI18n();
@@ -58,16 +59,17 @@ function BudgetBrackets({ question, onAnswer }) {
   );
 }
 
-export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, isTyping, layout, progress }) {
+export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, isTyping, layout, progress, products = [], onSelectProduct, inlineProducts = false, headerExtras = null }) {
   const { t } = useI18n();
   const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
+  const showInline = inlineProducts && products.length > 0;
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isTyping, currentQuestion]);
+  }, [messages, isTyping, currentQuestion, products]);
 
   const submit = (e) => {
     e.preventDefault();
@@ -93,6 +95,7 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
           </div>
         </div>
         <div className="chat-header-actions">
+          {headerExtras}
           {onOpenHistory && (
             <button
               className="chat-restart"
@@ -136,6 +139,23 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
         {messages.map((m, i) => (
           <ChatBubble key={i} role={m.role} layout={layout}>{m.text}</ChatBubble>
         ))}
+
+        {/* On narrow viewports the recommendations live inside the conversation,
+            as Amazon "shared link" cards rather than a separate results panel. */}
+        {showInline && (
+          <div className="chat-products">
+            <ChatBubble role="bot" layout={layout}>{t('chat.mySelection')}</ChatBubble>
+            <div className="chat-products-list">
+              {products.slice(0, 3).map((p, i) => (
+                <ProductLinkCard key={p.id} product={p} rank={i + 1} onSelect={onSelectProduct} />
+              ))}
+            </div>
+            {currentQuestion && (
+              <div className="chat-products-hint">{t('chat.refineHint')}</div>
+            )}
+          </div>
+        )}
+
         {isTyping && <TypingDots layout={layout} />}
 
         {!isTyping && currentQuestion && (

@@ -52,6 +52,8 @@ const TRANSLATIONS = {
     "chat.inputAnswer": "Ou écrivez votre réponse…",
     "chat.inputCriteria": "Précisez vos critères…",
     "chat.send": "Envoyer",
+    "chat.mySelection": "Voici ma sélection pour vous 🎁",
+    "chat.refineHint": "Continuez à répondre pour affiner ma sélection.",
     "chat.error":
       "Désolé, le service de recommandation n'a pas répondu ({msg}). Réessayez ou rafraîchissez la page.",
 
@@ -393,6 +395,8 @@ const TRANSLATIONS = {
     "chat.inputAnswer": "Or type your answer…",
     "chat.inputCriteria": "Refine your criteria…",
     "chat.send": "Send",
+    "chat.mySelection": "Here's my pick for you 🎁",
+    "chat.refineHint": "Keep answering to refine my picks.",
     "chat.error":
       "Sorry, the recommendation service didn't respond ({msg}). Try again or refresh the page.",
 

@@ -37,6 +37,25 @@ import {
   useTweaks,
 } from './components/TweaksPanel.jsx';
 
+// True on narrow viewports (phones / small tablets). Drives the advisor's
+// single-column "chat + inline product link cards" layout; on wider screens we
+// keep the two-pane chat + results panel. Mirrors the matchMedia pattern in
+// main.jsx and the `@media (max-width: 979px)` CSS breakpoint.
+function useIsNarrow() {
+  const query = '(max-width: 979px)';
+  const [narrow, setNarrow] = useState(
+    () => typeof matchMedia === 'function' && matchMedia(query).matches,
+  );
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return;
+    const mq = matchMedia(query);
+    const onChange = () => setNarrow(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return narrow;
+}
+
 const CATEGORY_KEYWORDS = {
   phone: ['téléphone', 'telephone', 'smartphone', 'phone', 'iphone', 'mobile', 'portable android', 'samsung galaxy', 'pixel'],
   laptop: ['ordinateur', 'laptop', 'pc portable', 'macbook', 'pc', 'notebook', 'ultrabook'],
@@ -410,6 +429,7 @@ export default function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const { user } = useAuth();
   const { t: tr, lang } = useI18n();
+  const narrow = useIsNarrow();
 
   const [category, setCategory] = useState(null);
   const [initialQuery, setInitialQuery] = useState('');
@@ -816,7 +836,7 @@ export default function App() {
   const rest = recommendedProducts.slice(1, 3);
 
   return (
-    <div className="app">
+    <div className={'app' + (narrow ? ' app-narrow' : '')}>
       <ChatPanel
         messages={messages}
         currentQuestion={currentQuestion}
@@ -828,8 +848,24 @@ export default function App() {
         isTyping={isTyping}
         layout={t.chatLayout}
         progress={progress}
+        products={recommendedProducts}
+        onSelectProduct={navOpenProduct}
+        inlineProducts={narrow}
+        headerExtras={narrow ? (
+          <>
+            {category === 'gift' && recommendedProducts.length > 0 && (
+              <button type="button" className="chat-restart" onClick={shareGift} title={tr('gift.share')} aria-label={tr('gift.share')}>
+                <span aria-hidden="true">🔗</span>
+              </button>
+            )}
+            <FriendRequestsBell onOpen={navOpenNotifications} pingKey={notifOpen} />
+            <LangToggle />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} />
+          </>
+        ) : null}
       />
 
+      {!narrow && (
       <main className="results-panel">
         <header className="results-header">
           <div>
@@ -886,6 +922,7 @@ export default function App() {
           </span>
         </footer>
       </main>
+      )}
 
       {selected && (
         <ProductDetail

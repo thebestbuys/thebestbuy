@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Capacitor } from '@capacitor/core';
 import App from './App.jsx';
-import MobileApp from './mobile/MobileApp.jsx';
 import { AuthProvider } from './lib/auth.jsx';
 import { LanguageProvider } from './lib/i18n.jsx';
 import ThemeEditor from './components/ThemeEditor.jsx';
@@ -12,31 +10,11 @@ import './styles.css';
 // Apply any saved "charte graphique" overrides before first paint (no flash).
 applyStoredTheme();
 
-const MOBILE_BREAKPOINT = 768;
-
-function getOverride() {
-  const v = new URLSearchParams(window.location.search).get('view');
-  return v === 'mobile' || v === 'web' ? v : null;
-}
-
-function pickInitial() {
-  const override = getOverride();
-  if (override) return override;
-  if (Capacitor.isNativePlatform()) return 'mobile';
-  return window.innerWidth < MOBILE_BREAKPOINT ? 'mobile' : 'web';
-}
-
+// Single responsive UI for every viewport (desktop / tablet / phone) and the
+// native Capacitor build. App.jsx adapts its layout via CSS + a `useIsNarrow`
+// hook; the old self-contained MobileApp.jsx was retired.
 function Root() {
-  const [view, setView] = useState(pickInitial);
   const [themeOpen, setThemeOpen] = useState(false);
-
-  useEffect(() => {
-    if (getOverride() || Capacitor.isNativePlatform()) return;
-    const mq = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    const onChange = () => setView(mq.matches ? 'mobile' : 'web');
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
 
   // Re-apply the theme when the OS scheme changes, while preference is "system".
   useEffect(() => {
@@ -63,7 +41,7 @@ function Root() {
 
   return (
     <>
-      {view === 'mobile' ? <MobileApp /> : <App />}
+      <App />
       <ThemeEditor open={themeOpen} onClose={() => setThemeOpen(false)} />
     </>
   );
