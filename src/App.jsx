@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CATEGORIES } from './data.js';
 import { askQuestion, recommend, enrichProduct } from './lib/askAI.js';
 import AuthMenu from './components/AuthMenu.jsx';
@@ -23,6 +23,8 @@ import { giftToPrompt, giftTitle, encodeGiftShare, decodeGiftShare } from './lib
 import { getAccessToken } from './lib/cloud.js';
 import {
   deriveTitle,
+  formatRelative,
+  listConversations,
   newConversationId,
   saveConversation,
 } from './lib/history.js';
@@ -106,12 +108,13 @@ function ResultsPlaceholder({ category }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, friendsOpen, onOpenGift, onOpenLegal, onOpenGuide }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, friendsOpen, onOpenGift, onOpenLegal, onOpenGuide, onLoadConvo }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
+  const recents = useMemo(() => listConversations(user?.sub).slice(0, 6), [user?.sub]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -184,19 +187,6 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
         <button
           type="button"
           className="auth-trigger auth-trigger-home"
-          onClick={onOpenHistory}
-          aria-label={t('home.history')}
-          title={t('home.historyTitle')}
-        >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.4" />
-            <path d="M8 4.5V8l2.4 1.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-          </svg>
-          {t('home.history')}
-        </button>
-        <button
-          type="button"
-          className="auth-trigger auth-trigger-home"
           onClick={onOpenSelections}
           aria-label={t('home.selectionsTitle')}
           title={t('home.selectionsTitle')}
@@ -264,6 +254,33 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             );
           })}
         </div>
+
+        {recents.length > 0 && (
+          <section className="home-history">
+            <div className="home-guides-head home-history-head">
+              <h2 className="home-guides-title">{t('home.history')}</h2>
+              <button type="button" className="home-history-all" onClick={onOpenHistory}>
+                {t('m.seeAll')}
+              </button>
+            </div>
+            <div className="home-history-grid">
+              {recents.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="home-history-card"
+                  onClick={() => onLoadConvo?.(c)}
+                >
+                  <span className="home-history-card-title">{c.title || t('history.conversation')}</span>
+                  <span className="home-history-card-meta">
+                    {formatRelative(c.updatedAt)}
+                    {c.done ? ` · ${t('history.done')}` : ''}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="home-guides">
           <div className="home-guides-head">
@@ -736,6 +753,7 @@ export default function App() {
           onOpenGift={navOpenGift}
           onOpenLegal={navOpenLegal}
           onOpenGuide={navOpenGuide}
+          onLoadConvo={loadConversation}
         />
         <HistoryPanel
           open={historyOpen}

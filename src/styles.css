@@ -2942,6 +2942,69 @@ select.profile-input {
 }
 
 /* ───────────────────────── Guides (home) ─────────────────────────── */
+.home-history {
+  width: 100%;
+  max-width: 1000px;
+  margin: 56px auto 0;
+  padding: 0 24px;
+}
+.home-history-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  text-align: left;
+  margin-bottom: 16px;
+}
+.home-history-all {
+  flex-shrink: 0;
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.home-history-all:hover {
+  text-decoration: underline;
+}
+.home-history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.home-history-card {
+  text-align: left;
+  background: var(--bg-elev);
+  border: 0.5px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.home-history-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+.home-history-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.home-history-card-meta {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
 .home-guides {
   width: 100%;
   max-width: 1000px;
