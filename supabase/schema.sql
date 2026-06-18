@@ -87,6 +87,26 @@ create table if not exists public.occasions (
   created_at timestamptz not null default now()
 );
 
+-- ── Polls ("ask a friend's opinion") ───────────────────────────────────────
+create table if not exists public.polls (
+  id         text        primary key,
+  owner_id   uuid        not null references auth.users (id) on delete cascade,
+  items      jsonb       not null,            -- [{b,m,p,u,i}, …]
+  created_at timestamptz not null default now()
+);
+create table if not exists public.poll_recipients (
+  poll_id      text not null references public.polls (id) on delete cascade,
+  recipient_id uuid not null references auth.users (id) on delete cascade,
+  primary key (poll_id, recipient_id)
+);
+create table if not exists public.poll_votes (
+  poll_id    text        not null references public.polls (id) on delete cascade,
+  voter_id   uuid        not null references auth.users (id) on delete cascade,
+  choice     integer     not null,
+  created_at timestamptz not null default now(),
+  primary key (poll_id, voter_id)
+);
+
 -- ── Shared lists (short share links) ───────────────────────────────────────
 -- A gift/wishlist snapshot stored under a short id, so share links stay tiny
 -- (?s=ab12cd34) instead of carrying the whole payload in the URL.
@@ -105,6 +125,9 @@ alter table public.friend_requests enable row level security;
 alter table public.shared_lists  enable row level security;
 alter table public.lists         enable row level security;
 alter table public.occasions     enable row level security;
+alter table public.polls           enable row level security;
+alter table public.poll_recipients enable row level security;
+alter table public.poll_votes      enable row level security;
 
 drop policy if exists "own selections" on public.selections;
 create policy "own selections" on public.selections
@@ -180,6 +203,76 @@ create policy "own lists" on public.lists
   for all
   using      (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- Polls: owner manages own rows directly; all cross-user access goes through the
+-- SECURITY DEFINER functions below (recipients/votes have no direct policy).
+drop policy if exists "own polls" on public.polls;
+create policy "own polls" on public.polls
+  for all
+  using      (auth.uid() = owner_id)
+  with check (auth.uid() = owner_id);
+
+-- Create a poll and address it to accepted friends only.
+create or replace function public.create_poll(p_id text, p_items jsonb, p_recipients uuid[])
+returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.polls (id, owner_id, items) values (p_id, auth.uid(), p_items);
+  insert into public.poll_recipients (poll_id, recipient_id)
+  select p_id, r
+  from unnest(p_recipients) as r
+  where exists (
+    select 1 from public.friend_requests fr
+    where fr.status = 'accepted'
+      and ((fr.requester_id = auth.uid() and fr.addressee_id = r)
+        or (fr.requester_id = r and fr.addressee_id = auth.uid()))
+  );
+end;
+$$;
+grant execute on function public.create_poll(text, jsonb, uuid[]) to authenticated;
+
+-- Polls addressed to me (with the asker's identity + my current vote).
+create or replace function public.incoming_polls()
+returns table (id text, owner_id uuid, owner_name text, owner_avatar text, items jsonb, created_at timestamptz, my_vote integer)
+language sql security definer set search_path = public as $$
+  select pl.id, pl.owner_id, pr.display_name, pr.avatar_url, pl.items, pl.created_at,
+    (select v.choice from public.poll_votes v where v.poll_id = pl.id and v.voter_id = auth.uid())
+  from public.polls pl
+  join public.poll_recipients prr on prr.poll_id = pl.id and prr.recipient_id = auth.uid()
+  join public.profiles pr on pr.user_id = pl.owner_id
+  order by pl.created_at desc;
+$$;
+grant execute on function public.incoming_polls() to authenticated;
+
+-- My polls with per-voter results.
+create or replace function public.outgoing_polls()
+returns table (id text, items jsonb, created_at timestamptz, votes jsonb)
+language sql security definer set search_path = public as $$
+  select pl.id, pl.items, pl.created_at,
+    coalesce((
+      select jsonb_agg(jsonb_build_object('choice', v.choice, 'name', p.display_name))
+      from public.poll_votes v join public.profiles p on p.user_id = v.voter_id
+      where v.poll_id = pl.id
+    ), '[]'::jsonb)
+  from public.polls pl
+  where pl.owner_id = auth.uid()
+  order by pl.created_at desc;
+$$;
+grant execute on function public.outgoing_polls() to authenticated;
+
+-- Cast / change my vote (only if I'm a recipient).
+create or replace function public.vote_poll(p_id text, p_choice integer)
+returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if exists (select 1 from public.poll_recipients where poll_id = p_id and recipient_id = auth.uid()) then
+    insert into public.poll_votes (poll_id, voter_id, choice)
+    values (p_id, auth.uid(), p_choice)
+    on conflict (poll_id, voter_id) do update set choice = excluded.choice;
+  end if;
+end;
+$$;
+grant execute on function public.vote_poll(text, integer) to authenticated;
 
 -- ── Friend directory functions (SECURITY DEFINER) ──────────────────────────
 -- These read the public identity columns of OTHER users without opening the

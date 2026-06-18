@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
-import { listIncomingRequests, listFriends, respondFriendRequest } from '../lib/cloud.js';
+import {
+  listIncomingRequests,
+  listFriends,
+  respondFriendRequest,
+  incomingPolls,
+  outgoingPolls,
+  votePoll,
+} from '../lib/cloud.js';
+import { AmazonPrice, ProductImage } from './ProductCard.jsx';
 import {
   listOccasions,
   addOccasion,
@@ -24,6 +32,8 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
   const [incoming, setIncoming] = useState([]);
   const [friends, setFriends] = useState([]);
   const [occasions, setOccasions] = useState([]);
+  const [inPolls, setInPolls] = useState([]);
+  const [outPolls, setOutPolls] = useState([]);
   const [label, setLabel] = useState('');
   const [date, setDate] = useState('');
 
@@ -31,6 +41,18 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
     listIncomingRequests().then(setIncoming);
     listFriends().then(setFriends);
     setOccasions(listOccasions(user?.sub));
+    incomingPolls().then(setInPolls);
+    outgoingPolls().then(setOutPolls);
+  };
+
+  const amazonUrl = (p) =>
+    p.u || `https://www.amazon.fr/s?k=${encodeURIComponent(`${p.b || ''} ${p.m || ''}`)}&tag=oraklia123-21`;
+
+  const vote = async (pollId, idx) => {
+    setInPolls((cur) => cur.map((p) => (p.id === pollId ? { ...p, my_vote: idx } : p)));
+    await votePoll(pollId, idx);
+    incomingPolls().then(setInPolls);
+    outgoingPolls().then(setOutPolls);
   };
 
   useEffect(() => {
@@ -159,6 +181,40 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
               </>
             )}
 
+            {inPolls.length > 0 && (
+              <>
+                <div className="friends-section">{t('poll.incoming')}</div>
+                {inPolls.map((poll) => (
+                  <div key={poll.id} className="poll-card">
+                    <div className="poll-card-head">{t('poll.from', { name: poll.owner_name })}</div>
+                    <ul className="pub-items poll-vote-items">
+                      {(poll.items || []).map((p, idx) => {
+                        const chosen = poll.my_vote === idx;
+                        return (
+                          <li key={idx} className={'pub-item poll-pick' + (chosen ? ' is-on' : '')}>
+                            <a className="pub-item-img" href={amazonUrl(p)} target="_blank" rel="noopener noreferrer sponsored">
+                              <ProductImage product={{ brand: p.b, model: p.m, image_url: p.i }} size="small" />
+                            </a>
+                            <span className="pub-item-main">
+                              <span className="pub-item-title">{[p.b, p.m].filter(Boolean).join(' ')}</span>
+                              {p.p != null && <span className="pub-item-price"><AmazonPrice price={p.p} /></span>}
+                            </span>
+                            <button
+                              type="button"
+                              className={'friend-btn' + (chosen ? '' : ' ghost')}
+                              onClick={() => vote(poll.id, idx)}
+                            >
+                              {chosen ? t('poll.voted') : t('poll.vote')}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+              </>
+            )}
+
             <div className="friends-section">{t('notif.occasions')}</div>
             {upcoming.length === 0 ? (
               <div className="friends-hint">{nothing ? t('notif.empty') : '—'}</div>
@@ -185,6 +241,40 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
                   </li>
                 ))}
               </ul>
+            )}
+
+            {outPolls.length > 0 && (
+              <>
+                <div className="friends-section">{t('poll.outgoing')}</div>
+                {outPolls.map((poll) => {
+                  const votes = Array.isArray(poll.votes) ? poll.votes : [];
+                  return (
+                    <div key={poll.id} className="poll-card">
+                      <ul className="pub-items">
+                        {(poll.items || []).map((p, idx) => {
+                          const voters = votes.filter((v) => v.choice === idx);
+                          return (
+                            <li key={idx} className="pub-item">
+                              <span className="pub-item-img">
+                                <ProductImage product={{ brand: p.b, model: p.m, image_url: p.i }} size="small" />
+                              </span>
+                              <span className="pub-item-main">
+                                <span className="pub-item-title">{[p.b, p.m].filter(Boolean).join(' ')}</span>
+                              </span>
+                              <span className="poll-tally">{voters.length}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      <div className="poll-voters">
+                        {votes.length === 0
+                          ? t('poll.noVotes')
+                          : votes.map((v, i) => `${v.name} → ${(v.choice ?? 0) + 1}`).join(' · ')}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
             )}
 
             <div className="friends-section">{t('occ.addTitle')}</div>

@@ -11,6 +11,7 @@ import SharedGiftList from './components/SharedGiftList.jsx';
 import FriendsPanel from './components/FriendsPanel.jsx';
 import FriendRequestsBell from './components/FriendRequestsBell.jsx';
 import NotificationsPanel from './components/NotificationsPanel.jsx';
+import AskOpinionPanel from './components/AskOpinionPanel.jsx';
 import FavoriteButton from './components/FavoriteButton.jsx';
 import LegalNotices from './components/LegalNotices.jsx';
 import GuideArticle from './components/GuideArticle.jsx';
@@ -109,7 +110,7 @@ function ResultsPlaceholder({ category }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenNotifications, notifPing, onOpenGift, onOpenLegal, onOpenGuide, onLoadConvo }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifPing, onOpenGift, onOpenLegal, onOpenGuide, onLoadConvo }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -204,7 +205,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
         </button>
         <FriendRequestsBell onOpen={onOpenNotifications} pingKey={notifPing} />
         <LangToggle />
-        <AuthMenu variant="home" onOpenSelections={onOpenSelections} onOpenProfile={onOpenProfile} onOpenFriends={onOpenFriends} onOpenHistory={onOpenHistory} />
+        <AuthMenu variant="home" onOpenSelections={onOpenSelections} onOpenProfile={onOpenProfile} onOpenFriends={onOpenFriends} onOpenHistory={onOpenHistory} onOpenAsk={onOpenAsk} />
       </div>
       <main className="home-main">
         <h1 className="home-logo">Oraklia</h1>
@@ -426,6 +427,7 @@ export default function App() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [friendsOpen, setFriendsOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [askOpen, setAskOpen] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
   const [giftPrefill, setGiftPrefill] = useState(null); // {occasion} when opened from a reminder
   const [gift, setGift] = useState(null);   // recipient payload when in gift mode
@@ -620,6 +622,7 @@ export default function App() {
   const navOpenProfile = () => { pushHistory(); setProfileOpen(true); };
   const navOpenFriends = () => { pushHistory(); setFriendsOpen(true); };
   const navOpenNotifications = () => { pushHistory(); setNotifOpen(true); };
+  const navOpenAsk = () => { pushHistory(); setAskOpen(true); };
   const navOpenGift = () => { setGiftPrefill(null); pushHistory(); setGiftOpen(true); };
   // From a reminder: friend birthday → start directly; holiday/occasion → open
   // the gift form prefilled with the occasion so the user can link a recipient.
@@ -675,6 +678,7 @@ export default function App() {
       if (legalOpen) { setLegalOpen(false); return; }
       if (giftOpen) { setGiftOpen(false); return; }
       if (notifOpen) { setNotifOpen(false); return; }
+      if (askOpen) { setAskOpen(false); return; }
       if (friendsOpen) { setFriendsOpen(false); return; }
       if (profileOpen) { setProfileOpen(false); return; }
       if (selectionsOpen) { setSelectionsOpen(false); return; }
@@ -685,7 +689,7 @@ export default function App() {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, giftOpen, notifOpen, friendsOpen, profileOpen, selectionsOpen, historyOpen, activeGuide, category]);
+  }, [selected, legalOpen, giftOpen, notifOpen, askOpen, friendsOpen, profileOpen, selectionsOpen, historyOpen, activeGuide, category]);
 
   const getAmazonUrl = (p) => {
     if (p.amazon_url) return p.amazon_url;
@@ -778,6 +782,7 @@ export default function App() {
           onOpenSelections={navOpenSelections}
           onOpenProfile={navOpenProfile}
           onOpenFriends={navOpenFriends}
+          onOpenAsk={navOpenAsk}
           onOpenNotifications={navOpenNotifications}
           notifPing={notifOpen}
           onOpenGift={navOpenGift}
@@ -800,6 +805,7 @@ export default function App() {
         <ProfilePanel open={profileOpen} onClose={navBack} />
         <FriendsPanel open={friendsOpen} onClose={navBack} />
         <NotificationsPanel open={notifOpen} onClose={navBack} onGift={giftFromReminder} />
+        <AskOpinionPanel open={askOpen} onClose={navBack} getAmazonUrl={getAmazonUrl} />
         <GiftPanel open={giftOpen} onClose={navBack} onSubmit={startGift} initial={giftPrefill} />
         <LegalNotices open={legalOpen} onClose={navBack} />
       </>
@@ -844,7 +850,7 @@ export default function App() {
             )}
             <FriendRequestsBell onOpen={navOpenNotifications} pingKey={notifOpen} />
             <LangToggle />
-            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} />
           </div>
         </header>
 
@@ -910,6 +916,8 @@ export default function App() {
       <FriendsPanel open={friendsOpen} onClose={navBack} />
 
       <NotificationsPanel open={notifOpen} onClose={navBack} onGift={giftFromReminder} />
+
+      <AskOpinionPanel open={askOpen} onClose={navBack} getAmazonUrl={getAmazonUrl} />
 
       <LegalNotices open={legalOpen} onClose={navBack} />
 

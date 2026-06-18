@@ -153,6 +153,23 @@ const TRANSLATIONS = {
     "holiday.halloween": "Halloween",
     "holiday.christmas": "Noël",
 
+    // Ask a friend's opinion (polls)
+    "poll.ask": "Demander l'avis d'un ami",
+    "poll.title": "Demander un avis",
+    "poll.pickProducts": "Choisis 2 à 4 produits",
+    "poll.pickFriends": "À qui demander ?",
+    "poll.noProducts": "Ajoute d'abord des produits à tes sélections.",
+    "poll.noFriends": "Ajoute d'abord des amis.",
+    "poll.send": "Envoyer le sondage",
+    "poll.sent": "Sondage envoyé !",
+    "poll.incoming": "On te demande ton avis",
+    "poll.from": "{name} hésite — ton avis ?",
+    "poll.vote": "Je choisis celui-ci",
+    "poll.voted": "Ton choix ✓",
+    "poll.outgoing": "Tes sondages",
+    "poll.noVotes": "En attente de votes…",
+    "poll.votes": "Votes",
+
     // Profile (personalization)
     "profile.title": "Mon profil",
     "profile.sub": "Décrivez-vous pour des suggestions plus adaptées.",
@@ -475,6 +492,23 @@ const TRANSLATIONS = {
     "holiday.fathersDay": "Father's Day",
     "holiday.halloween": "Halloween",
     "holiday.christmas": "Christmas",
+
+    // Ask a friend's opinion (polls)
+    "poll.ask": "Ask a friend's opinion",
+    "poll.title": "Ask for advice",
+    "poll.pickProducts": "Pick 2 to 4 products",
+    "poll.pickFriends": "Who to ask?",
+    "poll.noProducts": "Add some products to your selections first.",
+    "poll.noFriends": "Add some friends first.",
+    "poll.send": "Send the poll",
+    "poll.sent": "Poll sent!",
+    "poll.incoming": "Your opinion is asked",
+    "poll.from": "{name} is unsure — your pick?",
+    "poll.vote": "I pick this one",
+    "poll.voted": "Your pick ✓",
+    "poll.outgoing": "Your polls",
+    "poll.noVotes": "Waiting for votes…",
+    "poll.votes": "Votes",
 
     // Profile (personalization)
     "profile.title": "My profile",

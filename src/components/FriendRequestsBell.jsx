@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
-import { listIncomingRequests, listFriends } from '../lib/cloud.js';
+import { listIncomingRequests, listFriends, incomingPolls } from '../lib/cloud.js';
 import { listOccasions, daysUntil } from '../lib/occasions.js';
 import { upcomingHolidays } from '../lib/holidays.js';
 
@@ -23,9 +23,14 @@ export default function FriendRequestsBell({ onOpen, pingKey }) {
     let active = true;
     const load = async () => {
       try {
-        const [reqs, friends] = await Promise.all([listIncomingRequests(), listFriends()]);
+        const [reqs, friends, polls] = await Promise.all([
+          listIncomingRequests(),
+          listFriends(),
+          incomingPolls(),
+        ]);
         if (!active) return;
         let n = Array.isArray(reqs) ? reqs.length : 0;
+        n += (polls || []).filter((p) => p.my_vote == null).length;
         for (const f of friends || []) {
           if (f.birthday) {
             const d = daysUntil(f.birthday, true);

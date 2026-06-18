@@ -141,6 +141,38 @@ export async function cloudFetchProfileData() {
   return data?.data ?? null;
 }
 
+// ─── Polls (ask a friend's opinion) ─────────────────────────────────────────
+export async function createPoll(items, recipientIds) {
+  if (!hasCloudSession() || !items?.length || !recipientIds?.length) return { ok: false };
+  const id = `poll_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  const { error } = await supabase.rpc('create_poll', {
+    p_id: id,
+    p_items: items,
+    p_recipients: recipientIds,
+  });
+  return { ok: !error, id, error };
+}
+
+export async function incomingPolls() {
+  if (!hasCloudSession()) return [];
+  const { data, error } = await supabase.rpc('incoming_polls');
+  if (error) return [];
+  return data || [];
+}
+
+export async function outgoingPolls() {
+  if (!hasCloudSession()) return [];
+  const { data, error } = await supabase.rpc('outgoing_polls');
+  if (error) return [];
+  return data || [];
+}
+
+export async function votePoll(pollId, choice) {
+  if (!hasCloudSession() || !pollId) return { ok: false };
+  const { error } = await supabase.rpc('vote_poll', { p_id: pollId, p_choice: choice });
+  return { ok: !error, error };
+}
+
 // ─── Occasions (reminders) ──────────────────────────────────────────────────
 export async function cloudUpsertOccasion(o) {
   if (!hasCloudSession() || !o?.id) return;

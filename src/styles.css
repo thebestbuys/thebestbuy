@@ -2767,6 +2767,56 @@ ul {
   flex: 0 0 auto;
   width: 150px;
 }
+
+/* Polls (ask a friend's opinion) */
+.poll-card {
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  background: var(--bg-elev);
+}
+.poll-card-head {
+  padding: 10px 12px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.poll-vote-items .pub-item {
+  align-items: center;
+}
+.poll-pick {
+  cursor: pointer;
+}
+.poll-pick.is-on {
+  background: var(--accent-soft);
+}
+.poll-check {
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+.poll-tally {
+  flex-shrink: 0;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.poll-voters {
+  padding: 6px 12px 10px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
 .friends-back {
   appearance: none;
   border: 0;
