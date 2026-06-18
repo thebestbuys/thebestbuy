@@ -59,7 +59,7 @@ const BUDGET_PRESETS = [
 // People can be saved & reused ("Mes proches"): the durable parts (name,
 // relationship, gender, age, interests) persist per user; occasion and budget
 // stay per search.
-export default function GiftPanel({ open, onClose, onSubmit }) {
+export default function GiftPanel({ open, onClose, onSubmit, initial }) {
   const { user } = useAuth();
   const { t } = useI18n();
   const [form, setForm] = useState(GIFT_EMPTY);
@@ -71,7 +71,7 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
 
   useEffect(() => {
     if (!open) return;
-    setForm(GIFT_EMPTY);
+    setForm({ ...GIFT_EMPTY, ...(initial || {}) });
     setPeople(listRecipients(user?.sub));
     setSavedId(null);
     setPersonName('');

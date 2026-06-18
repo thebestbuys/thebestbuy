@@ -93,9 +93,10 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
     } else if (e.kind === 'holiday') {
       onGift?.({ occasion: e.name });
     } else {
-      onGift?.({ occasion: e.name, interests: e.name });
+      onGift?.({ occasion: e.name });
     }
-    onClose();
+    // App decides what to do (start directly for a friend, or open the gift form
+    // prefilled with the occasion) and closes this panel.
   };
 
   const addManual = () => {

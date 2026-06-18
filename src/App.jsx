@@ -421,6 +421,7 @@ export default function App() {
   const [friendsOpen, setFriendsOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
+  const [giftPrefill, setGiftPrefill] = useState(null); // {occasion} when opened from a reminder
   const [gift, setGift] = useState(null);   // recipient payload when in gift mode
   const [shareCopied, setShareCopied] = useState(false);
   // Read-only shared list opened from a ?s=<id> (short) or ?share=<payload> link.
@@ -613,7 +614,19 @@ export default function App() {
   const navOpenProfile = () => { pushHistory(); setProfileOpen(true); };
   const navOpenFriends = () => { pushHistory(); setFriendsOpen(true); };
   const navOpenNotifications = () => { pushHistory(); setNotifOpen(true); };
-  const navOpenGift = () => { pushHistory(); setGiftOpen(true); };
+  const navOpenGift = () => { setGiftPrefill(null); pushHistory(); setGiftOpen(true); };
+  // From a reminder: friend birthday → start directly; holiday/occasion → open
+  // the gift form prefilled with the occasion so the user can link a recipient.
+  const giftFromReminder = (payload) => {
+    setNotifOpen(false);
+    if (payload?.friendId) {
+      startGift(payload);
+    } else {
+      setGiftPrefill({ occasion: payload?.occasion || '' });
+      pushHistory();
+      setGiftOpen(true);
+    }
+  };
   const navOpenProduct = (p) => { pushHistory(); setSelected(p); };
   // Start a gift advisor session from the recipient form. Reuses the normal
   // advisor pipeline with a pseudo-category ('gift') and the recipient payload;
@@ -780,8 +793,8 @@ export default function App() {
         />
         <ProfilePanel open={profileOpen} onClose={navBack} />
         <FriendsPanel open={friendsOpen} onClose={navBack} />
-        <NotificationsPanel open={notifOpen} onClose={navBack} onGift={startGift} />
-        <GiftPanel open={giftOpen} onClose={navBack} onSubmit={startGift} />
+        <NotificationsPanel open={notifOpen} onClose={navBack} onGift={giftFromReminder} />
+        <GiftPanel open={giftOpen} onClose={navBack} onSubmit={startGift} initial={giftPrefill} />
         <LegalNotices open={legalOpen} onClose={navBack} />
       </>
     );
@@ -886,11 +899,11 @@ export default function App() {
 
       <ProfilePanel open={profileOpen} onClose={navBack} />
 
-      <GiftPanel open={giftOpen} onClose={navBack} onSubmit={startGift} />
+      <GiftPanel open={giftOpen} onClose={navBack} onSubmit={startGift} initial={giftPrefill} />
 
       <FriendsPanel open={friendsOpen} onClose={navBack} />
 
-      <NotificationsPanel open={notifOpen} onClose={navBack} onGift={startGift} />
+      <NotificationsPanel open={notifOpen} onClose={navBack} onGift={giftFromReminder} />
 
       <LegalNotices open={legalOpen} onClose={navBack} />
 
