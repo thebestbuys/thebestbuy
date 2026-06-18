@@ -9,6 +9,7 @@ import {
   daysUntil,
   turningAge,
 } from '../lib/occasions.js';
+import { upcomingHolidays } from '../lib/holidays.js';
 
 function initials(name = '') {
   const p = String(name).trim().split(/\s+/).filter(Boolean);
@@ -72,6 +73,15 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
     if (d == null || d < 0) continue;
     upcoming.push({ key: o.id, kind: 'occ', name: o.label, days: d, occId: o.id });
   }
+  for (const h of upcomingHolidays()) {
+    upcoming.push({
+      key: 'h_' + h.key,
+      kind: 'holiday',
+      name: t('holiday.' + h.key),
+      emoji: h.emoji,
+      days: h.days,
+    });
+  }
   upcoming.sort((a, b) => a.days - b.days);
 
   const whenLabel = (d) =>
@@ -80,6 +90,8 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
   const giftFor = (e) => {
     if (e.kind === 'bday') {
       onGift?.({ friendId: e.friendId, friendName: e.name, occasion: t('gift.occ.birthday') });
+    } else if (e.kind === 'holiday') {
+      onGift?.({ occasion: e.name });
     } else {
       onGift?.({ occasion: e.name, interests: e.name });
     }
@@ -153,7 +165,7 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
               <ul className="friends-list">
                 {upcoming.map((e) => (
                   <li key={e.key} className="friend-row occ-row">
-                    <span className="occ-emoji" aria-hidden="true">{e.kind === 'bday' ? '🎂' : '🎉'}</span>
+                    <span className="occ-emoji" aria-hidden="true">{e.kind === 'bday' ? '🎂' : e.emoji || '🎉'}</span>
                     <span className="friend-name occ-main">
                       <span className="occ-name">
                         {e.kind === 'bday' ? t('occ.birthdayOf', { name: e.name }) : e.name}

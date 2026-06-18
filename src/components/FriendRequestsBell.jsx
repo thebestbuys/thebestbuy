@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
 import { listIncomingRequests, listFriends } from '../lib/cloud.js';
 import { listOccasions, daysUntil } from '../lib/occasions.js';
+import { upcomingHolidays } from '../lib/holidays.js';
 
 const SOON_DAYS = 14;
 
@@ -35,6 +36,7 @@ export default function FriendRequestsBell({ onOpen, pingKey }) {
           const d = daysUntil(o.date, o.recurring);
           if (d != null && d >= 0 && d <= SOON_DAYS) n += 1;
         }
+        n += upcomingHolidays(SOON_DAYS).length;
         setCount(n);
       } catch {
         /* ignore */

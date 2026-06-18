@@ -145,6 +145,13 @@ const TRANSLATIONS = {
     "occ.add": "Ajouter",
     "occ.recurring": "Chaque année",
     "occ.delete": "Supprimer",
+    "holiday.newYear": "Nouvel An",
+    "holiday.valentine": "Saint-Valentin",
+    "holiday.grandmothersDay": "Fête des grands-mères",
+    "holiday.mothersDay": "Fête des mères",
+    "holiday.fathersDay": "Fête des pères",
+    "holiday.halloween": "Halloween",
+    "holiday.christmas": "Noël",
 
     // Profile (personalization)
     "profile.title": "Mon profil",
@@ -461,6 +468,13 @@ const TRANSLATIONS = {
     "occ.add": "Add",
     "occ.recurring": "Every year",
     "occ.delete": "Delete",
+    "holiday.newYear": "New Year",
+    "holiday.valentine": "Valentine's Day",
+    "holiday.grandmothersDay": "Grandmothers' Day",
+    "holiday.mothersDay": "Mother's Day",
+    "holiday.fathersDay": "Father's Day",
+    "holiday.halloween": "Halloween",
+    "holiday.christmas": "Christmas",
 
     // Profile (personalization)
     "profile.title": "My profile",
