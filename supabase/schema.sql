@@ -132,11 +132,15 @@ language sql security definer set search_path = public as $$
 $$;
 grant execute on function public.search_users(text) to authenticated;
 
--- Accepted friends, returning the OTHER party's public identity.
-create or replace function public.list_friends()
-returns table (user_id uuid, display_name text, avatar_url text)
+-- Accepted friends, returning the OTHER party's public identity + how many items
+-- they have in their wishlist (selections), so the UI can hint "X has N ideas".
+-- Drop first: the return columns changed (can't be done by CREATE OR REPLACE).
+drop function if exists public.list_friends();
+create function public.list_friends()
+returns table (user_id uuid, display_name text, avatar_url text, wishlist_count integer)
 language sql security definer set search_path = public as $$
-  select p.user_id, p.display_name, p.avatar_url
+  select p.user_id, p.display_name, p.avatar_url,
+    (select count(*)::int from public.selections s where s.user_id = p.user_id) as wishlist_count
   from public.friend_requests fr
   join public.profiles p
     on p.user_id = case when fr.requester_id = auth.uid()

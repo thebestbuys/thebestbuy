@@ -193,6 +193,11 @@ export default function GiftPanel({ open, onClose, onSubmit }) {
                   >
                     <ChipAvatar name={f.display_name} url={f.avatar_url} />
                     {f.display_name}
+                    {f.wishlist_count > 0 && (
+                      <span className="gift-chip-count" title={t('friends.wishCount', { n: f.wishlist_count })}>
+                        🎁 {f.wishlist_count}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>

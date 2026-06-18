@@ -7,7 +7,13 @@ import { AmazonPrice, ProductImage, Stars } from './ProductCard.jsx';
 export default function SharedGiftList({ data, onCreate }) {
   const { t } = useI18n();
   const items = Array.isArray(data?.items) ? data.items : [];
+  const isWish = data?.k === 'wish';
+  const owner = String(data?.r || '').trim();
   const forWhat = [data?.r, data?.o].map((s) => String(s || '').trim()).filter(Boolean).join(' · ');
+  const eyebrow = isWish ? `✨ ${t('share.wishEyebrow')}` : `🎁 ${t('share.eyebrow')}`;
+  const title = isWish
+    ? owner ? t('share.wishTitle', { name: owner }) : t('share.wishTitleAnon')
+    : t('share.title');
 
   const toProduct = (it) => ({
     brand: it.b,
@@ -22,9 +28,9 @@ export default function SharedGiftList({ data, onCreate }) {
     <div className="share-page">
       <header className="share-head">
         <h1 className="home-logo">Oraklia</h1>
-        <div className="share-eyebrow">🎁 {t('share.eyebrow')}</div>
-        <h2 className="share-title">{t('share.title')}</h2>
-        {forWhat && <p className="share-for">{t('share.forOccasion', { what: forWhat })}</p>}
+        <div className="share-eyebrow">{eyebrow}</div>
+        <h2 className="share-title">{title}</h2>
+        {!isWish && forWhat && <p className="share-for">{t('share.forOccasion', { what: forWhat })}</p>}
       </header>
 
       {items.length === 0 ? (

@@ -8,6 +8,7 @@ import {
   listSelections,
   removeSelection,
 } from '../lib/selections.js';
+import { encodeGiftShare } from '../lib/gift.js';
 
 // Mirror of HistoryPanel, for saved products. Reads fresh on open.
 export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) {
@@ -38,6 +39,8 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
 
   if (!open) return null;
 
+  const [shared, setShared] = useState(false);
+
   const remove = (id, e) => {
     e.stopPropagation();
     removeSelection(user?.sub, id);
@@ -45,6 +48,32 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
     // Stay in sync with the bump removeSelection just made, so reopening
     // doesn't see a "changed" revision and reload.
     loadedSig.current = `${user?.sub || '_anon'}:${getSelectionsRevision(user?.sub)}`;
+  };
+
+  // Share the wishlist as a self-contained ?share=… link (reuses the read-only
+  // SharedGiftList view, in wishlist mode).
+  const shareList = async () => {
+    const shareItems = items.slice(0, 20).map((p) => ({
+      b: p.brand,
+      m: p.model,
+      p: p.price ?? null,
+      u: getAmazonUrl ? getAmazonUrl(p) : p.amazon_url,
+      i: p.image_url || null,
+      s: p.score ?? null,
+    }));
+    if (!shareItems.length) return;
+    const payload = { k: 'wish', r: user?.name || '', items: shareItems };
+    const url = `${window.location.origin}${window.location.pathname}?share=${encodeGiftShare(payload)}`;
+    try {
+      if (navigator.share) await navigator.share({ title: 'Oraklia', url });
+      else {
+        await navigator.clipboard.writeText(url);
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      }
+    } catch {
+      /* cancelled */
+    }
   };
 
 
@@ -66,13 +95,21 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
               {user ? t('selections.subUser') : t('selections.subGuest')}
             </p>
           </div>
-          <button
-            className="auth-modal-close"
-            onClick={onClose}
-            aria-label={t('auth.close')}
-          >
-            ✕
-          </button>
+          <div className="selections-head-actions">
+            {items.length > 0 && (
+              <button type="button" className="selections-share-btn" onClick={shareList}>
+                <span aria-hidden="true">🔗</span>
+                {shared ? t('selections.shareCopied') : t('selections.share')}
+              </button>
+            )}
+            <button
+              className="auth-modal-close"
+              onClick={onClose}
+              aria-label={t('auth.close')}
+            >
+              ✕
+            </button>
+          </div>
         </header>
 
         {items.length === 0 ? (

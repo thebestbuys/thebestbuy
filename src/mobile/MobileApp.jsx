@@ -2953,6 +2953,9 @@ function GiftSheet({ open, onClose, onSubmit }) {
                   <button key={f.user_id} type="button" onClick={() => setFriend(friend?.id === f.user_id ? null : { id: f.user_id, name: f.display_name })} style={{ ...chip(friend?.id === f.user_id), display: "inline-flex", alignItems: "center", gap: 6, paddingLeft: 6 }}>
                     <FriendChipAva name={f.display_name} url={f.avatar_url} />
                     {f.display_name}
+                    {f.wishlist_count > 0 && (
+                      <span style={{ fontSize: 11, fontWeight: 700, color: BB.coralDeep, background: BB.chipBg, padding: "1px 7px", borderRadius: 999 }}>🎁 {f.wishlist_count}</span>
+                    )}
                   </button>
                 ))}
               </div>

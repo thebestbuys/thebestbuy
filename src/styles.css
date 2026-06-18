@@ -2349,6 +2349,31 @@ ul {
   color: var(--text-faint);
   text-align: center;
 }
+.selections-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.selections-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  appearance: none;
+  border: 0.5px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.selections-share-btn:hover {
+  filter: brightness(0.97);
+}
 .auth-dropdown-count {
   margin-left: auto;
   background: var(--accent-soft);
@@ -2735,6 +2760,18 @@ select.profile-input {
   color: var(--accent);
   font-size: 9px;
   font-weight: 700;
+}
+.gift-chip-count {
+  margin-left: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+.gift-chip.is-active .gift-chip-count {
+  background: rgba(255, 255, 255, 0.5);
 }
 .gift-chip-x {
   appearance: none;

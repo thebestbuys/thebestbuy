@@ -124,6 +124,7 @@ const TRANSLATIONS = {
     "friends.empty": "Pas encore d'amis. Utilise la recherche ci-dessus.",
     "friends.remove": "Retirer",
     "friends.removeConfirm": "Retirer {name} de tes amis ?",
+    "friends.wishCount": "{n} idées",
 
     // Profile (personalization)
     "profile.title": "Mon profil",
@@ -176,8 +177,13 @@ const TRANSLATIONS = {
     "selections.add": "Ajouter à mes sélections",
     "selections.remove": "Retirer de mes sélections",
     "selections.added": "Ajouté {when}",
+    "selections.share": "Partager ma liste",
+    "selections.shareCopied": "Lien copié !",
     "selections.priceNote":
       "Prix indicatif au moment de l'enregistrement — seule la page Amazon fait foi.",
+    "share.wishEyebrow": "Liste d'envies partagée",
+    "share.wishTitle": "La liste d'envies de {name}",
+    "share.wishTitleAnon": "Une liste d'envies",
 
     "cat.phone": "Téléphone",
     "cat.laptop": "Ordinateur",
@@ -393,6 +399,7 @@ const TRANSLATIONS = {
     "friends.empty": "No friends yet. Use the search above.",
     "friends.remove": "Remove",
     "friends.removeConfirm": "Remove {name} from your friends?",
+    "friends.wishCount": "{n} ideas",
 
     // Profile (personalization)
     "profile.title": "My profile",
@@ -445,8 +452,13 @@ const TRANSLATIONS = {
     "selections.add": "Add to my selections",
     "selections.remove": "Remove from my selections",
     "selections.added": "Added {when}",
+    "selections.share": "Share my list",
+    "selections.shareCopied": "Link copied!",
     "selections.priceNote":
       "Indicative price at time of saving — only the Amazon page is authoritative.",
+    "share.wishEyebrow": "Shared wishlist",
+    "share.wishTitle": "{name}'s wishlist",
+    "share.wishTitleAnon": "A wishlist",
 
     "cat.phone": "Phone",
     "cat.laptop": "Laptop",
