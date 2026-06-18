@@ -184,25 +184,20 @@ export default function FriendsPanel({ open, onClose }) {
                     <span className="pub-list-caret">{openListId === l.id ? '▾' : '▸'}</span>
                   </button>
                   {openListId === l.id && (
-                    <ul className="share-grid pub-list-grid">
+                    <ul className="pub-items">
                       {listItems.map((p, i) => {
                         const url = amazonUrl(p);
                         return (
-                          <li key={i} className="amz-card">
-                            <a className="amz-card-img" href={url} target="_blank" rel="noopener noreferrer sponsored">
+                          <li key={i} className="pub-item">
+                            <a className="pub-item-img" href={url} target="_blank" rel="noopener noreferrer sponsored" title={t('product.viewAmazon')}>
                               <ProductImage product={p} size="small" />
                             </a>
-                            <div className="amz-card-body">
-                              <a className="amz-card-title" href={url} target="_blank" rel="noopener noreferrer sponsored">
-                                {[p.brand, p.model].filter(Boolean).join(' ')}
-                              </a>
+                            <a className="pub-item-main" href={url} target="_blank" rel="noopener noreferrer sponsored">
+                              <span className="pub-item-title">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
                               {p.price != null && (
-                                <div className="amz-card-price"><AmazonPrice price={p.price} /></div>
+                                <span className="pub-item-price"><AmazonPrice price={p.price} /></span>
                               )}
-                              <a className="amz-buy-btn" href={url} target="_blank" rel="noopener noreferrer sponsored">
-                                {t('product.viewAmazon')}
-                              </a>
-                            </div>
+                            </a>
                           </li>
                         );
                       })}
