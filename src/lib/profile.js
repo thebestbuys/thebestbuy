@@ -22,7 +22,9 @@ const FIELDS = Object.keys(FIELD_MAX);
 
 // Extra persisted keys that are NOT part of the AI prompt (e.g. birthday, used
 // for occasion reminders and shared with friends).
-const EXTRA_MAX = { birthday: 10 }; // 'YYYY-MM-DD' or 'MM-DD'
+// `shareTrends`: consent for "Trends in my circle". Opt-out — sharing is on
+// unless explicitly 'false' (mirrored to profiles.data, read by circle_trending).
+const EXTRA_MAX = { birthday: 10, shareTrends: 5 }; // 'YYYY-MM-DD' / 'true'|'false'
 const ALL_KEYS = [...FIELDS, ...Object.keys(EXTRA_MAX)];
 const MAX_FOR = { ...FIELD_MAX, ...EXTRA_MAX };
 

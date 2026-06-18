@@ -188,6 +188,22 @@ export default function ProfilePanel({ open, onClose }) {
             <span className="profile-hint">{t('profile.hint')}</span>
           </div>
 
+          <label className="profile-consent">
+            <input
+              type="checkbox"
+              className="profile-consent-check"
+              checked={form.shareTrends !== 'false'}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, shareTrends: e.target.checked ? 'true' : 'false' }));
+                setSaved(false);
+              }}
+            />
+            <span className="profile-consent-text">
+              <span className="profile-consent-label">{t('profile.shareTrends')}</span>
+              <span className="profile-consent-hint">{t('profile.shareTrendsHint')}</span>
+            </span>
+          </label>
+
           <div className="profile-actions">
             {hasAny && (
               <button type="button" className="profile-clear" onClick={clear}>

@@ -202,6 +202,14 @@ const TRANSLATIONS = {
     "profile.saved": "Profil enregistré",
     "profile.clear": "Tout effacer",
     "profile.counter": "{n}/600",
+    "profile.shareTrends": "Partager mes sélections dans les tendances",
+    "profile.shareTrendsHint":
+      "Vos produits sauvegardés et cliqués alimentent (de façon anonyme et agrégée) les « Tendances dans mon cercle » de vos amis. Décochez pour ne pas y contribuer.",
+
+    // Trends in my circle (home)
+    "trending.title": "Tendances dans mon cercle",
+    "trending.sub": "Ce que vos amis sauvegardent et regardent en ce moment.",
+    "trending.friendsCount": "{n} ami(s) dans votre cercle",
 
     // History
     "history.title": "Historique",
@@ -544,6 +552,14 @@ const TRANSLATIONS = {
     "profile.saved": "Profile saved",
     "profile.clear": "Clear all",
     "profile.counter": "{n}/600",
+    "profile.shareTrends": "Share my selections in trends",
+    "profile.shareTrendsHint":
+      "Your saved and clicked products feed (anonymously and aggregated) your friends' “Trends in my circle”. Uncheck to opt out of contributing.",
+
+    // Trends in my circle (home)
+    "trending.title": "Trends in my circle",
+    "trending.sub": "What your friends are saving and viewing right now.",
+    "trending.friendsCount": "{n} friend(s) in your circle",
 
     // History
     "history.title": "History",

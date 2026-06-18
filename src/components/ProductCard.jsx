@@ -218,12 +218,17 @@ export function HeroCard({ product, density, onSelect }) {
 // the chat stream on narrow viewports. Reuses ProductImage + PriceTag so the
 // amazon_verified rules hold automatically (placeholder + estimated range when
 // the product wasn't verified against Amazon; never a fake price/image/stars).
-export function ProductLinkCard({ product, rank, onSelect }) {
+export function ProductLinkCard({ product, rank, friendCount, onSelect }) {
   const { t, lang } = useI18n();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   return (
     <button type="button" className="product-link-card" onClick={() => onSelect(product)}>
       {rank != null && <span className="plc-rank">#{rank}</span>}
+      {friendCount != null && (
+        <span className="plc-friends" title={t('trending.friendsCount', { n: friendCount })}>
+          👥 {friendCount}
+        </span>
+      )}
       <span className="plc-thumb">
         <ProductImage product={product} size="small" />
       </span>

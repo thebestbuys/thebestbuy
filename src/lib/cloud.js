@@ -378,3 +378,44 @@ export async function cloudFetchConversations() {
   if (error) return null;
   return (data || []).map((r) => r.data).filter(Boolean);
 }
+
+// ─── Trends in my circle ───────────────────────────────────────────────────
+// Light product snapshot stored with a click — same shape as a selection (incl.
+// amazon_verified, so the trending UI can honour the verified-vs-estimate rules).
+function trendingSnapshot(p) {
+  return {
+    id: p.id,
+    brand: p.brand,
+    model: p.model,
+    price: p.price ?? null,
+    image_url: p.image_url || null,
+    color: p.color || null,
+    rating: p.rating ?? null,
+    reviews: p.reviews ?? null,
+    score: p.score ?? null,
+    amazon_url: p.amazon_url || null,
+    category: p.category || null,
+    amazon_verified: !!p.amazon_verified,
+  };
+}
+
+// Record an outbound Amazon click as a popularity signal (best-effort).
+export async function logLinkClick(product) {
+  if (!hasCloudSession() || product?.id == null) return;
+  await supabase.from('link_clicks').insert({
+    user_id: uid(),
+    product_id: String(product.id),
+    data: trendingSnapshot(product),
+  });
+}
+
+// Top products across consenting friends (selections ∪ clicks). Each item is a
+// product snapshot with an extra `friend_count` (how many friends are behind it).
+export async function circleTrending(max = 12) {
+  if (!hasCloudSession()) return [];
+  const { data, error } = await supabase.rpc('circle_trending', { max_items: max });
+  if (error) return [];
+  return (data || [])
+    .map((r) => (r?.data ? { ...r.data, friend_count: r.friend_count } : null))
+    .filter(Boolean);
+}

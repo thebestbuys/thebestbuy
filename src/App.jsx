@@ -17,12 +17,12 @@ import LegalNotices from './components/LegalNotices.jsx';
 import GuideArticle from './components/GuideArticle.jsx';
 import LangToggle from './components/LangToggle.jsx';
 import { GUIDES, localizeGuide } from './data/guides.js';
-import { HeroCard, PriceTag, ProductImage, ScoreRing, SmallCard, VerifiedRating } from './components/ProductCard.jsx';
+import { HeroCard, PriceTag, ProductImage, ProductLinkCard, ScoreRing, SmallCard, VerifiedRating } from './components/ProductCard.jsx';
 import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './lib/i18n.jsx';
 import { getProfile, profileToPrompt } from './lib/profile.js';
 import { giftToPrompt, giftTitle, buildShareUrl, loadSharedPayload } from './lib/gift.js';
-import { getAccessToken } from './lib/cloud.js';
+import { getAccessToken, circleTrending, logLinkClick } from './lib/cloud.js';
 import {
   deriveTitle,
   formatRelative,
@@ -129,7 +129,46 @@ function ResultsPlaceholder({ category }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifPing, onOpenGift, onOpenLegal, onOpenGuide, onLoadConvo }) {
+// "Tendances dans mon cercle" — products most saved/clicked by the signed-in
+// user's consenting friends (aggregated server-side by circle_trending). Hidden
+// for guests and when the circle has nothing to show yet.
+function TrendingCircle({ onOpen }) {
+  const { t } = useI18n();
+  const { user } = useAuth();
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    if (!user) {
+      setItems([]);
+      return;
+    }
+    let alive = true;
+    circleTrending(12).then((list) => {
+      if (alive) setItems(Array.isArray(list) ? list : []);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [user?.sub]);
+
+  if (!user || items.length === 0) return null;
+
+  return (
+    <section className="home-trending">
+      <div className="home-guides-head">
+        <h2 className="home-guides-title">{t('trending.title')}</h2>
+        <p className="home-guides-sub">{t('trending.sub')}</p>
+      </div>
+      <div className="trending-row">
+        {items.map((p) => (
+          <ProductLinkCard key={p.id} product={p} friendCount={p.friend_count} onSelect={onOpen} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifPing, onOpenGift, onOpenLegal, onOpenGuide, onLoadConvo, onOpenProduct }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -276,6 +315,8 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             );
           })}
         </div>
+
+        <TrendingCircle onOpen={onOpenProduct} />
 
         {recents.length > 0 && (
           <section className="home-history">
@@ -717,7 +758,9 @@ export default function App() {
     return `https://www.amazon.fr/s?k=${q}&tag=oraklia123-21`;
   };
 
-  const handleBuy = () => {
+  const handleBuy = (product) => {
+    // Record the outbound click as a popularity signal for "Trends in my circle".
+    if (product) logLinkClick(product).catch(() => {});
     navBack();
   };
 
@@ -809,7 +852,11 @@ export default function App() {
           onOpenLegal={navOpenLegal}
           onOpenGuide={navOpenGuide}
           onLoadConvo={loadConversation}
+          onOpenProduct={navOpenProduct}
         />
+        {selected && (
+          <ProductDetail product={selected} onClose={navBack} onBuy={handleBuy} />
+        )}
         <HistoryPanel
           open={historyOpen}
           onClose={navBack}

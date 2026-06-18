@@ -357,6 +357,69 @@ language sql security definer set search_path = public as $$
 $$;
 grant execute on function public.public_list_items(text) to authenticated;
 
+-- ── Link clicks (Amazon outbound) — a lightweight popularity signal ─────────
+-- Every time a user opens an Amazon product link we record a row. Combined with
+-- selections, this feeds the "Trends in my circle" aggregate below.
+create table if not exists public.link_clicks (
+  id         bigint      generated always as identity primary key,
+  user_id    uuid        not null references auth.users (id) on delete cascade,
+  product_id text        not null,
+  data       jsonb       not null,            -- product snapshot (same shape as selections.data)
+  clicked_at timestamptz not null default now()
+);
+alter table public.link_clicks enable row level security;
+drop policy if exists "own link clicks" on public.link_clicks;
+create policy "own link clicks" on public.link_clicks
+  for all
+  using      (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+create index if not exists link_clicks_user_idx on public.link_clicks (user_id, clicked_at desc);
+create index if not exists link_clicks_product_idx on public.link_clicks (product_id);
+
+-- ── "Trends in my circle" (SECURITY DEFINER) ───────────────────────────────
+-- Aggregate, across the current user's accepted friends WHO CONSENT to sharing,
+-- the products they saved (selections) or clicked (link_clicks). Sharing is
+-- OPT-OUT: a friend contributes unless profiles.data.shareTrends = 'false'.
+-- Ranked by the number of distinct friends behind each product; returns one
+-- representative snapshot (most recent) per product plus that friend count.
+create or replace function public.circle_trending(max_items int default 12)
+returns table (product_id text, data jsonb, friend_count int)
+language sql security definer set search_path = public as $$
+  with friends as (
+    select case when fr.requester_id = auth.uid() then fr.addressee_id else fr.requester_id end as fid
+    from public.friend_requests fr
+    where fr.status = 'accepted'
+      and (fr.requester_id = auth.uid() or fr.addressee_id = auth.uid())
+  ),
+  consenting as (
+    select f.fid
+    from friends f
+    join public.profiles p on p.user_id = f.fid
+    where coalesce(p.data->>'shareTrends', 'true') <> 'false'
+  ),
+  signals as (
+    select s.user_id, s.product_id, s.data, s.added_at as ts
+    from public.selections s
+    join consenting c on c.fid = s.user_id
+    union all
+    select lc.user_id, lc.product_id, lc.data, lc.clicked_at as ts
+    from public.link_clicks lc
+    join consenting c on c.fid = lc.user_id
+  ),
+  ranked as (
+    select product_id, data, ts,
+      count(distinct user_id) over (partition by product_id) as friend_count,
+      row_number()           over (partition by product_id order by ts desc) as rn
+    from signals
+  )
+  select product_id, data, friend_count
+  from ranked
+  where rn = 1
+  order by friend_count desc, ts desc
+  limit greatest(1, least(max_items, 50));
+$$;
+grant execute on function public.circle_trending(int) to authenticated;
+
 -- Pending requests addressed to me, with the requester's identity.
 create or replace function public.list_incoming_requests()
 returns table (id uuid, user_id uuid, display_name text, avatar_url text, created_at timestamptz)

@@ -69,7 +69,8 @@ The client builds a compact **criteria object**, not a chat transcript: `objet` 
 ### Cross-cutting pieces
 - **i18n** (`src/lib/i18n.jsx`): `useI18n()` → `{t, lang, setLang}`; `t(key, vars)` interpolates `{var}`. FR + EN dictionaries are in this one file — **add new keys to both languages**.
 - **Routing**: there is no router. `App.jsx` is state-driven (home / advisor / product / legal / history / guide layers) and **intercepts the browser Back button** via the History API (`pushState`/`popstate`).
-- **Persistence**: localStorage only, no backend DB — conversations (`src/lib/history.js`, keys `bb_conversations*`), favorites/selections (`src/lib/selections.js`), language, auth.
+- **Persistence**: localStorage first (conversations `src/lib/history.js` keys `bb_conversations*`, favorites/selections `src/lib/selections.js`, profile, language, auth). When signed in, most stores **also mirror to Supabase** (`src/lib/cloud.js`, schema in `supabase/schema.sql`); cross-user reads go through **SECURITY DEFINER RPCs** scoped to accepted friendships (e.g. `list_friends`, `circle_trending`). After editing `supabase/schema.sql`, the SQL must be re-run in the Supabase SQL editor to take effect.
+- **"Trends in my circle"** (`TrendingCircle` on the home): `circle_trending` RPC aggregates products that the user's *consenting* friends saved (`selections`) or clicked (`link_clicks`), ranked by distinct-friend count. Sharing is **opt-out** via the profile flag `shareTrends` (mirrored into `profiles.data`); a friend contributes unless it's `'false'`. Trending cards reuse `ProductLinkCard` so the `amazon_verified` display rules hold (legacy snapshots without the flag degrade safely to an estimate).
 - `src/scoring.js` is an intentional stub (ranking/scoring is done by the AI now); `src/data.js` `CATEGORIES` is minimal/legacy.
 - `designs/` contains static mockups/prototypes, **not** the live app — editing them changes nothing user-facing.
 

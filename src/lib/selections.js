@@ -77,6 +77,10 @@ function snapshot(product, listIds = []) {
     score: product.score ?? null,
     amazon_url: product.amazon_url || null,
     category: product.category || null,
+    // Carried so downstream readers (e.g. "Trends in my circle") can honour the
+    // verified-vs-estimate display rules. Legacy snapshots lack it → treated as
+    // unverified (safe: shows an estimate range, never a fake exact price).
+    amazon_verified: !!product.amazon_verified,
     listIds: Array.isArray(listIds) ? listIds : [],
     addedAt: Date.now(),
   };

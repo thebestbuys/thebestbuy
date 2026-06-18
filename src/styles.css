@@ -3971,3 +3971,91 @@ select.profile-input {
   .guide-title { font-size: 32px; }
   .guide-article { padding: 32px 20px 64px; }
 }
+
+/* ───────────────── Trends in my circle (home carousel) ───────────────── */
+.home-trending {
+  margin-top: 40px;
+}
+.trending-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  overflow-x: auto;
+  padding: 2px 2px 10px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.trending-row::-webkit-scrollbar {
+  height: 6px;
+}
+.trending-row::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+/* In the horizontal carousel each link card gets a fixed width (overrides the
+   full-width chat variant). */
+.trending-row .product-link-card {
+  flex: 0 0 270px;
+  width: 270px;
+  scroll-snap-align: start;
+  border-bottom-left-radius: 14px;
+}
+.plc-friends {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  line-height: 1.3;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+/* Consent toggle in the profile panel */
+.profile-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: var(--bg-soft);
+  border: 0.5px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+}
+.profile-consent-check {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: var(--accent);
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+.profile-consent-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.profile-consent-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.profile-consent-hint {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+@media (max-width: 560px) {
+  .trending-row .product-link-card {
+    flex-basis: 80vw;
+    width: 80vw;
+  }
+}
