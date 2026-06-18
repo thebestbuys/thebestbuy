@@ -423,23 +423,29 @@ function ProductDetail({ product, onClose, onBuy }) {
                 <VerifiedRating product={product} locale={locale} />
               </div>
             )}
-            <div className="modal-score-row">
-              <ScoreRing score={product.score} size={56} />
-              <div>
-                <div className="modal-score-title">{t('product.matchPct', { score: product.score })}</div>
-                <div className="modal-score-sub">{t('product.matchSub')}</div>
+            {product.score != null && (
+              <div className="modal-score-row">
+                <ScoreRing score={product.score} size={56} />
+                <div>
+                  <div className="modal-score-title">{t('product.matchPct', { score: product.score })}</div>
+                  <div className="modal-score-sub">{t('product.matchSub')}</div>
+                </div>
               </div>
-            </div>
+            )}
             {product.why && (
               <>
                 <div className="modal-section-title">{t('product.why')}</div>
                 <p className="modal-why">{product.why}</p>
               </>
             )}
-            <div className="modal-section-title">{t('product.features')}</div>
-            <ul className="modal-specs">
-              {product.specs.map((s, i) => <li key={i}>{s}</li>)}
-            </ul>
+            {product.specs?.length > 0 && (
+              <>
+                <div className="modal-section-title">{t('product.features')}</div>
+                <ul className="modal-specs">
+                  {product.specs.map((s, i) => <li key={i}>{s}</li>)}
+                </ul>
+              </>
+            )}
             <div className="modal-bottom">
               <div>
                 <div className="modal-price-label">
