@@ -167,16 +167,6 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
         type="button"
         className="auth-dropdown-item"
         onClick={() => {
-          onOpenHistory?.();
-          onClose();
-        }}
-      >
-        {t('home.history')}
-      </button>
-      <button
-        type="button"
-        className="auth-dropdown-item"
-        onClick={() => {
           onOpenSelections?.();
           onClose();
         }}
@@ -193,6 +183,16 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
         }}
       >
         {t('auth.myProfile')}
+      </button>
+      <button
+        type="button"
+        className="auth-dropdown-item"
+        onClick={() => {
+          onOpenHistory?.();
+          onClose();
+        }}
+      >
+        {t('home.history')}
       </button>
       <button
         type="button"
