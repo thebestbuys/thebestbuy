@@ -210,6 +210,8 @@ const TRANSLATIONS = {
     "trending.title": "Tendances dans mon cercle",
     "trending.sub": "Ce que vos amis sauvegardent et regardent en ce moment.",
     "trending.friendsCount": "{n} ami(s) dans votre cercle",
+    "trending.empty":
+      "Rien pour l'instant. Dès que vos amis sauvegardent ou consultent des produits (partage activé), ils apparaîtront ici.",
 
     // History
     "history.title": "Historique",
@@ -560,6 +562,8 @@ const TRANSLATIONS = {
     "trending.title": "Trends in my circle",
     "trending.sub": "What your friends are saving and viewing right now.",
     "trending.friendsCount": "{n} friend(s) in your circle",
+    "trending.empty":
+      "Nothing yet. As soon as your friends save or view products (sharing on), they'll show up here.",
 
     // History
     "history.title": "History",

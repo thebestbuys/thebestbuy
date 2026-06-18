@@ -136,22 +136,28 @@ function TrendingCircle({ onOpen }) {
   const { t } = useI18n();
   const { user } = useAuth();
   const [items, setItems] = useState([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!user) {
       setItems([]);
+      setLoaded(false);
       return;
     }
     let alive = true;
+    setLoaded(false);
     circleTrending(12).then((list) => {
-      if (alive) setItems(Array.isArray(list) ? list : []);
+      if (!alive) return;
+      setItems(Array.isArray(list) ? list : []);
+      setLoaded(true);
     });
     return () => {
       alive = false;
     };
   }, [user?.sub]);
 
-  if (!user || items.length === 0) return null;
+  // Hidden for guests, and until the first fetch resolves (no empty flash).
+  if (!user || !loaded) return null;
 
   return (
     <section className="home-trending">
@@ -159,11 +165,15 @@ function TrendingCircle({ onOpen }) {
         <h2 className="home-guides-title">{t('trending.title')}</h2>
         <p className="home-guides-sub">{t('trending.sub')}</p>
       </div>
-      <div className="trending-row">
-        {items.map((p) => (
-          <ProductLinkCard key={p.id} product={p} friendCount={p.friend_count} onSelect={onOpen} />
-        ))}
-      </div>
+      {items.length > 0 ? (
+        <div className="trending-row">
+          {items.map((p) => (
+            <ProductLinkCard key={p.id} product={p} friendCount={p.friend_count} onSelect={onOpen} />
+          ))}
+        </div>
+      ) : (
+        <p className="trending-empty">{t('trending.empty')}</p>
+      )}
     </section>
   );
 }
