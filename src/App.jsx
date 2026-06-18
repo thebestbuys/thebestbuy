@@ -201,16 +201,6 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           </svg>
           {t('home.selections')}
         </button>
-        <button
-          type="button"
-          className="auth-trigger auth-trigger-home gift-trigger"
-          onClick={onOpenGift}
-          aria-label={t('home.gift')}
-          title={t('home.gift')}
-        >
-          <span aria-hidden="true">🎁</span>
-          {t('home.gift')}
-        </button>
         <FriendRequestsBell onOpen={onOpenFriends} pingKey={friendsOpen} />
         <LangToggle />
         <AuthMenu variant="home" onOpenSelections={onOpenSelections} onOpenProfile={onOpenProfile} onOpenFriends={onOpenFriends} onOpenHistory={onOpenHistory} />
@@ -241,6 +231,11 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             </svg>
           </button>
         </form>
+
+        <button type="button" className="home-gift-cta" onClick={onOpenGift}>
+          <span aria-hidden="true" className="home-gift-cta-emoji">🎁</span>
+          {t('home.gift')}
+        </button>
 
         <div className="home-suggestions">
           {suggestions.map((s) => {
