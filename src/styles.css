@@ -2355,7 +2355,12 @@ ul {
   gap: 8px;
   flex-shrink: 0;
 }
+/* The ✕ close button is position:absolute (top-right of the panel), so anchor
+   the share button just to its left to avoid overlapping it. */
 .selections-share-btn {
+  position: absolute;
+  top: 13px;
+  right: 48px;
   display: inline-flex;
   align-items: center;
   gap: 6px;

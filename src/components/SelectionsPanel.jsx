@@ -8,7 +8,7 @@ import {
   listSelections,
   removeSelection,
 } from '../lib/selections.js';
-import { encodeGiftShare } from '../lib/gift.js';
+import { buildShareUrl } from '../lib/gift.js';
 
 // Mirror of HistoryPanel, for saved products. Reads fresh on open.
 export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) {
@@ -62,7 +62,7 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
     }));
     if (!shareItems.length) return;
     const payload = { k: 'wish', r: user?.name || '', items: shareItems };
-    const url = `${window.location.origin}${window.location.pathname}?share=${encodeGiftShare(payload)}`;
+    const url = await buildShareUrl(payload);
     try {
       if (navigator.share) await navigator.share({ title: 'Oraklia', url });
       else {

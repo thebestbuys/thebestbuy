@@ -141,6 +141,38 @@ export async function cloudFetchProfileData() {
   return data?.data ?? null;
 }
 
+// ─── Shared lists (short share links) ──────────────────────────────────────
+function shortId() {
+  return (
+    Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 4)
+  );
+}
+
+// Store a share payload under a short id; returns the id (or null when not
+// signed in / on failure, so callers can fall back to an inline link).
+export async function createShareLink(payload) {
+  if (!hasCloudSession()) return null;
+  for (let i = 0; i < 3; i++) {
+    const id = shortId();
+    const { error } = await supabase.from('shared_lists').insert({ id, data: payload });
+    if (!error) return id;
+    if (error.code !== '23505') return null; // 23505 = unique violation → retry
+  }
+  return null;
+}
+
+// Public read (works for anonymous visitors via the "read shared lists" policy).
+export async function fetchSharedList(id) {
+  if (!supabase || !id) return null;
+  const { data, error } = await supabase
+    .from('shared_lists')
+    .select('data')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) return null;
+  return data?.data ?? null;
+}
+
 // ─── Friends (social graph) ────────────────────────────────────────────────
 export async function searchUsers(query) {
   const q = String(query || '').trim();

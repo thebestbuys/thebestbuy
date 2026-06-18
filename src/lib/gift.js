@@ -81,3 +81,34 @@ export function decodeGiftShare(str) {
     return null;
   }
 }
+
+// Build a share URL: a short ?s=<id> link backed by Supabase when possible,
+// falling back to the self-contained ?share=<payload> link (guests / no cloud).
+export async function buildShareUrl(payload) {
+  const base = `${window.location.origin}${window.location.pathname}`;
+  try {
+    const { createShareLink } = await import('./cloud.js');
+    const id = await createShareLink(payload);
+    if (id) return `${base}?s=${id}`;
+  } catch {
+    /* fall back to inline */
+  }
+  return `${base}?share=${encodeGiftShare(payload)}`;
+}
+
+// Resolve a shared payload from the current URL (?s=<id> or ?share=<payload>).
+export async function loadSharedPayload(search) {
+  const params = new URLSearchParams(search || '');
+  const id = params.get('s');
+  if (id) {
+    try {
+      const { fetchSharedList } = await import('./cloud.js');
+      return (await fetchSharedList(id)) || null;
+    } catch {
+      return null;
+    }
+  }
+  const enc = params.get('share');
+  if (enc) return decodeGiftShare(enc);
+  return null;
+}

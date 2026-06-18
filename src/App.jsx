@@ -19,7 +19,7 @@ import { HeroCard, PriceTag, ProductImage, ScoreRing, SmallCard, VerifiedRating 
 import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './lib/i18n.jsx';
 import { getProfile, profileToPrompt } from './lib/profile.js';
-import { giftToPrompt, giftTitle, encodeGiftShare, decodeGiftShare } from './lib/gift.js';
+import { giftToPrompt, giftTitle, buildShareUrl, loadSharedPayload } from './lib/gift.js';
 import { getAccessToken } from './lib/cloud.js';
 import {
   deriveTitle,
@@ -421,15 +421,22 @@ export default function App() {
   const [giftOpen, setGiftOpen] = useState(false);
   const [gift, setGift] = useState(null);   // recipient payload when in gift mode
   const [shareCopied, setShareCopied] = useState(false);
-  // Read-only shared gift list opened from a ?share=… link (decoded once).
-  const [sharedList, setSharedList] = useState(() => {
+  // Read-only shared list opened from a ?s=<id> (short) or ?share=<payload> link.
+  const [sharedList, setSharedList] = useState(null);
+  const [shareLoading, setShareLoading] = useState(() => {
     try {
-      const s = new URLSearchParams(window.location.search).get('share');
-      return s ? decodeGiftShare(s) : null;
+      const p = new URLSearchParams(window.location.search);
+      return !!(p.get('s') || p.get('share'));
     } catch {
-      return null;
+      return false;
     }
   });
+  useEffect(() => {
+    if (!shareLoading) return;
+    loadSharedPayload(window.location.search)
+      .then((d) => setSharedList(d || { items: [] }))
+      .finally(() => setShareLoading(false));
+  }, [shareLoading]);
   const [legalOpen, setLegalOpen] = useState(false);
   const [activeGuide, setActiveGuide] = useState(null);
   const [objet, setObjet] = useState('');      // human search term sent to the AI
@@ -680,7 +687,7 @@ export default function App() {
     }));
     if (!items.length) return;
     const payload = { r: gift?.relationship || '', o: gift?.occasion || '', items };
-    const url = `${window.location.origin}${window.location.pathname}?share=${encodeGiftShare(payload)}`;
+    const url = await buildShareUrl(payload);
     try {
       if (navigator.share) {
         await navigator.share({ title: 'Oraklia', url });
@@ -699,6 +706,7 @@ export default function App() {
       window.history.replaceState({}, '', window.location.pathname);
     } catch { /* noop */ }
     setSharedList(null);
+    setShareLoading(false);
   };
 
   const startAdvisorFromGuide = (cat) => {
@@ -715,7 +723,10 @@ export default function App() {
     setCategory(cat);
   };
 
-  // Shared gift list view (opened from a ?share=… link) — takes precedence.
+  // Shared list view (opened from a ?s= / ?share= link) — takes precedence.
+  if (shareLoading) {
+    return <div className="share-page"><p className="share-empty">…</p></div>;
+  }
   if (sharedList) {
     return <SharedGiftList data={sharedList} onCreate={closeSharedList} />;
   }

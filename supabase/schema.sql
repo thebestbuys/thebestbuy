@@ -53,12 +53,22 @@ create table if not exists public.friend_requests (
   check (requester_id <> addressee_id)
 );
 
+-- ── Shared lists (short share links) ───────────────────────────────────────
+-- A gift/wishlist snapshot stored under a short id, so share links stay tiny
+-- (?s=ab12cd34) instead of carrying the whole payload in the URL.
+create table if not exists public.shared_lists (
+  id         text        primary key,
+  data       jsonb       not null,
+  created_at timestamptz not null default now()
+);
+
 -- ── Row Level Security ────────────────────────────────────────────────────
 alter table public.selections    enable row level security;
 alter table public.conversations enable row level security;
 alter table public.recipients    enable row level security;
 alter table public.profiles      enable row level security;
 alter table public.friend_requests enable row level security;
+alter table public.shared_lists  enable row level security;
 
 drop policy if exists "own selections" on public.selections;
 create policy "own selections" on public.selections
@@ -108,6 +118,18 @@ drop policy if exists "remove friend row" on public.friend_requests;
 create policy "remove friend row" on public.friend_requests
   for delete
   using (auth.uid() = requester_id or auth.uid() = addressee_id);
+
+-- Shared lists: anyone with the link can read (incl. anonymous visitors);
+-- only signed-in users can create one.
+drop policy if exists "read shared lists" on public.shared_lists;
+create policy "read shared lists" on public.shared_lists
+  for select
+  using (true);
+
+drop policy if exists "create shared lists" on public.shared_lists;
+create policy "create shared lists" on public.shared_lists
+  for insert
+  with check (auth.uid() is not null);
 
 -- ── Friend directory functions (SECURITY DEFINER) ──────────────────────────
 -- These read the public identity columns of OTHER users without opening the

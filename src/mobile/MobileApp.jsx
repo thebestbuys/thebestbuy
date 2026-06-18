@@ -13,7 +13,7 @@ import {
 import { listSelections, removeSelection } from "../lib/selections.js";
 import { getProfile, profileToPrompt, saveProfile } from "../lib/profile.js";
 import { getMode, setMode as setThemeMode } from "../lib/theme.js";
-import { GIFT_EMPTY, giftToPrompt, giftTitle, encodeGiftShare } from "../lib/gift.js";
+import { GIFT_EMPTY, giftToPrompt, giftTitle, buildShareUrl } from "../lib/gift.js";
 import { listRecipients, removeRecipient, saveRecipient } from "../lib/recipients.js";
 import {
   searchUsers,
@@ -546,7 +546,7 @@ function ChatScreen({ query, onBack, accent = BB.coral, convoId, restore, gift: 
     }));
     if (!items.length) return;
     const payload = { r: gift?.relationship || "", o: gift?.occasion || "", items };
-    const url = `${window.location.origin}${window.location.pathname}?share=${encodeGiftShare(payload)}`;
+    const url = await buildShareUrl(payload);
     try {
       if (navigator.share) await navigator.share({ title: "Oraklia", url });
       else await navigator.clipboard.writeText(url);
