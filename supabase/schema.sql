@@ -406,16 +406,22 @@ language sql security definer set search_path = public as $$
     from public.link_clicks lc
     join consenting c on c.fid = lc.user_id
   ),
-  ranked as (
-    select product_id, data, ts,
-      count(distinct user_id) over (partition by product_id) as friend_count,
-      row_number()           over (partition by product_id order by ts desc) as rn
+  agg as (
+    -- distinct-friend count per product (DISTINCT isn't allowed in a window fn)
+    select product_id, count(distinct user_id) as friend_count
     from signals
+    group by product_id
+  ),
+  rep as (
+    -- one representative snapshot per product: the most recent signal
+    select distinct on (product_id) product_id, data, ts
+    from signals
+    order by product_id, ts desc
   )
-  select product_id, data, friend_count
-  from ranked
-  where rn = 1
-  order by friend_count desc, ts desc
+  select a.product_id, r.data, a.friend_count::int
+  from agg a
+  join rep r on r.product_id = a.product_id
+  order by a.friend_count desc, r.ts desc
   limit greatest(1, least(max_items, 50));
 $$;
 grant execute on function public.circle_trending(int) to authenticated;
