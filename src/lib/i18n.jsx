@@ -125,6 +125,10 @@ const TRANSLATIONS = {
     "friends.remove": "Retirer",
     "friends.removeConfirm": "Retirer {name} de tes amis ?",
     "friends.wishCount": "{n} idées",
+    "friends.viewLists": "Voir ses listes",
+    "friends.theirLists": "Listes de {name}",
+    "friends.noPublicLists": "Aucune liste publique.",
+    "friends.back": "← Retour",
 
     // Profile (personalization)
     "profile.title": "Mon profil",
@@ -419,6 +423,10 @@ const TRANSLATIONS = {
     "friends.remove": "Remove",
     "friends.removeConfirm": "Remove {name} from your friends?",
     "friends.wishCount": "{n} ideas",
+    "friends.viewLists": "View lists",
+    "friends.theirLists": "{name}'s lists",
+    "friends.noPublicLists": "No public list.",
+    "friends.back": "← Back",
 
     // Profile (personalization)
     "profile.title": "My profile",

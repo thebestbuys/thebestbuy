@@ -55,8 +55,21 @@ create table if not exists public.friend_requests (
 
 -- ── Lists (named collections, private/public) ──────────────────────────────
 -- Membership product↔list lives in selections.data.listIds (no extra table).
+-- id is TEXT (client-generated, e.g. "l_xxx"). An earlier version used a uuid
+-- column which rejected those ids — migrate it (the uuid table never stored
+-- anything, since those inserts failed).
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'lists'
+      and column_name = 'id' and data_type = 'uuid'
+  ) then
+    drop table public.lists cascade;
+  end if;
+end $$;
 create table if not exists public.lists (
-  id         uuid        primary key default gen_random_uuid(),
+  id         text        primary key,
   user_id    uuid        not null references auth.users (id) on delete cascade,
   name       text        not null,
   visibility text        not null default 'private',  -- private | public
@@ -192,6 +205,46 @@ language sql security definer set search_path = public as $$
   order by p.display_name;
 $$;
 grant execute on function public.list_friends() to authenticated;
+
+-- A friend's PUBLIC lists (only if accepted friendship), with item counts.
+create or replace function public.friend_public_lists(friend uuid)
+returns table (id text, name text, item_count integer)
+language sql security definer set search_path = public as $$
+  select l.id, l.name,
+    (select count(*)::int from public.selections s
+       where s.user_id = l.user_id and s.data->'listIds' ? l.id) as item_count
+  from public.lists l
+  where l.user_id = friend
+    and l.visibility = 'public'
+    and exists (
+      select 1 from public.friend_requests fr
+      where fr.status = 'accepted'
+        and ((fr.requester_id = auth.uid() and fr.addressee_id = friend)
+          or (fr.requester_id = friend and fr.addressee_id = auth.uid()))
+    )
+  order by l.name;
+$$;
+grant execute on function public.friend_public_lists(uuid) to authenticated;
+
+-- Items of a specific PUBLIC list owned by an accepted friend.
+create or replace function public.public_list_items(list text)
+returns table (data jsonb)
+language sql security definer set search_path = public as $$
+  select s.data
+  from public.lists l
+  join public.selections s
+    on s.user_id = l.user_id and s.data->'listIds' ? l.id
+  where l.id = list
+    and l.visibility = 'public'
+    and exists (
+      select 1 from public.friend_requests fr
+      where fr.status = 'accepted'
+        and ((fr.requester_id = auth.uid() and fr.addressee_id = l.user_id)
+          or (fr.requester_id = l.user_id and fr.addressee_id = auth.uid()))
+    )
+  order by (s.data->>'addedAt') desc;
+$$;
+grant execute on function public.public_list_items(text) to authenticated;
 
 -- Pending requests addressed to me, with the requester's identity.
 create or replace function public.list_incoming_requests()

@@ -234,6 +234,22 @@ export async function listFriends() {
   return data || [];
 }
 
+// A friend's public lists (id, name, item_count) — only if you're friends.
+export async function friendPublicLists(friendId) {
+  if (!hasCloudSession() || !friendId) return [];
+  const { data, error } = await supabase.rpc('friend_public_lists', { friend: friendId });
+  if (error) return [];
+  return data || [];
+}
+
+// Product snapshots of a friend's public list.
+export async function publicListItems(listId) {
+  if (!hasCloudSession() || !listId) return [];
+  const { data, error } = await supabase.rpc('public_list_items', { list: listId });
+  if (error) return [];
+  return (data || []).map((r) => r.data).filter(Boolean);
+}
+
 // Remove an existing friendship (delete the row in either direction). RLS only
 // lets a user delete rows that involve them.
 export async function removeFriend(friendUserId) {

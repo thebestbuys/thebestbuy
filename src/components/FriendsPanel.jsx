@@ -8,7 +8,10 @@ import {
   listFriends,
   respondFriendRequest,
   removeFriend,
+  friendPublicLists,
+  publicListItems,
 } from '../lib/cloud.js';
+import { AmazonPrice, ProductImage } from './ProductCard.jsx';
 
 function initials(name = '') {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
@@ -45,6 +48,10 @@ export default function FriendsPanel({ open, onClose }) {
   const [searched, setSearched] = useState(false);
   const [incoming, setIncoming] = useState([]);
   const [friends, setFriends] = useState([]);
+  const [viewing, setViewing] = useState(null);   // friend whose lists we browse
+  const [pubLists, setPubLists] = useState(null);  // null = loading
+  const [openListId, setOpenListId] = useState(null);
+  const [listItems, setListItems] = useState([]);
 
   const refresh = () => {
     listIncomingRequests().then(setIncoming);
@@ -56,6 +63,7 @@ export default function FriendsPanel({ open, onClose }) {
     setQ('');
     setResults([]);
     setSearched(false);
+    setViewing(null);
     refresh();
     const onKey = (e) => {
       if (e.key === 'Escape') onClose();
@@ -106,6 +114,28 @@ export default function FriendsPanel({ open, onClose }) {
     refresh();
   };
 
+  const browse = (f) => {
+    setViewing(f);
+    setPubLists(null);
+    setOpenListId(null);
+    setListItems([]);
+    friendPublicLists(f.user_id).then(setPubLists);
+  };
+
+  const openList = (l) => {
+    if (openListId === l.id) {
+      setOpenListId(null);
+      return;
+    }
+    setOpenListId(l.id);
+    setListItems([]);
+    publicListItems(l.id).then(setListItems);
+  };
+
+  const amazonUrl = (p) =>
+    p.amazon_url ||
+    `https://www.amazon.fr/s?k=${encodeURIComponent(`${p.brand} ${p.model}`)}&tag=oraklia123-21`;
+
   return (
     <div className="auth-modal-bg" onClick={onClose}>
       <div
@@ -117,8 +147,19 @@ export default function FriendsPanel({ open, onClose }) {
       >
         <header className="history-head">
           <div>
-            <h2 id="friends-title" className="history-title">{t('friends.title')}</h2>
-            <p className="history-sub">{t('friends.sub')}</p>
+            {viewing ? (
+              <>
+                <button type="button" className="friends-back" onClick={() => setViewing(null)}>
+                  {t('friends.back')}
+                </button>
+                <h2 className="history-title">{t('friends.theirLists', { name: viewing.display_name })}</h2>
+              </>
+            ) : (
+              <>
+                <h2 id="friends-title" className="history-title">{t('friends.title')}</h2>
+                <p className="history-sub">{t('friends.sub')}</p>
+              </>
+            )}
           </div>
           <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
         </header>
@@ -127,6 +168,49 @@ export default function FriendsPanel({ open, onClose }) {
           <div className="history-empty">
             <div className="history-empty-icon">👋</div>
             <div className="history-empty-text">{t('friends.signedOut')}</div>
+          </div>
+        ) : viewing ? (
+          <div className="friends-body">
+            {pubLists === null ? (
+              <div className="friends-hint">…</div>
+            ) : pubLists.length === 0 ? (
+              <div className="friends-hint">{t('friends.noPublicLists')}</div>
+            ) : (
+              pubLists.map((l) => (
+                <div key={l.id} className="pub-list">
+                  <button type="button" className="pub-list-head" onClick={() => openList(l)}>
+                    <span className="pub-list-name">🌐 {l.name}</span>
+                    <span className="sel-list-n">{t('lists.count', { n: l.item_count })}</span>
+                    <span className="pub-list-caret">{openListId === l.id ? '▾' : '▸'}</span>
+                  </button>
+                  {openListId === l.id && (
+                    <ul className="share-grid pub-list-grid">
+                      {listItems.map((p, i) => {
+                        const url = amazonUrl(p);
+                        return (
+                          <li key={i} className="amz-card">
+                            <a className="amz-card-img" href={url} target="_blank" rel="noopener noreferrer sponsored">
+                              <ProductImage product={p} size="small" />
+                            </a>
+                            <div className="amz-card-body">
+                              <a className="amz-card-title" href={url} target="_blank" rel="noopener noreferrer sponsored">
+                                {[p.brand, p.model].filter(Boolean).join(' ')}
+                              </a>
+                              {p.price != null && (
+                                <div className="amz-card-price"><AmazonPrice price={p.price} /></div>
+                              )}
+                              <a className="amz-buy-btn" href={url} target="_blank" rel="noopener noreferrer sponsored">
+                                {t('product.viewAmazon')}
+                              </a>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         ) : (
           <div className="friends-body">
@@ -194,6 +278,9 @@ export default function FriendsPanel({ open, onClose }) {
                   <li key={f.user_id} className="friend-row">
                     <Avatar name={f.display_name} url={f.avatar_url} />
                     <span className="friend-name">{f.display_name}</span>
+                    <button type="button" className="friend-btn" onClick={() => browse(f)}>
+                      {t('friends.viewLists')}
+                    </button>
                     <button type="button" className="friend-btn ghost" onClick={() => remove(f)}>
                       {t('friends.remove')}
                     </button>
