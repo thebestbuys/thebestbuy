@@ -2354,6 +2354,15 @@ ul {
 .fav-wrap {
   display: contents;
 }
+/* "Manage lists" button on saved-product cards (top-left; ✕ remove is top-right) */
+.fav-btn-manage {
+  top: 8px;
+  left: 8px;
+  width: 30px;
+  height: 30px;
+  color: var(--accent);
+  border-color: var(--accent);
+}
 .fav-pop {
   z-index: 2147483000;
   background: var(--bg-elev);

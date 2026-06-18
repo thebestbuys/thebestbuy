@@ -7,7 +7,7 @@ import { listLists, createList } from '../lib/lists.js';
 // Heart that saves a product into one or more named lists. Clicking opens a
 // picker (checkboxes of lists + "create a list"); a product in ≥1 list is "on".
 // `variant="inline"` drops the absolute positioning (e.g. in the detail modal).
-export default function FavoriteButton({ product, variant = 'card' }) {
+export default function FavoriteButton({ product, variant = 'card', onChange }) {
   const { user } = useAuth();
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -46,6 +46,7 @@ export default function FavoriteButton({ product, variant = 'card' }) {
   if (product?.id == null) return null;
 
   const on = checked.length > 0;
+  const manage = variant === 'manage';
 
   const openPicker = (e) => {
     e.stopPropagation();
@@ -69,6 +70,7 @@ export default function FavoriteButton({ product, variant = 'card' }) {
       ? checked.filter((x) => x !== listId)
       : [...checked, listId];
     setChecked(setProductLists(user?.sub, product, next));
+    onChange?.();
   };
 
   const create = () => {
@@ -78,6 +80,7 @@ export default function FavoriteButton({ product, variant = 'card' }) {
     setNewName('');
     setLists(listLists(user?.sub));
     setChecked(setProductLists(user?.sub, product, [...checked, lst.id]));
+    onChange?.();
   };
 
   return (
@@ -85,23 +88,35 @@ export default function FavoriteButton({ product, variant = 'card' }) {
       <button
         type="button"
         ref={btnRef}
-        className={'fav-btn' + (variant === 'inline' ? ' fav-btn-inline' : '') + (on ? ' on' : '')}
+        className={
+          'fav-btn' +
+          (variant === 'inline' ? ' fav-btn-inline' : '') +
+          (manage ? ' fav-btn-manage' : '') +
+          (on ? ' on' : '')
+        }
         onClick={openPicker}
         aria-pressed={on}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={on ? t('selections.remove') : t('selections.add')}
-        title={on ? t('selections.remove') : t('selections.add')}
+        aria-label={manage ? t('lists.addTo') : on ? t('selections.remove') : t('selections.add')}
+        title={manage ? t('lists.addTo') : on ? t('selections.remove') : t('selections.add')}
       >
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-          <path
-            d="M9 15.4S2.4 11.3 2.4 6.8A3.35 3.35 0 0 1 9 5.1 3.35 3.35 0 0 1 15.6 6.8C15.6 11.3 9 15.4 9 15.4Z"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinejoin="round"
-            fill={on ? 'currentColor' : 'none'}
-          />
-        </svg>
+        {manage ? (
+          <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <path d="M3 4.5h8M3 9h8M3 13.5h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M13 11.5v5M10.5 14h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <path
+              d="M9 15.4S2.4 11.3 2.4 6.8A3.35 3.35 0 0 1 9 5.1 3.35 3.35 0 0 1 15.6 6.8C15.6 11.3 9 15.4 9 15.4Z"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+              fill={on ? 'currentColor' : 'none'}
+            />
+          </svg>
+        )}
       </button>
 
       {open && (

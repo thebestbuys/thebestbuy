@@ -11,6 +11,7 @@ import {
 } from '../lib/selections.js';
 import { listLists, getListsRevision, updateList, deleteList } from '../lib/lists.js';
 import { buildShareUrl } from '../lib/gift.js';
+import FavoriteButton from './FavoriteButton.jsx';
 
 // Saved products, organized into named lists (private/public).
 export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) {
@@ -208,6 +209,7 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
                 const url = getAmazonUrl ? getAmazonUrl(p) : p.amazon_url;
                 return (
                   <li key={p.id} className="amz-card">
+                    <FavoriteButton product={p} variant="manage" onChange={reload} />
                     <button
                       type="button"
                       className="amz-card-remove"
