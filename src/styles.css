@@ -194,6 +194,31 @@ ul {
   background: var(--accent);
   transform: scale(1.05);
 }
+.home-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+.home-occ-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 22px;
+  border: 0.5px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.home-occ-cta:hover {
+  transform: translateY(-2px);
+  filter: brightness(0.98);
+}
 .home-gift-cta {
   display: inline-flex;
   align-items: center;

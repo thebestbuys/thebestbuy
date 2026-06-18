@@ -233,10 +233,16 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           </button>
         </form>
 
-        <button type="button" className="home-gift-cta" onClick={onOpenGift}>
-          <span aria-hidden="true" className="home-gift-cta-emoji">🎁</span>
-          {t('home.gift')}
-        </button>
+        <div className="home-cta-row">
+          <button type="button" className="home-gift-cta" onClick={onOpenGift}>
+            <span aria-hidden="true" className="home-gift-cta-emoji">🎁</span>
+            {t('home.gift')}
+          </button>
+          <button type="button" className="home-occ-cta" onClick={onOpenNotifications}>
+            <span aria-hidden="true" className="home-gift-cta-emoji">📅</span>
+            {t('notif.occasions')}
+          </button>
+        </div>
 
         <div className="home-suggestions">
           {suggestions.map((s) => {
