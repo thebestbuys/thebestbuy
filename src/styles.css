@@ -1841,6 +1841,30 @@ ul {
     height: 100dvh;
     max-height: none;
     border-right: 0;
+    /* Grid cells default to min-width:auto and would otherwise expand to fit
+       the header's intrinsic width, pushing the whole column (and the chat
+       bubbles) past the viewport. Let it shrink so the header wraps instead. */
+    min-width: 0;
+  }
+  .app-narrow .chat-header {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .app-narrow .chat-header-left {
+    min-width: 0;
+  }
+  .app-narrow .chat-stream {
+    overflow-x: hidden;
+  }
+  /* Compact the account controls injected into the chat header on mobile:
+     icon-only triggers so 6-7 controls fit without overflowing. */
+  .app-narrow .chat-header-actions .auth-trigger {
+    font-size: 0;
+    gap: 0;
+    padding: 8px 9px;
+  }
+  .app-narrow .chat-header-actions .auth-userbtn-name {
+    display: none;
   }
 }
 
