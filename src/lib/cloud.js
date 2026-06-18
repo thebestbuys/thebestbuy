@@ -141,6 +141,36 @@ export async function cloudFetchProfileData() {
   return data?.data ?? null;
 }
 
+// ─── Lists (named collections) ──────────────────────────────────────────────
+export async function cloudUpsertList(list) {
+  if (!hasCloudSession() || !list?.id) return;
+  await supabase.from('lists').upsert(
+    {
+      id: String(list.id),
+      user_id: uid(),
+      name: list.name || '',
+      visibility: list.visibility === 'public' ? 'public' : 'private',
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'id' },
+  );
+}
+
+export async function cloudDeleteList(listId) {
+  if (!hasCloudSession() || listId == null) return;
+  await supabase.from('lists').delete().eq('user_id', uid()).eq('id', String(listId));
+}
+
+export async function cloudFetchLists() {
+  if (!hasCloudSession()) return null;
+  const { data, error } = await supabase
+    .from('lists')
+    .select('id, name, visibility, created_at')
+    .order('created_at', { ascending: true });
+  if (error) return null;
+  return data || [];
+}
+
 // ─── Shared lists (short share links) ──────────────────────────────────────
 function shortId() {
   return (

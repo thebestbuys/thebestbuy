@@ -64,7 +64,7 @@ export function isSelected(userId, productId) {
   return listSelections(userId).some((p) => p.id === productId);
 }
 
-function snapshot(product) {
+function snapshot(product, listIds = []) {
   return {
     id: product.id,
     brand: product.brand,
@@ -77,8 +77,68 @@ function snapshot(product) {
     score: product.score ?? null,
     amazon_url: product.amazon_url || null,
     category: product.category || null,
+    listIds: Array.isArray(listIds) ? listIds : [],
     addedAt: Date.now(),
   };
+}
+
+// The lists a product currently belongs to (empty when not saved / no list).
+export function getProductListIds(userId, productId) {
+  const it = listSelections(userId).find((p) => p.id === productId);
+  return Array.isArray(it?.listIds) ? it.listIds : [];
+}
+
+// Set a product's list membership. Empty array → the product is removed from the
+// selections entirely (every save belongs to at least one list).
+export function setProductLists(userId, product, listIds) {
+  if (product?.id == null) return [];
+  const ids = Array.from(new Set((listIds || []).filter(Boolean)));
+  const list = listSelections(userId);
+  const idx = list.findIndex((p) => p.id === product.id);
+  if (ids.length === 0) {
+    if (idx >= 0) {
+      list.splice(idx, 1);
+      write(userId, list);
+      cloudDeleteSelection(product.id).catch(() => {});
+    }
+    return [];
+  }
+  let item;
+  if (idx >= 0) {
+    item = { ...list[idx], listIds: ids };
+    list[idx] = item;
+  } else {
+    item = snapshot(product, ids);
+    list.unshift(item);
+    if (list.length > MAX_SELECTIONS) list.length = MAX_SELECTIONS;
+  }
+  write(userId, list);
+  cloudUpsertSelection(item).catch(() => {});
+  return ids;
+}
+
+// Remove a list id from every selection (after deleting a list); selections left
+// with no list are dropped.
+export function removeListFromAll(userId, listId) {
+  const list = listSelections(userId);
+  let changed = false;
+  const next = [];
+  for (const p of list) {
+    if (Array.isArray(p.listIds) && p.listIds.includes(listId)) {
+      const ids = p.listIds.filter((x) => x !== listId);
+      changed = true;
+      if (ids.length === 0) {
+        cloudDeleteSelection(p.id).catch(() => {});
+        continue;
+      }
+      const item = { ...p, listIds: ids };
+      next.push(item);
+      cloudUpsertSelection(item).catch(() => {});
+    } else {
+      next.push(p);
+    }
+  }
+  if (changed) write(userId, next);
 }
 
 // Adds the product if absent, removes it if present.

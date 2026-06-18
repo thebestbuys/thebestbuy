@@ -53,6 +53,17 @@ create table if not exists public.friend_requests (
   check (requester_id <> addressee_id)
 );
 
+-- ── Lists (named collections, private/public) ──────────────────────────────
+-- Membership product↔list lives in selections.data.listIds (no extra table).
+create table if not exists public.lists (
+  id         uuid        primary key default gen_random_uuid(),
+  user_id    uuid        not null references auth.users (id) on delete cascade,
+  name       text        not null,
+  visibility text        not null default 'private',  -- private | public
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 -- ── Shared lists (short share links) ───────────────────────────────────────
 -- A gift/wishlist snapshot stored under a short id, so share links stay tiny
 -- (?s=ab12cd34) instead of carrying the whole payload in the URL.
@@ -69,6 +80,7 @@ alter table public.recipients    enable row level security;
 alter table public.profiles      enable row level security;
 alter table public.friend_requests enable row level security;
 alter table public.shared_lists  enable row level security;
+alter table public.lists         enable row level security;
 
 drop policy if exists "own selections" on public.selections;
 create policy "own selections" on public.selections
@@ -130,6 +142,14 @@ drop policy if exists "create shared lists" on public.shared_lists;
 create policy "create shared lists" on public.shared_lists
   for insert
   with check (auth.uid() is not null);
+
+-- Lists: owner-only read/write. Friends read PUBLIC lists via SECURITY DEFINER
+-- functions (Phase 2), so the table itself stays private.
+drop policy if exists "own lists" on public.lists;
+create policy "own lists" on public.lists
+  for all
+  using      (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- ── Friend directory functions (SECURITY DEFINER) ──────────────────────────
 -- These read the public identity columns of OTHER users without opening the

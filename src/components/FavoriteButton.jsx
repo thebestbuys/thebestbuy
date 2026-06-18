@@ -1,46 +1,158 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
-import { isSelected, toggleSelection } from '../lib/selections.js';
+import { getProductListIds, setProductLists } from '../lib/selections.js';
+import { listLists, createList } from '../lib/lists.js';
 
-// Heart toggle that saves/removes a product from "Mes sélections".
-// `variant="inline"` drops the absolute positioning for use inside flows
-// (e.g. the product detail modal). Stops propagation so it never triggers
-// the surrounding card's onSelect.
+// Heart that saves a product into one or more named lists. Clicking opens a
+// picker (checkboxes of lists + "create a list"); a product in ≥1 list is "on".
+// `variant="inline"` drops the absolute positioning (e.g. in the detail modal).
 export default function FavoriteButton({ product, variant = 'card' }) {
   const { user } = useAuth();
   const { t } = useI18n();
-  const [on, setOn] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [lists, setLists] = useState([]);
+  const [checked, setChecked] = useState([]);
+  const [newName, setNewName] = useState('');
+  const [pos, setPos] = useState(null);
+  const wrapRef = useRef(null);
+  const btnRef = useRef(null);
+
+  const refresh = () => {
+    setLists(listLists(user?.sub));
+    setChecked(getProductListIds(user?.sub, product?.id));
+  };
 
   useEffect(() => {
-    setOn(isSelected(user?.sub, product?.id));
+    setChecked(getProductListIds(user?.sub, product?.id));
   }, [user?.sub, product?.id]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
 
   if (product?.id == null) return null;
 
-  const toggle = (e) => {
+  const on = checked.length > 0;
+
+  const openPicker = (e) => {
     e.stopPropagation();
-    setOn(toggleSelection(user?.sub, product));
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    refresh();
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) {
+      const W = 248;
+      const left = Math.max(8, Math.min(r.left, window.innerWidth - W - 8));
+      const top = Math.min(r.bottom + 6, window.innerHeight - 8);
+      setPos({ top, left, width: W });
+    }
+    setOpen(true);
+  };
+
+  const toggleList = (listId) => {
+    const next = checked.includes(listId)
+      ? checked.filter((x) => x !== listId)
+      : [...checked, listId];
+    setChecked(setProductLists(user?.sub, product, next));
+  };
+
+  const create = () => {
+    const name = newName.trim();
+    if (!name) return;
+    const lst = createList(user?.sub, name);
+    setNewName('');
+    setLists(listLists(user?.sub));
+    setChecked(setProductLists(user?.sub, product, [...checked, lst.id]));
   };
 
   return (
-    <button
-      type="button"
-      className={'fav-btn' + (variant === 'inline' ? ' fav-btn-inline' : '') + (on ? ' on' : '')}
-      onClick={toggle}
-      aria-pressed={on}
-      aria-label={on ? t('selections.remove') : t('selections.add')}
-      title={on ? t('selections.remove') : t('selections.add')}
-    >
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-        <path
-          d="M9 15.4S2.4 11.3 2.4 6.8A3.35 3.35 0 0 1 9 5.1 3.35 3.35 0 0 1 15.6 6.8C15.6 11.3 9 15.4 9 15.4Z"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-          fill={on ? 'currentColor' : 'none'}
-        />
-      </svg>
-    </button>
+    <span className="fav-wrap" ref={wrapRef}>
+      <button
+        type="button"
+        ref={btnRef}
+        className={'fav-btn' + (variant === 'inline' ? ' fav-btn-inline' : '') + (on ? ' on' : '')}
+        onClick={openPicker}
+        aria-pressed={on}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={on ? t('selections.remove') : t('selections.add')}
+        title={on ? t('selections.remove') : t('selections.add')}
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path
+            d="M9 15.4S2.4 11.3 2.4 6.8A3.35 3.35 0 0 1 9 5.1 3.35 3.35 0 0 1 15.6 6.8C15.6 11.3 9 15.4 9 15.4Z"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+            fill={on ? 'currentColor' : 'none'}
+          />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          className="fav-pop"
+          role="menu"
+          style={pos ? { position: 'fixed', top: pos.top, left: pos.left, width: pos.width } : undefined}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="fav-pop-head">{t('lists.addTo')}</div>
+          {lists.length > 0 ? (
+            <ul className="fav-pop-list">
+              {lists.map((l) => (
+                <li key={l.id}>
+                  <label className="fav-pop-item">
+                    <input
+                      type="checkbox"
+                      checked={checked.includes(l.id)}
+                      onChange={() => toggleList(l.id)}
+                    />
+                    <span className="fav-pop-name">{l.name}</span>
+                    {l.visibility === 'public' && (
+                      <span className="fav-pop-badge">{t('lists.public')}</span>
+                    )}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="fav-pop-empty">{t('lists.emptyShort')}</div>
+          )}
+          <div className="fav-pop-create">
+            <input
+              type="text"
+              value={newName}
+              maxLength={60}
+              placeholder={t('lists.newPlaceholder')}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  create();
+                }
+              }}
+            />
+            <button type="button" onClick={create} disabled={!newName.trim()}>
+              {t('lists.createBtn')}
+            </button>
+          </div>
+        </div>
+      )}
+    </span>
   );
 }
