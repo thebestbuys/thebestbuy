@@ -40,6 +40,7 @@ async function resolveFriendProfile(req, friendId, lang) {
     userOk: false,
     verified: false,
     profileLen: 0,
+    wishlistCount: 0,
     error: null,
   };
   try {
@@ -56,7 +57,7 @@ async function resolveFriendProfile(req, friendId, lang) {
     debug.userOk = !!requesterId;
     if (userErr || !requesterId || requesterId === friendId) {
       debug.error = userErr ? 'getUser: ' + (userErr.message || 'failed') : 'no requester';
-      return { text: '', debug };
+      return { text: '', wishlist: '', debug };
     }
 
     const admin = createClient(SUPA_URL, SUPA_SERVICE, { auth: { persistSession: false } });
@@ -81,10 +82,31 @@ async function resolveFriendProfile(req, friendId, lang) {
     if (profErr) debug.error = 'profile: ' + (profErr.message || 'failed');
     const text = profileDataToString(prof?.data, lang);
     debug.profileLen = text.length;
-    return { text, debug };
+
+    // The recipient's saved products ("Mes sélections") = a wishlist signal.
+    let wishlist = '';
+    const { data: sels } = await admin
+      .from('selections')
+      .select('data')
+      .eq('user_id', friendId)
+      .limit(40);
+    const items = (sels || [])
+      .map((r) => r.data)
+      .filter(Boolean)
+      .map((p) => {
+        const n = `${p.brand || ''} ${p.model || ''}`.trim();
+        if (!n) return '';
+        return p.price != null ? `${n} (~${p.price}€)` : n;
+      })
+      .filter(Boolean)
+      .slice(0, 20);
+    wishlist = items.join('; ');
+    debug.wishlistCount = items.length;
+
+    return { text, wishlist, debug };
   } catch (e) {
     debug.error = 'exception: ' + (e?.message || String(e));
-    return { text: '', debug };
+    return { text: '', wishlist: '', debug };
   }
 }
 
@@ -204,15 +226,18 @@ Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 }
 
 // 10 real, varied gift product candidates for the recipient + occasion + budget.
-function buildGiftRecommendPrompt(giftStr, answers, lang, exclude = [], surprise = false) {
+function buildGiftRecommendPrompt(giftStr, answers, lang, exclude = [], surprise = false, wishlist = '') {
   const excludeLine = exclude.length
     ? `\nNE propose AUCUN de ces produits (déjà testés, introuvables sur Amazon.fr) : ${exclude.join(', ')}. Propose-en 10 AUTRES, différents.`
     : '';
   const surpriseLine = surprise
     ? "\nMODE SURPRISE : ose des idées ORIGINALES, inattendues et créatives (pas seulement les évidences) tout en restant adaptées à la personne et au budget. Privilégie la nouveauté et l'effet \"waouh\"."
     : '';
+  const wishlistLine = wishlist
+    ? `\nLISTE DE SOUHAITS de la personne (produits qu'elle a elle-même sauvegardés) : ${wishlist}. Si un ou plusieurs RENTRENT DANS LE BUDGET, propose-les EN PRIORITÉ (inclus-en 1 à 3 parmi les 10) — ce sont des choses qu'elle veut déjà.`
+    : '';
   return `Tu es Oraklia, un conseiller en idées cadeaux. ${langLineFor(lang)}
-On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".
+On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".${wishlistLine}
 Préférences de raffinement (JSON): ${answersJson(answers)}
 
 Propose EXACTEMENT 10 idées de cadeaux : des produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, qui feraient de bons cadeaux pour CETTE personne, pour cette occasion et DANS le budget indiqué. VARIE les catégories (pas 10 produits du même type). Donne des marques et modèles PRÉCIS. "why" explique en une phrase pourquoi ça correspond à la personne. Score 0-99 = à quel point l'idée lui correspond.${surpriseLine}${excludeLine}
@@ -256,14 +281,17 @@ IMPORTANT: "products" null quand action="ask"; 10 produits quand action="recomme
 // Gift mode over the legacy transcript contract (used by the mobile app): same
 // action/products/question JSON, but gift-flavoured — recipient/occasion/budget
 // are already known, so it goes straight to recommendations and refines on demand.
-function buildGiftSystemPrompt(giftStr, lang = 'fr', surprise = false) {
+function buildGiftSystemPrompt(giftStr, lang = 'fr', surprise = false, wishlist = '') {
   const langLine = langLineFor(lang);
   const surpriseLine = surprise
     ? "\nMODE SURPRISE : ose des idées ORIGINALES, inattendues et créatives (pas seulement les évidences) tout en restant adaptées à la personne et au budget."
     : '';
+  const wishlistLine = wishlist
+    ? `\nLISTE DE SOUHAITS de la personne (produits qu'elle a elle-même sauvegardés) : ${wishlist}. Si un ou plusieurs RENTRENT DANS LE BUDGET, propose-les EN PRIORITÉ (inclus-en 1 à 3) — ce sont des choses qu'elle veut déjà.`
+    : '';
   return `Tu es Oraklia, un conseiller en idées cadeaux conversationnel.
 LANGUE DE RÉPONSE / OUTPUT LANGUAGE: ${langLine}
-On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".${surpriseLine}
+On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".${surpriseLine}${wishlistLine}
 
 DÉROULÉ:
 - À ton PREMIER message: action="recommend" avec EXACTEMENT 10 idées de cadeaux RÉELS vendus sur Amazon.fr, VARIÉES (catégories différentes), adaptées à la personne, à l'occasion et au budget indiqués. Ne pose PAS de question sur le budget/l'occasion (déjà connus).
@@ -407,8 +435,9 @@ export default async function handler(req, res) {
   // Gift mode: a recipient description is sent instead of a product "objet".
   // For a friend, resolve their PRIVATE profile server-side (verified friendship)
   // and fold it into the recipient description — it never reaches the client.
-  const friendRes = friendId ? await resolveFriendProfile(req, friendId, lang) : { text: '', debug: null };
+  const friendRes = friendId ? await resolveFriendProfile(req, friendId, lang) : { text: '', wishlist: '', debug: null };
   const friendProfile = friendRes.text;
+  const friendWishlist = friendRes.wishlist || '';
   const giftStr = [gift, friendProfile].map((s) => String(s || '').trim()).filter(Boolean).join('; ');
   // Supported on both the new (desktop) and legacy (mobile) paths.
   const isGift = giftStr.length > 0 || !!friendId;
@@ -421,13 +450,13 @@ export default async function handler(req, res) {
   let systemPrompt, contents, temperature;
   if (legacy) {
     systemPrompt = isGift
-      ? buildGiftSystemPrompt(giftStr, lang, surprise)
+      ? buildGiftSystemPrompt(giftStr, lang, surprise, friendWishlist)
       : buildSystemPrompt(category, lang, profile);
     contents = toGeminiContents(messages);
     temperature = isGift ? (surprise ? 0.95 : 0.7) : 0.5;
   } else if (isGift) {
     systemPrompt = isRecommend
-      ? buildGiftRecommendPrompt(giftStr, answers, lang, [], surprise)
+      ? buildGiftRecommendPrompt(giftStr, answers, lang, [], surprise, friendWishlist)
       : buildGiftAskPrompt(giftStr, answers, lang);
     contents = [{ role: 'user', parts: [{ text: isRecommend ? 'Donne les idées de cadeaux.' : 'Pose la prochaine question.' }] }];
     temperature = isRecommend ? (surprise ? 0.95 : 0.7) : 0.5;
@@ -561,7 +590,7 @@ export default async function handler(req, res) {
           }
         : {
             systemInstruction: { parts: [{ text: isGift
-              ? buildGiftRecommendPrompt(giftStr, answers, lang, [...triedNames], surprise)
+              ? buildGiftRecommendPrompt(giftStr, answers, lang, [...triedNames], surprise, friendWishlist)
               : buildRecommendPrompt(searchTerm, answers, lang, [...triedNames], profile) }] },
             contents: [{ role: 'user', parts: [{ text: 'Donne 10 autres recommandations.' }] }],
             generationConfig: { temperature: 0.6, responseMimeType: 'application/json' },
