@@ -16,7 +16,7 @@ import FavoriteButton from './components/FavoriteButton.jsx';
 import LegalNotices from './components/LegalNotices.jsx';
 import GuideArticle from './components/GuideArticle.jsx';
 import LangToggle from './components/LangToggle.jsx';
-import { GUIDES, localizeGuide } from './data/guides.js';
+import { GUIDES, localizeGuide, getGuide } from './data/guides.js';
 import { HeroCard, PriceTag, ProductImage, ProductLinkCard, ScoreRing, SmallCard, VerifiedRating } from './components/ProductCard.jsx';
 import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './lib/i18n.jsx';
@@ -54,6 +54,17 @@ function useIsNarrow() {
     return () => mq.removeEventListener('change', onChange);
   }, []);
   return narrow;
+}
+
+// Lightweight path → view mapping. Only the SEO/shareable pages (guides + legal)
+// carry a real URL; every other view stays URL-less app state. Used to open the
+// right view on a direct hit / refresh and to re-sync on browser back/forward.
+function viewFromPath() {
+  const path = typeof location !== 'undefined' ? location.pathname : '/';
+  const m = path.match(/^\/guide\/([^/]+)\/?$/);
+  if (m && getGuide(decodeURIComponent(m[1]))) return { guide: decodeURIComponent(m[1]) };
+  if (/^\/mentions-legales\/?$/.test(path)) return { legal: true };
+  return {};
 }
 
 const CATEGORY_KEYWORDS = {
@@ -529,8 +540,10 @@ export default function App() {
       .then((d) => setSharedList(d || { items: [] }))
       .finally(() => setShareLoading(false));
   }, [shareLoading]);
-  const [legalOpen, setLegalOpen] = useState(false);
-  const [activeGuide, setActiveGuide] = useState(null);
+  // Open the guide / legal view directly when landing on its URL (deep link,
+  // refresh, or the prerendered page handing off to the app).
+  const [legalOpen, setLegalOpen] = useState(() => !!viewFromPath().legal);
+  const [activeGuide, setActiveGuide] = useState(() => viewFromPath().guide || null);
   const [objet, setObjet] = useState('');      // human search term sent to the AI
   const [answers, setAnswers] = useState([]);  // compact criteria JSON [{id,q,a,tags,min,max}]
 
@@ -692,12 +705,14 @@ export default function App() {
   // forward navigation so the browser Back button steps back through in-app
   // views and overlays instead of leaving the site. UI close buttons call
   // window.history.back(), so both paths converge on the popstate handler.
-  const pushHistory = () => {
-    try { window.history.pushState({ oraklia: true }, ''); } catch { /* noop */ }
+  // `url` (optional) gives the SEO/shareable views (guides, legal) a real URL;
+  // every other view passes nothing and stays URL-less (same path, back-stack only).
+  const pushHistory = (url) => {
+    try { window.history.pushState({ oraklia: true }, '', url); } catch { /* noop */ }
   };
 
-  const navOpenGuide = (slug) => { pushHistory(); setActiveGuide(slug); };
-  const navOpenLegal = () => { pushHistory(); setLegalOpen(true); };
+  const navOpenGuide = (slug) => { pushHistory('/guide/' + slug); setActiveGuide(slug); };
+  const navOpenLegal = () => { pushHistory('/mentions-legales'); setLegalOpen(true); };
   const navOpenHistory = () => { pushHistory(); setHistoryOpen(true); };
   const navOpenSelections = () => { pushHistory(); setSelectionsOpen(true); };
   const navOpenProfile = () => { pushHistory(); setProfileOpen(true); };
@@ -771,6 +786,17 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, legalOpen, giftOpen, notifOpen, askOpen, friendsOpen, profileOpen, selectionsOpen, historyOpen, activeGuide, category]);
+
+  // Keep the tab title in sync with the open guide (matches the prerendered
+  // per-guide <title>); reset to the brand title elsewhere.
+  useEffect(() => {
+    const base = 'Oraklia — Conseiller d\'achat IA';
+    const g = activeGuide ? getGuide(activeGuide) : null;
+    document.title = g
+      ? `${localizeGuide(g, lang).title} — Oraklia`
+      : legalOpen ? 'Mentions légales — Oraklia' : base;
+    return () => { document.title = base; };
+  }, [activeGuide, legalOpen, lang]);
 
   const getAmazonUrl = (p) => {
     if (p.amazon_url) return p.amazon_url;

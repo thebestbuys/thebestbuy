@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender.mjs",
     "preview": "vite preview",
-    "cap:sync": "vite build && cap sync android",
+    "cap:sync": "vite build --mode capacitor && cap sync android",
     "cap:open": "cap open android",
-    "android": "vite build && cap sync android && cap open android",
+    "android": "vite build --mode capacitor && cap sync android && cap open android",
     "screens": "node scripts/responsive-screens.mjs"
   },
   "dependencies": {

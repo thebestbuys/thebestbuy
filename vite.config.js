@@ -8,9 +8,12 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    // Relative asset URLs so the Capacitor webview can load them from the
-    // file:// (or capacitor://) scheme. Harmless for the web build too.
-    base: './',
+    // Capacitor webview loads assets from file:// → needs RELATIVE urls ('./').
+    // The web build (Vercel) is served from '/', and prerendered guides live at
+    // nested paths like /guide/<slug>/ where relative asset urls would resolve
+    // wrong — so the web build uses an ABSOLUTE base ('/').
+    // Native build runs `vite build --mode capacitor`.
+    base: mode === 'capacitor' ? './' : '/',
     plugins: [
       react(),
       {
