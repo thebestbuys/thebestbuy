@@ -191,10 +191,10 @@ Réponses déjà recueillies (JSON — ne repose JAMAIS une dimension déjà cou
 Pose UNE SEULE nouvelle question, pertinente, pour affiner le besoin sur une dimension PAS ENCORE couverte.
 ${first
   ? `C'est la 1re question : commence OBLIGATOIREMENT par le BUDGET, avec EXACTEMENT 4 choix dont les bornes "min"/"max" en euros sont ADAPTÉES au prix réel typique de "${objet}" (ex: biberon ~5–50 €, écouteurs ~20–400 €, téléphone ~150–1500 €, téléviseur ~200–3000 €). Libellés courts "Moins de X €", "X – Y €", "Plus de Z €". 1er choix "min"=null, dernier choix "max"=null.`
-  : `Question courte, 2 à 4 choix concrets. Les choix peuvent porter des "tags" courts (ex: "ios", "anc", "gaming").`}
+  : `Question courte, 2 à 4 choix concrets. Les choix peuvent porter des "tags" courts (ex: "ios", "anc", "gaming"). Si PLUSIEURS réponses peuvent légitimement s'appliquer en même temps (ex: fonctionnalités/usages souhaités), mets "multi":true et propose 3 à 6 choix ; sinon "multi":false. Ne mets JAMAIS "multi":true sur le budget.`}
 
 Réponds UNIQUEMENT par un objet JSON valide de cette forme:
-{"reply":"<la question à afficher>","question":{"id":"slug-court","text":"<la question>","choices":[{"id":"slug","label":"Libellé court","tags":[],"min":null,"max":null}]}}`;
+{"reply":"<la question à afficher>","question":{"id":"slug-court","text":"<la question>","multi":false,"choices":[{"id":"slug","label":"Libellé court","tags":[],"min":null,"max":null}]}}`;
 }
 
 // Prompt to generate 10 real product candidates from the criteria JSON.
@@ -219,10 +219,10 @@ function buildGiftAskPrompt(giftStr, answers, lang) {
 On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".
 Préférences de raffinement déjà recueillies (JSON): ${answersJson(answers)}
 
-Pose UNE SEULE nouvelle question courte (2 à 4 choix concrets) pour mieux cerner le cadeau idéal, sur une dimension PAS ENCORE couverte (ex: style/usage, pratique vs original, plaisir vs utile, univers précis). Ne repose jamais le budget ni l'occasion (déjà connus). Les choix peuvent porter des "tags" courts.
+Pose UNE SEULE nouvelle question courte (2 à 4 choix concrets) pour mieux cerner le cadeau idéal, sur une dimension PAS ENCORE couverte (ex: style/usage, pratique vs original, plaisir vs utile, univers précis). Ne repose jamais le budget ni l'occasion (déjà connus). Les choix peuvent porter des "tags" courts. Si PLUSIEURS réponses peuvent s'appliquer en même temps, mets "multi":true et propose 3 à 6 choix ; sinon "multi":false.
 
 Réponds UNIQUEMENT par un objet JSON valide de cette forme:
-{"reply":"<la question à afficher>","question":{"id":"slug-court","text":"<la question>","choices":[{"id":"slug","label":"Libellé court","tags":[],"min":null,"max":null}]}}`;
+{"reply":"<la question à afficher>","question":{"id":"slug-court","text":"<la question>","multi":false,"choices":[{"id":"slug","label":"Libellé court","tags":[],"min":null,"max":null}]}}`;
 }
 
 // 10 real, varied gift product candidates for the recipient + occasion + budget.

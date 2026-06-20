@@ -56,6 +56,14 @@ const TRANSLATIONS = {
     "chat.refineHint": "Continuez à répondre pour affiner ma sélection.",
     "chat.error":
       "Désolé, le service de recommandation n'a pas répondu ({msg}). Réessayez ou rafraîchissez la page.",
+    "chat.skip": "Peu importe",
+    "chat.multiValidate": "Valider",
+    "chat.editAnswer": "Modifier cette réponse",
+    "chat.progressStep": "Question {n} sur {total}",
+    "chat.progressSoon": "bientôt tes recommandations",
+    "chat.progressRefine": "Affine pour de meilleures suggestions",
+    "chat.progressReady": "Sélection prête ✓",
+    "chat.progressGiftPrep": "Je prépare des idées…",
 
     // Budget slider
     "budget.confirm": "Confirmer",
@@ -409,6 +417,14 @@ const TRANSLATIONS = {
     "chat.refineHint": "Keep answering to refine my picks.",
     "chat.error":
       "Sorry, the recommendation service didn't respond ({msg}). Try again or refresh the page.",
+    "chat.skip": "No preference",
+    "chat.multiValidate": "Confirm",
+    "chat.editAnswer": "Edit this answer",
+    "chat.progressStep": "Question {n} of {total}",
+    "chat.progressSoon": "recommendations coming soon",
+    "chat.progressRefine": "Refine for better suggestions",
+    "chat.progressReady": "Selection ready ✓",
+    "chat.progressGiftPrep": "Preparing ideas…",
 
     // Budget slider
     "budget.confirm": "Confirm",

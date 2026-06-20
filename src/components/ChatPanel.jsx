@@ -2,14 +2,30 @@ import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../lib/i18n.jsx';
 import { ProductLinkCard } from './ProductCard.jsx';
 
-function ChatBubble({ role, children, layout }) {
+function ChatBubble({ role, children, layout, onEdit, editLabel }) {
   const { t } = useI18n();
+  const editable = role === 'user' && typeof onEdit === 'function';
   if (layout === 'list') {
     return (
-      <div className={'chat-list-row role-' + role}>
+      <div className={'chat-list-row role-' + role + (editable ? ' editable' : '')}>
         <div className="chat-list-tag">{role === 'bot' ? t('chat.assistant') : t('chat.you')}</div>
-        <div className="chat-list-text">{children}</div>
+        {editable ? (
+          <button type="button" className="chat-list-text chat-editable" onClick={onEdit} title={editLabel} aria-label={editLabel}>
+            {children}
+            <span className="chat-edit-pencil" aria-hidden="true">✎</span>
+          </button>
+        ) : (
+          <div className="chat-list-text">{children}</div>
+        )}
       </div>
+    );
+  }
+  if (editable) {
+    return (
+      <button type="button" className="chat-bubble role-user chat-editable" onClick={onEdit} title={editLabel} aria-label={editLabel}>
+        <div className="chat-bubble-text">{children}</div>
+        <span className="chat-edit-pencil" aria-hidden="true">✎</span>
+      </button>
     );
   }
   return (
@@ -59,11 +75,52 @@ function BudgetBrackets({ question, onAnswer }) {
   );
 }
 
-export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, isTyping, layout, progress, products = [], onSelectProduct, inlineProducts = false, headerExtras = null }) {
+// Multi-select question (question.multi): toggle several choices, then validate
+// them as ONE combined answer (labels joined, tags unioned). Validating with
+// nothing selected behaves like "No preference" (a skip).
+function MultiChoice({ question, onAnswer, onSkip }) {
+  const { t } = useI18n();
+  const [picked, setPicked] = useState([]);
+  const toggle = (id) =>
+    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  const submit = () => {
+    if (picked.length === 0) {
+      onSkip();
+      return;
+    }
+    const chosen = question.choices.filter((c) => picked.includes(c.id));
+    const tags = [...new Set(chosen.flatMap((c) => c.tags || []))];
+    const label = chosen.map((c) => c.label).join(', ');
+    onAnswer(question.id, { id: 'multi', label, tags, min: null, max: null });
+  };
+  return (
+    <div className="chat-multi">
+      <div className="chat-choices">
+        {question.choices.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            className={'choice-chip choice-toggle' + (picked.includes(c.id) ? ' selected' : '')}
+            aria-pressed={picked.includes(c.id)}
+            onClick={() => toggle(c.id)}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+      <button type="button" className="choice-chip choice-validate" onClick={submit}>
+        {picked.length === 0 ? t('chat.skip') : t('chat.multiValidate')}
+      </button>
+    </div>
+  );
+}
+
+export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onEditAnswer, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, headerExtras = null }) {
   const { t } = useI18n();
   const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
   const showInline = inlineProducts && products.length > 0;
+  const ratio = progressInfo?.ratio ?? 0;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -77,6 +134,11 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
     onFreeText(freeText.trim());
     setFreeText('');
   };
+
+  // "No preference" shortcut — records a neutral, unbounded answer so the user
+  // is never stuck on a question they have no opinion on.
+  const skip = () =>
+    onAnswer(currentQuestion.id, { id: 'skip', label: t('chat.skip'), tags: [], min: null, max: null });
 
   return (
     <aside className="chat-panel" data-layout={layout}>
@@ -132,12 +194,25 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
       </header>
 
       <div className="chat-progress">
-        <div className="chat-progress-bar" style={{ width: `${progress}%` }} />
+        <div className="chat-progress-bar" style={{ width: `${ratio * 100}%` }} />
       </div>
+      {progressInfo?.label && (
+        <div className={'chat-progress-label tone-' + (progressInfo.tone || 'neutral')}>
+          {progressInfo.label}
+        </div>
+      )}
 
-      <div ref={scrollRef} className="chat-stream">
+      <div ref={scrollRef} className="chat-stream" aria-live="polite">
         {messages.map((m, i) => (
-          <ChatBubble key={i} role={m.role} layout={layout}>{m.text}</ChatBubble>
+          <ChatBubble
+            key={i}
+            role={m.role}
+            layout={layout}
+            onEdit={m.role === 'user' && onEditAnswer ? () => onEditAnswer(i) : null}
+            editLabel={t('chat.editAnswer')}
+          >
+            {m.text}
+          </ChatBubble>
         ))}
 
         {/* On narrow viewports the recommendations live inside the conversation,
@@ -159,17 +234,25 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
         {isTyping && <TypingDots layout={layout} />}
 
         {!isTyping && currentQuestion && (
-          <div className="chat-choices">
-            {isBudgetQuestion(currentQuestion) ? (
+          isBudgetQuestion(currentQuestion) ? (
+            <>
               <BudgetBrackets question={currentQuestion} onAnswer={onAnswer} />
-            ) : (
-              currentQuestion.choices.map((c) => (
+              <div className="chat-choices chat-skip-row">
+                <button type="button" className="choice-chip choice-skip" onClick={skip}>{t('chat.skip')}</button>
+              </div>
+            </>
+          ) : currentQuestion.multi ? (
+            <MultiChoice question={currentQuestion} onAnswer={onAnswer} onSkip={skip} />
+          ) : (
+            <div className="chat-choices">
+              {currentQuestion.choices.map((c) => (
                 <button key={c.id} className="choice-chip" onClick={() => onAnswer(currentQuestion.id, c)}>
                   {c.label}
                 </button>
-              ))
-            )}
-          </div>
+              ))}
+              <button type="button" className="choice-chip choice-skip" onClick={skip}>{t('chat.skip')}</button>
+            </div>
+          )
         )}
       </div>
 

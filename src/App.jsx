@@ -547,12 +547,35 @@ export default function App() {
   const [objet, setObjet] = useState('');      // human search term sent to the AI
   const [answers, setAnswers] = useState([]);  // compact criteria JSON [{id,q,a,tags,min,max}]
 
-  const progress = done ? 100 : Math.min(90, turnCount * 22);
-
   // Self mode: recommend after the first 5 answers, then every 3 more (8, 11, …).
   // Gift mode: recommend immediately (the recipient form already has budget +
   // occasion), then every 3 refinement answers (0, 3, 6, …).
+  const FIRST_RECO = 5;
   const shouldRecommendAt = (n) => (gift ? n % 3 === 0 : n >= 5 && (n - 5) % 3 === 0);
+
+  // Honest progress tied to the recommendation milestone (FIRST_RECO answers in
+  // self mode) rather than an arbitrary turnCount*22. Drives both the bar width
+  // (ratio) and a human-readable label in ChatPanel.
+  const progressInfo = (() => {
+    if (done && recommendedProducts.length > 0) {
+      return { ratio: 1, label: tr('chat.progressReady'), tone: 'ready' };
+    }
+    if (gift) {
+      return {
+        ratio: Math.min(0.9, 0.3 + turnCount * 0.15),
+        label: recommendedProducts.length ? tr('chat.progressRefine') : tr('chat.progressGiftPrep'),
+        tone: 'refine',
+      };
+    }
+    if (turnCount < FIRST_RECO) {
+      return {
+        ratio: turnCount / FIRST_RECO,
+        label: `${tr('chat.progressStep', { n: Math.min(turnCount + 1, FIRST_RECO), total: FIRST_RECO })} · ${tr('chat.progressSoon')}`,
+        tone: 'asking',
+      };
+    }
+    return { ratio: 0.9, label: tr('chat.progressRefine'), tone: 'refine' };
+  })();
 
   const loadProducts = (products) => {
     if (!Array.isArray(products) || !products.length) return;
@@ -575,6 +598,9 @@ export default function App() {
   const advance = async (currentAnswers, searchObjet = objet) => {
     setIsTyping(true);
     setCurrentQuestion(null);
+    // Strip client-only fields (_q, _msgIndex used by edit/rewind) before sending.
+    const answersForApi = currentAnswers.map(({ id, q, a, tags, min, max }) => ({ id, q, a, tags, min, max }));
+    currentAnswers = answersForApi;
     const profile = profileToPrompt(getProfile(user?.sub), lang);
     const giftStr = gift ? giftToPrompt(gift, lang) : '';
     const surprise = !!gift?.surprise;
@@ -634,11 +660,34 @@ export default function App() {
       tags: choice.tags || [],
       min: choice.min ?? null,
       max: choice.max ?? null,
+      // Client-only (stripped before any API call in advance()): _q lets us
+      // re-present this exact question when the user edits the answer; _msgIndex
+      // is the index of the user bubble we add below, so editing can rewind the
+      // message stream to just before it. See editAnswer().
+      _q: currentQuestion || null,
+      _msgIndex: messages.length,
     }];
     setMessages((m) => [...m, { role: 'user', text: label }]);
     setAnswers(next);
     setTurnCount((c) => c + 1);
     advance(next);
+  };
+
+  // Tap-to-edit a previous answer: rewind the conversation to just before that
+  // answer (drop later answers, messages, and products), re-present its question,
+  // and let the user pick again — which resumes the normal advance() flow.
+  const editAnswer = (msgIndex) => {
+    const idx = answers.findIndex((a) => a._msgIndex === msgIndex);
+    if (idx < 0) return;
+    const q = answers[idx]._q;
+    setMessages(messages.slice(0, msgIndex));
+    setAnswers(answers.slice(0, idx));
+    setTurnCount(idx);
+    setRecommendedProducts([]);
+    setDone(false);
+    setCurrentQuestion(q && Array.isArray(q.choices) ? q : null);
+    setIsTyping(false);
+    setRefreshKey((k) => k + 1);
   };
 
   const handleAnswer = (_qId, choice) => recordAnswer(choice.label, choice);
@@ -938,9 +987,10 @@ export default function App() {
         onRestart={handleRestart}
         onHome={navBack}
         onOpenHistory={navOpenHistory}
+        onEditAnswer={editAnswer}
         isTyping={isTyping}
         layout={t.chatLayout}
-        progress={progress}
+        progressInfo={progressInfo}
         products={recommendedProducts}
         onSelectProduct={navOpenProduct}
         inlineProducts={narrow}
