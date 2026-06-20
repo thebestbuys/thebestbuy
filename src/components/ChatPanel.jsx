@@ -115,12 +115,43 @@ function MultiChoice({ question, onAnswer, onSkip }) {
   );
 }
 
-export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onEditAnswer, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, headerExtras = null }) {
+// The right control for a question (budget brackets / multi-select / single
+// choice), always with a "No preference" escape hatch. Reused for the live
+// question at the bottom and the in-place answer editor.
+function ChoiceControl({ question, onAnswer, onSkip }) {
+  const { t } = useI18n();
+  if (isBudgetQuestion(question)) {
+    return (
+      <>
+        <BudgetBrackets question={question} onAnswer={onAnswer} />
+        <div className="chat-choices chat-skip-row">
+          <button type="button" className="choice-chip choice-skip" onClick={onSkip}>{t('chat.skip')}</button>
+        </div>
+      </>
+    );
+  }
+  if (question.multi) {
+    return <MultiChoice question={question} onAnswer={onAnswer} onSkip={onSkip} />;
+  }
+  return (
+    <div className="chat-choices">
+      {question.choices.map((c) => (
+        <button key={c.id} className="choice-chip" onClick={() => onAnswer(question.id, c)}>
+          {c.label}
+        </button>
+      ))}
+      <button type="button" className="choice-chip choice-skip" onClick={onSkip}>{t('chat.skip')}</button>
+    </div>
+  );
+}
+
+export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, headerExtras = null }) {
   const { t } = useI18n();
   const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
   const showInline = inlineProducts && products.length > 0;
   const ratio = progressInfo?.ratio ?? 0;
+  const editing = editMsgIndex != null && editQuestion;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -137,8 +168,8 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
 
   // "No preference" shortcut — records a neutral, unbounded answer so the user
   // is never stuck on a question they have no opinion on.
-  const skip = () =>
-    onAnswer(currentQuestion.id, { id: 'skip', label: t('chat.skip'), tags: [], min: null, max: null });
+  const skipChoice = (qId) => ({ id: 'skip', label: t('chat.skip'), tags: [], min: null, max: null });
+  const skip = () => onAnswer(currentQuestion.id, skipChoice(currentQuestion.id));
 
   return (
     <aside className="chat-panel" data-layout={layout}>
@@ -204,15 +235,32 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
 
       <div ref={scrollRef} className="chat-stream" aria-live="polite">
         {messages.map((m, i) => (
-          <ChatBubble
-            key={i}
-            role={m.role}
-            layout={layout}
-            onEdit={m.role === 'user' && onEditAnswer ? () => onEditAnswer(i) : null}
-            editLabel={t('chat.editAnswer')}
-          >
-            {m.text}
-          </ChatBubble>
+          <div key={i} className="chat-msg-wrap">
+            <ChatBubble
+              role={m.role}
+              layout={layout}
+              onEdit={m.role === 'user' && onStartEdit ? () => onStartEdit(i) : null}
+              editLabel={t('chat.editAnswer')}
+            >
+              {m.text}
+            </ChatBubble>
+
+            {/* In-place editor: appears right under the edited answer's bubble.
+                Picking a new value replaces just this answer and keeps the rest. */}
+            {editing && i === editMsgIndex && (
+              <div className="chat-edit-panel">
+                <div className="chat-edit-head">
+                  <span className="chat-edit-q">{editQuestion.text}</span>
+                  <button type="button" className="chat-edit-cancel" onClick={onCancelEdit} aria-label={t('auth.close')}>✕</button>
+                </div>
+                <ChoiceControl
+                  question={editQuestion}
+                  onAnswer={onApplyEdit}
+                  onSkip={() => onApplyEdit(editQuestion.id, skipChoice(editQuestion.id))}
+                />
+              </div>
+            )}
+          </div>
         ))}
 
         {/* On narrow viewports the recommendations live inside the conversation,
@@ -234,25 +282,7 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
         {isTyping && <TypingDots layout={layout} />}
 
         {!isTyping && currentQuestion && (
-          isBudgetQuestion(currentQuestion) ? (
-            <>
-              <BudgetBrackets question={currentQuestion} onAnswer={onAnswer} />
-              <div className="chat-choices chat-skip-row">
-                <button type="button" className="choice-chip choice-skip" onClick={skip}>{t('chat.skip')}</button>
-              </div>
-            </>
-          ) : currentQuestion.multi ? (
-            <MultiChoice question={currentQuestion} onAnswer={onAnswer} onSkip={skip} />
-          ) : (
-            <div className="chat-choices">
-              {currentQuestion.choices.map((c) => (
-                <button key={c.id} className="choice-chip" onClick={() => onAnswer(currentQuestion.id, c)}>
-                  {c.label}
-                </button>
-              ))}
-              <button type="button" className="choice-chip choice-skip" onClick={skip}>{t('chat.skip')}</button>
-            </div>
-          )
+          <ChoiceControl question={currentQuestion} onAnswer={onAnswer} onSkip={skip} />
         )}
       </div>
 

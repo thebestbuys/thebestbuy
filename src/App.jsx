@@ -546,6 +546,7 @@ export default function App() {
   const [activeGuide, setActiveGuide] = useState(() => viewFromPath().guide || null);
   const [objet, setObjet] = useState('');      // human search term sent to the AI
   const [answers, setAnswers] = useState([]);  // compact criteria JSON [{id,q,a,tags,min,max}]
+  const [editIndex, setEditIndex] = useState(null); // answer index being edited in place
 
   // Self mode: recommend after the first 5 answers, then every 3 more (8, 11, …).
   // Gift mode: recommend immediately (the recipient form already has budget +
@@ -662,8 +663,8 @@ export default function App() {
       max: choice.max ?? null,
       // Client-only (stripped before any API call in advance()): _q lets us
       // re-present this exact question when the user edits the answer; _msgIndex
-      // is the index of the user bubble we add below, so editing can rewind the
-      // message stream to just before it. See editAnswer().
+      // is the index of the user bubble we add below, so an in-place edit can
+      // target the right bubble. See startEditAnswer()/applyEditAnswer().
       _q: currentQuestion || null,
       _msgIndex: messages.length,
     }];
@@ -673,21 +674,55 @@ export default function App() {
     advance(next);
   };
 
-  // Tap-to-edit a previous answer: rewind the conversation to just before that
-  // answer (drop later answers, messages, and products), re-present its question,
-  // and let the user pick again — which resumes the normal advance() flow.
-  const editAnswer = (msgIndex) => {
+  // Re-run only the recommendation step from a (possibly edited) criteria set,
+  // without asking a new question or changing the answer count. Used after an
+  // in-place answer edit so the picks reflect the change but the rest of the
+  // conversation (later answers, the pending question) is preserved.
+  const refreshRecommendations = async (currentAnswers) => {
+    setIsTyping(true);
+    const answersForApi = currentAnswers.map(({ id, q, a, tags, min, max }) => ({ id, q, a, tags, min, max }));
+    const profile = profileToPrompt(getProfile(user?.sub), lang);
+    const giftStr = gift ? giftToPrompt(gift, lang) : '';
+    const surprise = !!gift?.surprise;
+    const friendId = gift?.friendId || '';
+    const token = friendId ? getAccessToken() : '';
+    try {
+      const rec = await recommend({ objet, answers: answersForApi, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId });
+      if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
+      loadProducts(rec?.products);
+    } catch (e) {
+      setMessages((m) => [...m, { role: 'bot', text: tr('chat.error', { msg: e.message }) }]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  // Tap-to-edit a previous answer — IN PLACE. We start editing (re-present the
+  // question inline under its bubble), and on a new pick we replace just that
+  // answer, keep every later answer and the pending question, then refresh the
+  // recommendations from the updated criteria. No rewind, nothing is dropped.
+  const startEditAnswer = (msgIndex) => {
     const idx = answers.findIndex((a) => a._msgIndex === msgIndex);
-    if (idx < 0) return;
-    const q = answers[idx]._q;
-    setMessages(messages.slice(0, msgIndex));
-    setAnswers(answers.slice(0, idx));
-    setTurnCount(idx);
-    setRecommendedProducts([]);
-    setDone(false);
-    setCurrentQuestion(q && Array.isArray(q.choices) ? q : null);
-    setIsTyping(false);
-    setRefreshKey((k) => k + 1);
+    if (idx < 0 || !answers[idx]._q) return; // legacy answers without _q aren't editable
+    setEditIndex(idx);
+  };
+  const cancelEditAnswer = () => setEditIndex(null);
+  const applyEditAnswer = (idx, label, choice = {}) => {
+    if (idx == null || !answers[idx]) return;
+    const updated = answers.map((a, i) =>
+      i === idx
+        ? { ...a, id: choice.id || 'free', a: label, tags: choice.tags || [], min: choice.min ?? null, max: choice.max ?? null }
+        : a,
+    );
+    const msgIdx = answers[idx]._msgIndex;
+    if (msgIdx != null) {
+      setMessages((m) => m.map((msg, i) => (i === msgIdx ? { ...msg, text: label } : msg)));
+    }
+    setAnswers(updated);
+    setEditIndex(null);
+    // Only refresh if picks are already on screen; otherwise the next normal
+    // advance() will pick the change up with no extra round-trip.
+    if (recommendedProducts.length > 0) refreshRecommendations(updated);
   };
 
   const handleAnswer = (_qId, choice) => recordAnswer(choice.label, choice);
@@ -976,6 +1011,9 @@ export default function App() {
 
   const top = recommendedProducts[0];
   const rest = recommendedProducts.slice(1, 3);
+  const editAnswerObj = editIndex != null ? answers[editIndex] : null;
+  const editMsgIndex = editAnswerObj ? editAnswerObj._msgIndex : null;
+  const editQuestion = editAnswerObj ? editAnswerObj._q : null;
 
   return (
     <div className={'app' + (narrow ? ' app-narrow' : '')}>
@@ -987,7 +1025,11 @@ export default function App() {
         onRestart={handleRestart}
         onHome={navBack}
         onOpenHistory={navOpenHistory}
-        onEditAnswer={editAnswer}
+        onStartEdit={startEditAnswer}
+        onCancelEdit={cancelEditAnswer}
+        onApplyEdit={(qId, choice) => applyEditAnswer(editIndex, choice.label, choice)}
+        editMsgIndex={editMsgIndex}
+        editQuestion={editQuestion}
         isTyping={isTyping}
         layout={t.chatLayout}
         progressInfo={progressInfo}
