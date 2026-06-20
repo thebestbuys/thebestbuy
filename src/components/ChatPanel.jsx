@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../lib/i18n.jsx';
-import { ProductLinkCard } from './ProductCard.jsx';
+import { ProductLinkCard, ProductSkeleton } from './ProductCard.jsx';
 
 function ChatBubble({ role, children, layout, onEdit, editLabel }) {
   const { t } = useI18n();
@@ -145,11 +145,12 @@ function ChoiceControl({ question, onAnswer, onSkip }) {
   );
 }
 
-export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, headerExtras = null }) {
+export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, loadingProducts = false, headerExtras = null }) {
   const { t } = useI18n();
   const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
   const showInline = inlineProducts && products.length > 0;
+  const showInlineSkeleton = inlineProducts && loadingProducts && products.length === 0;
   const ratio = progressInfo?.ratio ?? 0;
   const editing = editMsgIndex != null && editQuestion;
 
@@ -157,7 +158,7 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isTyping, currentQuestion, products]);
+  }, [messages, isTyping, currentQuestion, products, loadingProducts]);
 
   const submit = (e) => {
     e.preventDefault();
@@ -279,7 +280,18 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
           </div>
         )}
 
-        {isTyping && <TypingDots layout={layout} />}
+        {/* Loading state for the first set of inline picks (narrow viewports). */}
+        {showInlineSkeleton && (
+          <div className="chat-products">
+            <div className="chat-products-list">
+              <ProductSkeleton variant="link" />
+              <ProductSkeleton variant="link" />
+              <ProductSkeleton variant="link" />
+            </div>
+          </div>
+        )}
+
+        {isTyping && !showInlineSkeleton && <TypingDots layout={layout} />}
 
         {!isTyping && currentQuestion && (
           <ChoiceControl question={currentQuestion} onAnswer={onAnswer} onSkip={skip} />

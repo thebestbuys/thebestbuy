@@ -191,7 +191,7 @@ export function HeroCard({ product, density, onSelect }) {
           <div className="hero-brand">{product.brand}</div>
           <h2 className="hero-model">{product.model}</h2>
           <VerifiedRating product={product} locale={locale} />
-          {product.why && !(product.amazon_verified && product.rating != null) && (
+          {product.why && (
             <div className="hero-why">{product.why}</div>
           )}
           <ul className="hero-specs">
@@ -235,6 +235,7 @@ export function ProductLinkCard({ product, rank, friendCount, onSelect }) {
       <span className="plc-body">
         <span className="plc-brand">{product.brand}</span>
         <span className="plc-model">{product.model}</span>
+        {product.why && <span className="plc-why">{product.why}</span>}
         <span className="plc-bottom">
           <PriceTag product={product} locale={locale} t={t} variant="small" />
           <span className="plc-domain">amazon.fr</span>
@@ -242,6 +243,50 @@ export function ProductLinkCard({ product, rank, friendCount, onSelect }) {
       </span>
       <span className="plc-chevron" aria-hidden="true">›</span>
     </button>
+  );
+}
+
+// Shimmer placeholder shown while a recommendation request is in flight, so the
+// results area reserves space and reads as "loading" instead of jumping from an
+// empty state straight to three cards. Variants mirror the real cards.
+export function ProductSkeleton({ variant = 'small' }) {
+  if (variant === 'hero') {
+    return (
+      <div className="hero-card skel-card" aria-hidden="true">
+        <div className="hero-grid">
+          <div className="skel-block skel-img-large" />
+          <div className="hero-meta">
+            <div className="skel-line w40" />
+            <div className="skel-line w70 tall" />
+            <div className="skel-line w90" />
+            <div className="skel-line w80" />
+            <div className="skel-line w50" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (variant === 'link') {
+    return (
+      <div className="product-link-card skel-card" aria-hidden="true">
+        <span className="skel-block skel-thumb" />
+        <span className="plc-body">
+          <div className="skel-line w40" />
+          <div className="skel-line w80" />
+          <div className="skel-line w50" />
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="small-card skel-card" aria-hidden="true">
+      <div className="skel-block skel-img-small" />
+      <div className="small-info">
+        <div className="skel-line w50" />
+        <div className="skel-line w80" />
+        <div className="skel-line w60" />
+      </div>
+    </div>
   );
 }
 
@@ -257,6 +302,7 @@ export function SmallCard({ product, rank, density, onSelect }) {
         <div className="small-brand">{product.brand}</div>
         <div className="small-model">{product.model}</div>
         <VerifiedRating product={product} size="small" locale={locale} />
+        {product.why && <div className="small-why">{product.why}</div>}
         <ul className="small-specs">
           {product.specs.slice(0, density === 'compact' ? 2 : 3).map((s, i) => <li key={i}>{s}</li>)}
         </ul>

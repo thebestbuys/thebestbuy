@@ -17,7 +17,7 @@ import LegalNotices from './components/LegalNotices.jsx';
 import GuideArticle from './components/GuideArticle.jsx';
 import LangToggle from './components/LangToggle.jsx';
 import { GUIDES, localizeGuide, getGuide } from './data/guides.js';
-import { HeroCard, PriceTag, ProductImage, ProductLinkCard, ScoreRing, SmallCard, VerifiedRating } from './components/ProductCard.jsx';
+import { HeroCard, PriceTag, ProductImage, ProductLinkCard, ProductSkeleton, ScoreRing, SmallCard, VerifiedRating } from './components/ProductCard.jsx';
 import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './lib/i18n.jsx';
 import { getProfile, profileToPrompt } from './lib/profile.js';
@@ -547,6 +547,7 @@ export default function App() {
   const [objet, setObjet] = useState('');      // human search term sent to the AI
   const [answers, setAnswers] = useState([]);  // compact criteria JSON [{id,q,a,tags,min,max}]
   const [editIndex, setEditIndex] = useState(null); // answer index being edited in place
+  const [loadingProducts, setLoadingProducts] = useState(false); // a recommend() call is in flight
 
   // Self mode: recommend after the first 5 answers, then every 3 more (8, 11, …).
   // Gift mode: recommend immediately (the recipient form already has budget +
@@ -607,8 +608,10 @@ export default function App() {
     const surprise = !!gift?.surprise;
     const friendId = gift?.friendId || '';
     const token = friendId ? getAccessToken() : '';
+    const willRecommend = shouldRecommendAt(currentAnswers.length);
+    if (willRecommend) setLoadingProducts(true);
     try {
-      if (shouldRecommendAt(currentAnswers.length)) {
+      if (willRecommend) {
         const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId });
         if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
         loadProducts(rec?.products);
@@ -622,6 +625,7 @@ export default function App() {
       setMessages((m) => [...m, { role: 'bot', text: tr('chat.error', { msg: e.message }) }]);
     } finally {
       setIsTyping(false);
+      setLoadingProducts(false);
     }
   };
 
@@ -680,6 +684,7 @@ export default function App() {
   // conversation (later answers, the pending question) is preserved.
   const refreshRecommendations = async (currentAnswers) => {
     setIsTyping(true);
+    setLoadingProducts(true);
     const answersForApi = currentAnswers.map(({ id, q, a, tags, min, max }) => ({ id, q, a, tags, min, max }));
     const profile = profileToPrompt(getProfile(user?.sub), lang);
     const giftStr = gift ? giftToPrompt(gift, lang) : '';
@@ -694,6 +699,7 @@ export default function App() {
       setMessages((m) => [...m, { role: 'bot', text: tr('chat.error', { msg: e.message }) }]);
     } finally {
       setIsTyping(false);
+      setLoadingProducts(false);
     }
   };
 
@@ -1036,6 +1042,7 @@ export default function App() {
         products={recommendedProducts}
         onSelectProduct={navOpenProduct}
         inlineProducts={narrow}
+        loadingProducts={loadingProducts}
         headerExtras={narrow ? (
           <>
             {category === 'gift' && recommendedProducts.length > 0 && (
@@ -1077,7 +1084,7 @@ export default function App() {
 
         <div
           className="results-content"
-          key={recommendedProducts.length > 0 ? refreshKey : 'placeholder'}
+          key={recommendedProducts.length > 0 ? refreshKey : loadingProducts ? 'loading' : 'placeholder'}
         >
           {recommendedProducts.length > 0 ? (
             <>
@@ -1090,6 +1097,16 @@ export default function App() {
                 {rest.map((p, i) => (
                   <SmallCard key={p.id} product={p} rank={i + 2} density={t.density} onSelect={navOpenProduct} />
                 ))}
+              </div>
+            </>
+          ) : loadingProducts ? (
+            <>
+              <div className={'hero-wrap variant-' + t.heroVariant}>
+                <ProductSkeleton variant="hero" />
+              </div>
+              <div className={'small-grid density-' + t.density}>
+                <ProductSkeleton variant="small" />
+                <ProductSkeleton variant="small" />
               </div>
             </>
           ) : (
