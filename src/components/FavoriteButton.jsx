@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
 import { getProductListIds, setProductLists } from '../lib/selections.js';
 import { listLists, createList } from '../lib/lists.js';
+import { toast } from '../lib/toast.js';
 
 // Heart that saves a product into one or more named lists. Clicking opens a
 // picker (checkboxes of lists + "create a list"); a product in ≥1 list is "on".
@@ -66,10 +67,11 @@ export default function FavoriteButton({ product, variant = 'card', onChange }) 
   };
 
   const toggleList = (listId) => {
-    const next = checked.includes(listId)
-      ? checked.filter((x) => x !== listId)
-      : [...checked, listId];
+    const adding = !checked.includes(listId);
+    const next = adding ? [...checked, listId] : checked.filter((x) => x !== listId);
     setChecked(setProductLists(user?.sub, product, next));
+    const name = lists.find((l) => l.id === listId)?.name || '';
+    toast(t(adding ? 'toast.added' : 'toast.removed', { name }));
     onChange?.();
   };
 
@@ -80,6 +82,7 @@ export default function FavoriteButton({ product, variant = 'card', onChange }) 
     setNewName('');
     setLists(listLists(user?.sub));
     setChecked(setProductLists(user?.sub, product, [...checked, lst.id]));
+    toast(t('toast.added', { name }));
     onChange?.();
   };
 

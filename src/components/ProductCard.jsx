@@ -122,6 +122,21 @@ export function VerifiedBadge({ product, compact = false }) {
   );
 }
 
+// Tells the user whether a product fits the budget bracket they picked. `budget`
+// is { min, max } in euros (from the budget answer); we only flag "over budget"
+// (with a small tolerance) vs "in budget" — being cheaper is never a warning.
+export function BudgetTag({ product, budget }) {
+  const { t } = useI18n();
+  if (!budget || product.price == null) return null;
+  const { max } = budget;
+  const over = max != null && product.price > max * 1.05;
+  return (
+    <span className={'budget-tag ' + (over ? 'over' : 'in')}>
+      {over ? t('product.overBudget') : t('product.inBudget')}
+    </span>
+  );
+}
+
 // Round to a human-friendly value for the estimated range bounds.
 function roundNice(v) {
   if (v >= 1000) return Math.round(v / 50) * 50;
@@ -191,7 +206,7 @@ export function ScoreRing({ score, size = 64 }) {
   );
 }
 
-export function HeroCard({ product, density, onSelect }) {
+export function HeroCard({ product, density, budget, onSelect }) {
   const { t, lang } = useI18n();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   return (
@@ -217,7 +232,10 @@ export function HeroCard({ product, density, onSelect }) {
             {product.specs.map((s, i) => <li key={i}>{s}</li>)}
           </ul>
           <div className="hero-bottom">
-            <PriceTag product={product} locale={locale} t={t} variant="hero" />
+            <div className="hero-price-wrap">
+              <PriceTag product={product} locale={locale} t={t} variant="hero" />
+              <BudgetTag product={product} budget={budget} />
+            </div>
             <button className="btn-primary" onClick={(e) => { e.stopPropagation(); onSelect(product); }}>
               {t('product.viewDetails')}
               <span className="btn-arrow">→</span>
@@ -237,7 +255,7 @@ export function HeroCard({ product, density, onSelect }) {
 // the chat stream on narrow viewports. Reuses ProductImage + PriceTag so the
 // amazon_verified rules hold automatically (placeholder + estimated range when
 // the product wasn't verified against Amazon; never a fake price/image/stars).
-export function ProductLinkCard({ product, rank, friendCount, onSelect }) {
+export function ProductLinkCard({ product, rank, friendCount, budget, onSelect }) {
   const { t, lang } = useI18n();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   return (
@@ -260,6 +278,7 @@ export function ProductLinkCard({ product, rank, friendCount, onSelect }) {
         {product.why && <span className="plc-why">{product.why}</span>}
         <span className="plc-bottom">
           <PriceTag product={product} locale={locale} t={t} variant="small" />
+          <BudgetTag product={product} budget={budget} />
           <span className="plc-domain">amazon.fr</span>
         </span>
       </span>
@@ -312,7 +331,7 @@ export function ProductSkeleton({ variant = 'small' }) {
   );
 }
 
-export function SmallCard({ product, rank, density, onSelect }) {
+export function SmallCard({ product, rank, density, budget, onSelect }) {
   const { t, lang } = useI18n();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   return (
@@ -332,7 +351,10 @@ export function SmallCard({ product, rank, density, onSelect }) {
           {product.specs.slice(0, density === 'compact' ? 2 : 3).map((s, i) => <li key={i}>{s}</li>)}
         </ul>
         <div className="small-bottom">
-          <PriceTag product={product} locale={locale} t={t} variant="small" />
+          <div className="small-price-wrap">
+            <PriceTag product={product} locale={locale} t={t} variant="small" />
+            <BudgetTag product={product} budget={budget} />
+          </div>
           <div className="small-score">
             <span className="small-score-num">{product.score}</span>
             <span className="small-score-pct">% match</span>

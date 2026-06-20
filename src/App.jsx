@@ -27,6 +27,7 @@ import { useI18n } from './lib/i18n.jsx';
 import { getProfile, profileToPrompt } from './lib/profile.js';
 import { giftToPrompt, giftTitle, buildShareUrl, loadSharedPayload } from './lib/gift.js';
 import { getAccessToken, circleTrending, logLinkClick } from './lib/cloud.js';
+import { toast } from './lib/toast.js';
 import {
   deriveTitle,
   formatRelative,
@@ -76,6 +77,17 @@ const CATEGORY_KEYWORDS = {
   laptop: ['ordinateur', 'laptop', 'pc portable', 'macbook', 'pc', 'notebook', 'ultrabook'],
   headphones: ['casque', 'écouteur', 'ecouteur', 'airpods', 'audio', 'headphone', 'earbuds', 'intra', 'bluetooth audio'],
 };
+
+// Maps a search term to one of our editorial buying guides (by guide category),
+// so the results can cross-link to "read our guide". Covers the categories that
+// detectCategory doesn't (tv / vacuum) plus the three it does.
+const GUIDE_KW = [
+  { cat: 'phone', kw: ['téléphone', 'telephone', 'smartphone', 'phone', 'iphone', 'pixel', 'galaxy'] },
+  { cat: 'laptop', kw: ['ordinateur', 'laptop', 'pc portable', 'macbook', 'notebook', 'ultrabook'] },
+  { cat: 'headphones', kw: ['casque', 'écouteur', 'ecouteur', 'airpods', 'earbuds', 'intra'] },
+  { cat: 'tv', kw: ['télé', 'tele', 'téléviseur', 'televiseur', 'oled', 'qled'] },
+  { cat: 'vacuum', kw: ['aspirateur', 'aspi'] },
+];
 
 // The AI returns positional ids ("p1", "p2", "p3") that repeat across every
 // recommendation set — so favoriting "p2" once would make every set's 2nd item
@@ -584,6 +596,43 @@ export default function App() {
     return { ratio: 0.9, label: tr('chat.progressRefine'), tone: 'refine' };
   })();
 
+  // Budget bracket the user picked (euros), used to badge each card in/over budget.
+  const budgetBounds = (() => {
+    const b = answers.find((a) => a.min != null || a.max != null);
+    return b ? { min: b.min ?? null, max: b.max ?? null } : null;
+  })();
+
+  // The buying guide that matches the current search, for the results cross-link.
+  const resultsGuide = (() => {
+    if (!category || category === 'gift') return null;
+    let cat = GUIDES.some((g) => g.category === category) ? category : null;
+    if (!cat) {
+      const text = (objet || initialQuery || '').toLowerCase();
+      cat = GUIDE_KW.find((m) => m.kw.some((k) => text.includes(k)))?.cat || null;
+    }
+    const g = cat ? GUIDES.find((x) => x.category === cat) : null;
+    return g ? localizeGuide(g, lang) : null;
+  })();
+
+  // Prefetch the most-used overlay chunks once the app is idle, so the first
+  // open of History/Selections/Profile/Gift/Notifications feels instant despite
+  // being code-split (see the lazy() imports above).
+  useEffect(() => {
+    const prefetch = () => {
+      import('./components/HistoryPanel.jsx');
+      import('./components/SelectionsPanel.jsx');
+      import('./components/ProfilePanel.jsx');
+      import('./components/GiftPanel.jsx');
+      import('./components/NotificationsPanel.jsx');
+    };
+    const ric = typeof window !== 'undefined' && window.requestIdleCallback;
+    const id = ric ? ric(prefetch, { timeout: 3000 }) : setTimeout(prefetch, 2500);
+    return () => {
+      if (ric && window.cancelIdleCallback) window.cancelIdleCallback(id);
+      else clearTimeout(id);
+    };
+  }, []);
+
   const loadProducts = (products) => {
     if (!Array.isArray(products) || !products.length) return;
     setDone(true);
@@ -720,6 +769,10 @@ export default function App() {
       .filter(Boolean);
     refreshRecommendations(answers, exclude);
   };
+
+  // Let an impatient user get picks before the usual 5-answer milestone, using
+  // whatever criteria are gathered so far. The advisor loop then continues.
+  const recommendNow = () => refreshRecommendations(answers);
 
   // Tap-to-edit a previous answer — IN PLACE. We start editing (re-present the
   // question inline under its bubble), and on a new pick we replace just that
@@ -938,6 +991,7 @@ export default function App() {
       } else {
         await navigator.clipboard.writeText(url);
         setShareCopied(true);
+        toast(tr('toast.linkCopied'));
         setTimeout(() => setShareCopied(false), 2000);
       }
     } catch {
@@ -1056,6 +1110,10 @@ export default function App() {
         editQuestion={editQuestion}
         onRetry={retryAction}
         onShowOthers={recommendedProducts.length > 0 ? showOtherProducts : null}
+        onRecommendNow={recommendedProducts.length === 0 && !isTyping && answers.length >= 1 && category !== 'gift' ? recommendNow : null}
+        guide={resultsGuide}
+        onOpenGuide={navOpenGuide}
+        budget={budgetBounds}
         isTyping={isTyping}
         layout={t.chatLayout}
         progressInfo={progressInfo}
@@ -1110,19 +1168,26 @@ export default function App() {
             <>
               {top && (
                 <div className={'hero-wrap variant-' + t.heroVariant}>
-                  <HeroCard product={top} density={t.density} onSelect={navOpenProduct} />
+                  <HeroCard product={top} density={t.density} budget={budgetBounds} onSelect={navOpenProduct} />
                 </div>
               )}
               <div className={'small-grid density-' + t.density}>
                 {rest.map((p, i) => (
-                  <SmallCard key={p.id} product={p} rank={i + 2} density={t.density} onSelect={navOpenProduct} />
+                  <SmallCard key={p.id} product={p} rank={i + 2} density={t.density} budget={budgetBounds} onSelect={navOpenProduct} />
                 ))}
               </div>
-              {!isTyping && (
-                <button type="button" className="show-others-btn" onClick={showOtherProducts}>
-                  <span aria-hidden="true">↻</span> {tr('results.showOthers')}
-                </button>
-              )}
+              <div className="results-actions">
+                {!isTyping && (
+                  <button type="button" className="show-others-btn" onClick={showOtherProducts}>
+                    <span aria-hidden="true">↻</span> {tr('results.showOthers')}
+                  </button>
+                )}
+                {resultsGuide && (
+                  <button type="button" className="results-guide-link" onClick={() => navOpenGuide(resultsGuide.slug)}>
+                    {tr('results.guideCta', { title: resultsGuide.title })}
+                  </button>
+                )}
+              </div>
             </>
           ) : loadingProducts ? (
             <>

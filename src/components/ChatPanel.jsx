@@ -145,7 +145,7 @@ function ChoiceControl({ question, onAnswer, onSkip }) {
   );
 }
 
-export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, onRetry = null, onShowOthers = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, loadingProducts = false, headerExtras = null }) {
+export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, onRetry = null, onShowOthers = null, onRecommendNow = null, guide = null, onOpenGuide = null, budget = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, loadingProducts = false, headerExtras = null }) {
   const { t } = useI18n();
   const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
@@ -271,12 +271,17 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
             <ChatBubble role="bot" layout={layout}>{t('chat.mySelection')}</ChatBubble>
             <div className="chat-products-list">
               {products.slice(0, 3).map((p, i) => (
-                <ProductLinkCard key={p.id} product={p} rank={i + 1} onSelect={onSelectProduct} />
+                <ProductLinkCard key={p.id} product={p} rank={i + 1} budget={budget} onSelect={onSelectProduct} />
               ))}
             </div>
             {onShowOthers && !isTyping && (
               <button type="button" className="show-others-btn show-others-chat" onClick={onShowOthers}>
                 <span aria-hidden="true">↻</span> {t('results.showOthers')}
+              </button>
+            )}
+            {guide && onOpenGuide && (
+              <button type="button" className="results-guide-link results-guide-chat" onClick={() => onOpenGuide(guide.slug)}>
+                {t('results.guideCta', { title: guide.title })}
               </button>
             )}
             {currentQuestion && (
@@ -308,6 +313,12 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
 
         {!isTyping && currentQuestion && (
           <ChoiceControl question={currentQuestion} onAnswer={onAnswer} onSkip={skip} />
+        )}
+
+        {!isTyping && onRecommendNow && !showInline && (
+          <button type="button" className="recommend-now-btn" onClick={onRecommendNow}>
+            <span aria-hidden="true">✦</span> {t('chat.recommendNow')}
+          </button>
         )}
       </div>
 

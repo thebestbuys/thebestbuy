@@ -4381,3 +4381,119 @@ select.profile-input {
   cursor: pointer;
   font-weight: 600;
 }
+
+/* ──────────── "Recommend now" CTA (skip the wait) ───────────────── */
+.recommend-now-btn {
+  appearance: none;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 9px 16px;
+  background: var(--accent);
+  border: none;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.recommend-now-btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+/* ──────────── Budget fit badge ──────────────────────────────────── */
+.hero-price-wrap,
+.small-price-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.budget-tag {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 1px 8px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.budget-tag.in {
+  color: var(--accent-good);
+  background: color-mix(in oklch, var(--accent-good) 12%, transparent);
+}
+.budget-tag.over {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.plc-bottom .budget-tag {
+  font-size: 10px;
+  padding: 0 6px;
+}
+
+/* ──────────── Results → buying guide cross-link ─────────────────── */
+.results-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.results-guide-link {
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  padding: 4px 8px;
+  border-radius: 8px;
+  text-align: center;
+}
+.results-guide-link:hover {
+  text-decoration: underline;
+}
+.results-guide-chat {
+  align-self: flex-start;
+  margin-top: 8px;
+  color: var(--text-muted);
+}
+
+/* ──────────── Toasts ────────────────────────────────────────────── */
+.toaster {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 4000;
+  pointer-events: none;
+}
+.toast {
+  background: var(--text);
+  color: var(--bg);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 999px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  animation: toastIn 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
+  max-width: 90vw;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}

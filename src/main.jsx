@@ -4,6 +4,7 @@ import App from './App.jsx';
 import { AuthProvider } from './lib/auth.jsx';
 import { LanguageProvider } from './lib/i18n.jsx';
 import ThemeEditor from './components/ThemeEditor.jsx';
+import Toaster from './components/Toaster.jsx';
 import { applyStoredTheme, getMode } from './lib/theme.js';
 import './styles.css';
 
@@ -43,6 +44,7 @@ function Root() {
     <>
       <App />
       <ThemeEditor open={themeOpen} onClose={() => setThemeOpen(false)} />
+      <Toaster />
     </>
   );
 }
