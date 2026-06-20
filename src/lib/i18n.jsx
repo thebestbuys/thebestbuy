@@ -41,6 +41,7 @@ const TRANSLATIONS = {
     "results.eyebrow": "Top 3 sélection",
     "results.finalized": "Sélection finalisée",
     "results.refining": "Affinage en cours…",
+    "results.showOthers": "Voir d'autres produits",
 
     // Chat
     "chat.subtitle": "Conseiller en ligne",
@@ -57,6 +58,7 @@ const TRANSLATIONS = {
     "chat.error":
       "Désolé, le service de recommandation n'a pas répondu ({msg}). Réessayez ou rafraîchissez la page.",
     "chat.skip": "Peu importe",
+    "chat.retry": "Réessayer",
     "chat.multiValidate": "Valider",
     "chat.editAnswer": "Modifier cette réponse",
     "chat.progressStep": "Question {n} sur {total}",
@@ -86,6 +88,8 @@ const TRANSLATIONS = {
     "product.why": "Pourquoi ce produit ?",
     "product.features": "Caractéristiques principales",
     "product.price": "Prix",
+    "product.verified": "Vérifié",
+    "product.verifiedTitle": "Prix et disponibilité confirmés sur Amazon.fr",
     "product.priceEstimate": "Prix estimé",
     "product.priceEstimateNote": "Estimation indicative · prix réel sur Amazon",
     "product.shipping": "Livraison gratuite · 30 jours d'essai",
@@ -399,6 +403,7 @@ const TRANSLATIONS = {
     "results.placeholderTitle": "Your suggestions<br/>will appear here",
     "results.placeholderSub":
       "Answer the questions in the chat so Oraklia can select the best products for you.",
+    "results.showOthers": "Show other products",
     "results.eyebrow": "Top 3 selection",
     "results.finalized": "Selection finalized",
     "results.refining": "Refining…",
@@ -418,6 +423,7 @@ const TRANSLATIONS = {
     "chat.error":
       "Sorry, the recommendation service didn't respond ({msg}). Try again or refresh the page.",
     "chat.skip": "No preference",
+    "chat.retry": "Retry",
     "chat.multiValidate": "Confirm",
     "chat.editAnswer": "Edit this answer",
     "chat.progressStep": "Question {n} of {total}",
@@ -447,6 +453,8 @@ const TRANSLATIONS = {
     "product.why": "Why this product?",
     "product.features": "Key features",
     "product.price": "Price",
+    "product.verified": "Verified",
+    "product.verifiedTitle": "Price and availability confirmed on Amazon.fr",
     "product.priceEstimate": "Estimated price",
     "product.priceEstimateNote": "Indicative estimate · real price on Amazon",
     "product.shipping": "Free delivery · 30-day trial",

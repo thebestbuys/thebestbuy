@@ -428,7 +428,9 @@ export default async function handler(req, res) {
   }
   const t1_ms = ms(t1);
 
-  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', conversationId = '', requestId = '' } = body;
+  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', conversationId = '', requestId = '', exclude = [] } = body;
+  // Products the client already saw and wants different from ("show me others").
+  const excludeNames = (Array.isArray(exclude) ? exclude : []).map((s) => String(s || '').trim()).filter(Boolean).slice(0, 30);
   // Legacy clients (mobile) send a full transcript in "messages" with no "mode".
   const legacy = Array.isArray(messages) && messages.length > 0 && body.mode == null;
   const isRecommend = mode === 'recommend';
@@ -456,13 +458,13 @@ export default async function handler(req, res) {
     temperature = isGift ? (surprise ? 0.95 : 0.7) : 0.5;
   } else if (isGift) {
     systemPrompt = isRecommend
-      ? buildGiftRecommendPrompt(giftStr, answers, lang, [], surprise, friendWishlist)
+      ? buildGiftRecommendPrompt(giftStr, answers, lang, excludeNames, surprise, friendWishlist)
       : buildGiftAskPrompt(giftStr, answers, lang);
     contents = [{ role: 'user', parts: [{ text: isRecommend ? 'Donne les idées de cadeaux.' : 'Pose la prochaine question.' }] }];
     temperature = isRecommend ? (surprise ? 0.95 : 0.7) : 0.5;
   } else {
     systemPrompt = isRecommend
-      ? buildRecommendPrompt(searchTerm, answers, lang, [], profile)
+      ? buildRecommendPrompt(searchTerm, answers, lang, excludeNames, profile)
       : buildAskPrompt(searchTerm, answers, lang, profile);
     contents = [{ role: 'user', parts: [{ text: isRecommend ? 'Donne les recommandations.' : 'Pose la prochaine question.' }] }];
     temperature = isRecommend ? 0.5 : 0.4;
@@ -590,8 +592,8 @@ export default async function handler(req, res) {
           }
         : {
             systemInstruction: { parts: [{ text: isGift
-              ? buildGiftRecommendPrompt(giftStr, answers, lang, [...triedNames], surprise, friendWishlist)
-              : buildRecommendPrompt(searchTerm, answers, lang, [...triedNames], profile) }] },
+              ? buildGiftRecommendPrompt(giftStr, answers, lang, [...triedNames, ...excludeNames], surprise, friendWishlist)
+              : buildRecommendPrompt(searchTerm, answers, lang, [...triedNames, ...excludeNames], profile) }] },
             contents: [{ role: 'user', parts: [{ text: 'Donne 10 autres recommandations.' }] }],
             generationConfig: { temperature: 0.6, responseMimeType: 'application/json' },
           };

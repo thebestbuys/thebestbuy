@@ -90,8 +90,8 @@ export function askQuestion({ objet, answers, lang = 'fr', profile = '', gift = 
 
 // Ask for product recommendations from the accumulated criteria.
 // `surprise` (gift mode) asks for bolder, more unexpected ideas.
-export function recommend({ objet, answers, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', token = '', conversationId = '' }) {
-  return postChat({ mode: 'recommend', objet, answers, lang, profile, gift, surprise, friendId, conversationId }, token);
+export function recommend({ objet, answers, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', token = '', conversationId = '', exclude = [] }) {
+  return postChat({ mode: 'recommend', objet, answers, lang, profile, gift, surprise, friendId, conversationId, exclude }, token);
 }
 
 // Enrich a product with real Amazon data (image, URL, rating, reviews).

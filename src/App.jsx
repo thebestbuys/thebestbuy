@@ -1,21 +1,25 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { CATEGORIES } from './data.js';
 import { askQuestion, recommend, enrichProduct } from './lib/askAI.js';
 import AuthMenu from './components/AuthMenu.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
-import HistoryPanel from './components/HistoryPanel.jsx';
-import SelectionsPanel from './components/SelectionsPanel.jsx';
-import ProfilePanel from './components/ProfilePanel.jsx';
-import GiftPanel from './components/GiftPanel.jsx';
-import SharedGiftList from './components/SharedGiftList.jsx';
-import FriendsPanel from './components/FriendsPanel.jsx';
 import FriendRequestsBell from './components/FriendRequestsBell.jsx';
-import NotificationsPanel from './components/NotificationsPanel.jsx';
-import AskOpinionPanel from './components/AskOpinionPanel.jsx';
 import FavoriteButton from './components/FavoriteButton.jsx';
-import LegalNotices from './components/LegalNotices.jsx';
-import GuideArticle from './components/GuideArticle.jsx';
 import LangToggle from './components/LangToggle.jsx';
+
+// Overlays / secondary views — code-split so they don't bloat the initial
+// bundle. Each is only mounted when its open flag is true (the panels already
+// return null when closed), so the chunk loads on first open, not at startup.
+const HistoryPanel = lazy(() => import('./components/HistoryPanel.jsx'));
+const SelectionsPanel = lazy(() => import('./components/SelectionsPanel.jsx'));
+const ProfilePanel = lazy(() => import('./components/ProfilePanel.jsx'));
+const GiftPanel = lazy(() => import('./components/GiftPanel.jsx'));
+const SharedGiftList = lazy(() => import('./components/SharedGiftList.jsx'));
+const FriendsPanel = lazy(() => import('./components/FriendsPanel.jsx'));
+const NotificationsPanel = lazy(() => import('./components/NotificationsPanel.jsx'));
+const AskOpinionPanel = lazy(() => import('./components/AskOpinionPanel.jsx'));
+const LegalNotices = lazy(() => import('./components/LegalNotices.jsx'));
+const GuideArticle = lazy(() => import('./components/GuideArticle.jsx'));
 import { GUIDES, localizeGuide, getGuide } from './data/guides.js';
 import { HeroCard, PriceTag, ProductImage, ProductLinkCard, ProductSkeleton, ScoreRing, SmallCard, VerifiedRating } from './components/ProductCard.jsx';
 import { useAuth } from './lib/auth.jsx';
@@ -548,6 +552,7 @@ export default function App() {
   const [answers, setAnswers] = useState([]);  // compact criteria JSON [{id,q,a,tags,min,max}]
   const [editIndex, setEditIndex] = useState(null); // answer index being edited in place
   const [loadingProducts, setLoadingProducts] = useState(false); // a recommend() call is in flight
+  const [retryAction, setRetryAction] = useState(null); // re-run the last failed AI call (set on error)
 
   // Self mode: recommend after the first 5 answers, then every 3 more (8, 11, …).
   // Gift mode: recommend immediately (the recipient form already has budget +
@@ -600,6 +605,7 @@ export default function App() {
   const advance = async (currentAnswers, searchObjet = objet) => {
     setIsTyping(true);
     setCurrentQuestion(null);
+    setRetryAction(null);
     // Strip client-only fields (_q, _msgIndex used by edit/rewind) before sending.
     const answersForApi = currentAnswers.map(({ id, q, a, tags, min, max }) => ({ id, q, a, tags, min, max }));
     currentAnswers = answersForApi;
@@ -623,6 +629,7 @@ export default function App() {
       setRefreshKey((k) => k + 1);
     } catch (e) {
       setMessages((m) => [...m, { role: 'bot', text: tr('chat.error', { msg: e.message }) }]);
+      setRetryAction(() => () => advance(currentAnswers, searchObjet));
     } finally {
       setIsTyping(false);
       setLoadingProducts(false);
@@ -682,9 +689,10 @@ export default function App() {
   // without asking a new question or changing the answer count. Used after an
   // in-place answer edit so the picks reflect the change but the rest of the
   // conversation (later answers, the pending question) is preserved.
-  const refreshRecommendations = async (currentAnswers) => {
+  const refreshRecommendations = async (currentAnswers, exclude = []) => {
     setIsTyping(true);
     setLoadingProducts(true);
+    setRetryAction(null);
     const answersForApi = currentAnswers.map(({ id, q, a, tags, min, max }) => ({ id, q, a, tags, min, max }));
     const profile = profileToPrompt(getProfile(user?.sub), lang);
     const giftStr = gift ? giftToPrompt(gift, lang) : '';
@@ -692,15 +700,25 @@ export default function App() {
     const friendId = gift?.friendId || '';
     const token = friendId ? getAccessToken() : '';
     try {
-      const rec = await recommend({ objet, answers: answersForApi, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId });
+      const rec = await recommend({ objet, answers: answersForApi, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId, exclude });
       if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
       loadProducts(rec?.products);
     } catch (e) {
       setMessages((m) => [...m, { role: 'bot', text: tr('chat.error', { msg: e.message }) }]);
+      setRetryAction(() => () => refreshRecommendations(currentAnswers, exclude));
     } finally {
       setIsTyping(false);
       setLoadingProducts(false);
     }
+  };
+
+  // "Show me other products": keep the same criteria but ask the AI for a fresh
+  // set, excluding the ones already on screen (backend honours `exclude`).
+  const showOtherProducts = () => {
+    const exclude = recommendedProducts
+      .map((p) => `${p.brand || ''} ${p.model || ''}`.trim())
+      .filter(Boolean);
+    refreshRecommendations(answers, exclude);
   };
 
   // Tap-to-edit a previous answer — IN PLACE. We start editing (re-present the
@@ -954,21 +972,25 @@ export default function App() {
     return <div className="share-page"><p className="share-empty">…</p></div>;
   }
   if (sharedList) {
-    return <SharedGiftList data={sharedList} onCreate={closeSharedList} />;
+    return (
+      <Suspense fallback={null}>
+        <SharedGiftList data={sharedList} onCreate={closeSharedList} />
+      </Suspense>
+    );
   }
 
   // Guide article view (accessible before choosing a category)
   if (activeGuide) {
     const guide = localizeGuide(GUIDES.find((g) => g.slug === activeGuide), lang);
     return (
-      <>
+      <Suspense fallback={null}>
         <GuideArticle
           guide={guide}
           onBack={navBack}
           onStartAdvisor={startAdvisorFromGuide}
         />
-        <LegalNotices open={legalOpen} onClose={navBack} />
-      </>
+        {legalOpen && <LegalNotices open onClose={navBack} />}
+      </Suspense>
     );
   }
 
@@ -993,24 +1015,20 @@ export default function App() {
         {selected && (
           <ProductDetail product={selected} onClose={navBack} onBuy={handleBuy} />
         )}
-        <HistoryPanel
-          open={historyOpen}
-          onClose={navBack}
-          onLoad={loadConversation}
-          currentId={convoId}
-        />
-        <SelectionsPanel
-          open={selectionsOpen}
-          onClose={navBack}
-          getAmazonUrl={getAmazonUrl}
-          onBuy={handleBuy}
-        />
-        <ProfilePanel open={profileOpen} onClose={navBack} />
-        <FriendsPanel open={friendsOpen} onClose={navBack} />
-        <NotificationsPanel open={notifOpen} onClose={navBack} onGift={giftFromReminder} />
-        <AskOpinionPanel open={askOpen} onClose={navBack} getAmazonUrl={getAmazonUrl} />
-        <GiftPanel open={giftOpen} onClose={navBack} onSubmit={startGift} initial={giftPrefill} />
-        <LegalNotices open={legalOpen} onClose={navBack} />
+        <Suspense fallback={null}>
+          {historyOpen && (
+            <HistoryPanel open onClose={navBack} onLoad={loadConversation} currentId={convoId} />
+          )}
+          {selectionsOpen && (
+            <SelectionsPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} onBuy={handleBuy} />
+          )}
+          {profileOpen && <ProfilePanel open onClose={navBack} />}
+          {friendsOpen && <FriendsPanel open onClose={navBack} />}
+          {notifOpen && <NotificationsPanel open onClose={navBack} onGift={giftFromReminder} />}
+          {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
+          {giftOpen && <GiftPanel open onClose={navBack} onSubmit={startGift} initial={giftPrefill} />}
+          {legalOpen && <LegalNotices open onClose={navBack} />}
+        </Suspense>
       </>
     );
   }
@@ -1036,6 +1054,8 @@ export default function App() {
         onApplyEdit={(qId, choice) => applyEditAnswer(editIndex, choice.label, choice)}
         editMsgIndex={editMsgIndex}
         editQuestion={editQuestion}
+        onRetry={retryAction}
+        onShowOthers={recommendedProducts.length > 0 ? showOtherProducts : null}
         isTyping={isTyping}
         layout={t.chatLayout}
         progressInfo={progressInfo}
@@ -1098,6 +1118,11 @@ export default function App() {
                   <SmallCard key={p.id} product={p} rank={i + 2} density={t.density} onSelect={navOpenProduct} />
                 ))}
               </div>
+              {!isTyping && (
+                <button type="button" className="show-others-btn" onClick={showOtherProducts}>
+                  <span aria-hidden="true">↻</span> {tr('results.showOthers')}
+                </button>
+              )}
             </>
           ) : loadingProducts ? (
             <>
@@ -1134,31 +1159,20 @@ export default function App() {
         />
       )}
 
-      <HistoryPanel
-        open={historyOpen}
-        onClose={navBack}
-        onLoad={loadConversation}
-        currentId={convoId}
-      />
-
-      <SelectionsPanel
-        open={selectionsOpen}
-        onClose={navBack}
-        getAmazonUrl={getAmazonUrl}
-        onBuy={handleBuy}
-      />
-
-      <ProfilePanel open={profileOpen} onClose={navBack} />
-
-      <GiftPanel open={giftOpen} onClose={navBack} onSubmit={startGift} initial={giftPrefill} />
-
-      <FriendsPanel open={friendsOpen} onClose={navBack} />
-
-      <NotificationsPanel open={notifOpen} onClose={navBack} onGift={giftFromReminder} />
-
-      <AskOpinionPanel open={askOpen} onClose={navBack} getAmazonUrl={getAmazonUrl} />
-
-      <LegalNotices open={legalOpen} onClose={navBack} />
+      <Suspense fallback={null}>
+        {historyOpen && (
+          <HistoryPanel open onClose={navBack} onLoad={loadConversation} currentId={convoId} />
+        )}
+        {selectionsOpen && (
+          <SelectionsPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} onBuy={handleBuy} />
+        )}
+        {profileOpen && <ProfilePanel open onClose={navBack} />}
+        {giftOpen && <GiftPanel open onClose={navBack} onSubmit={startGift} initial={giftPrefill} />}
+        {friendsOpen && <FriendsPanel open onClose={navBack} />}
+        {notifOpen && <NotificationsPanel open onClose={navBack} onGift={giftFromReminder} />}
+        {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
+        {legalOpen && <LegalNotices open onClose={navBack} />}
+      </Suspense>
 
       <TweaksPanel title="Tweaks">
         <TweakSection label="Layout du chat" />

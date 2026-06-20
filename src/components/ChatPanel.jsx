@@ -145,7 +145,7 @@ function ChoiceControl({ question, onAnswer, onSkip }) {
   );
 }
 
-export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, loadingProducts = false, headerExtras = null }) {
+export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, onRetry = null, onShowOthers = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, loadingProducts = false, headerExtras = null }) {
   const { t } = useI18n();
   const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
@@ -274,6 +274,11 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
                 <ProductLinkCard key={p.id} product={p} rank={i + 1} onSelect={onSelectProduct} />
               ))}
             </div>
+            {onShowOthers && !isTyping && (
+              <button type="button" className="show-others-btn show-others-chat" onClick={onShowOthers}>
+                <span aria-hidden="true">↻</span> {t('results.showOthers')}
+              </button>
+            )}
             {currentQuestion && (
               <div className="chat-products-hint">{t('chat.refineHint')}</div>
             )}
@@ -292,6 +297,14 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
         )}
 
         {isTyping && !showInlineSkeleton && <TypingDots layout={layout} />}
+
+        {!isTyping && onRetry && (
+          <div className="chat-choices chat-retry-row">
+            <button type="button" className="choice-chip choice-retry" onClick={onRetry}>
+              <span aria-hidden="true">↻</span> {t('chat.retry')}
+            </button>
+          </div>
+        )}
 
         {!isTyping && currentQuestion && (
           <ChoiceControl question={currentQuestion} onAnswer={onAnswer} onSkip={skip} />

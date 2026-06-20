@@ -106,6 +106,22 @@ export function VerifiedRating({ product, size = 'normal', locale }) {
   );
 }
 
+// Small trust badge shown only when the product's data was confirmed against
+// Amazon (amazon_verified). Makes the verified/estimate distinction explicit
+// instead of leaving it implicit in the price formatting.
+export function VerifiedBadge({ product, compact = false }) {
+  const { t } = useI18n();
+  if (!product.amazon_verified) return null;
+  return (
+    <span className={'verified-badge' + (compact ? ' compact' : '')} title={t('product.verifiedTitle')}>
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M2 8.5 6 12l8-8.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      {!compact && <span>{t('product.verified')}</span>}
+    </span>
+  );
+}
+
 // Round to a human-friendly value for the estimated range bounds.
 function roundNice(v) {
   if (v >= 1000) return Math.round(v / 50) * 50;
@@ -188,7 +204,10 @@ export function HeroCard({ product, density, onSelect }) {
       <div className="hero-grid">
         <ProductImage product={product} size="large" />
         <div className="hero-meta">
-          <div className="hero-brand">{product.brand}</div>
+          <div className="hero-brand-row">
+            <span className="hero-brand">{product.brand}</span>
+            <VerifiedBadge product={product} />
+          </div>
           <h2 className="hero-model">{product.model}</h2>
           <VerifiedRating product={product} locale={locale} />
           {product.why && (
@@ -233,7 +252,10 @@ export function ProductLinkCard({ product, rank, friendCount, onSelect }) {
         <ProductImage product={product} size="small" />
       </span>
       <span className="plc-body">
-        <span className="plc-brand">{product.brand}</span>
+        <span className="plc-brand-row">
+          <span className="plc-brand">{product.brand}</span>
+          <VerifiedBadge product={product} compact />
+        </span>
         <span className="plc-model">{product.model}</span>
         {product.why && <span className="plc-why">{product.why}</span>}
         <span className="plc-bottom">
@@ -299,7 +321,10 @@ export function SmallCard({ product, rank, density, onSelect }) {
       <FavoriteButton product={product} />
       <ProductImage product={product} size="small" />
       <div className="small-info">
-        <div className="small-brand">{product.brand}</div>
+        <div className="small-brand-row">
+          <span className="small-brand">{product.brand}</span>
+          <VerifiedBadge product={product} compact />
+        </div>
         <div className="small-model">{product.model}</div>
         <VerifiedRating product={product} size="small" locale={locale} />
         {product.why && <div className="small-why">{product.why}</div>}
