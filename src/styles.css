@@ -166,31 +166,16 @@ ul {
   display: flex;
   flex-direction: column;
 }
-/* Narrow viewports (phones / small tablets): the rail folds into a horizontal
-   top bar so nothing gets squeezed. */
+/* Small windows: keep the rail pinned LEFT (vertical, sticky) instead of
+   folding to a top bar — just narrower and more compact. */
 @media (max-width: 900px) {
-  .home--rail { flex-direction: column; }
-  .home-rail {
-    width: 100%;
-    height: auto;
-    position: static;
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 12px 16px;
-    border-right: 0;
-    border-bottom: 0.5px solid var(--border);
-  }
-  .rail-brand { padding: 4px 8px; font-size: 22px; }
-  .rail-nav { flex-direction: row; flex-wrap: wrap; flex: 1; }
-  .rail-foot {
-    margin-top: 0;
-    flex-direction: row;
-    padding-top: 0;
-    border-top: 0;
-    gap: 8px;
-  }
+  .home-rail { width: 184px; padding: 16px 10px; }
+  .rail-brand { font-size: 22px; padding: 4px 8px 10px; }
+  .rail-item { padding: 9px 10px; font-size: 13px; }
+}
+@media (max-width: 560px) {
+  .home-rail { width: 150px; padding: 14px 8px; }
+  .rail-item { padding: 8px 8px; gap: 9px; }
 }
 .home-main {
   flex: 1;
