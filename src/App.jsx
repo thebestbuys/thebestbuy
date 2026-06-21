@@ -20,6 +20,7 @@ const NotificationsPanel = lazy(() => import('./components/NotificationsPanel.js
 const AskOpinionPanel = lazy(() => import('./components/AskOpinionPanel.jsx'));
 const LegalNotices = lazy(() => import('./components/LegalNotices.jsx'));
 const GuideArticle = lazy(() => import('./components/GuideArticle.jsx'));
+const GuidesPanel = lazy(() => import('./components/GuidesPanel.jsx'));
 import { GUIDES, localizeGuide, getGuide } from './data/guides.js';
 import { HeroCard, PriceTag, ProductImage, ProductLinkCard, ProductSkeleton, ScoreRing, SmallCard, VerifiedRating } from './components/ProductCard.jsx';
 import { useAuth } from './lib/auth.jsx';
@@ -209,7 +210,28 @@ function TrendingCircle({ onOpen }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifPing, onOpenGift, onOpenLegal, onOpenGuide, onLoadConvo, onOpenProduct }) {
+function RailIcon({ name }) {
+  const p = { width: 18, height: 18, viewBox: '0 0 18 18', fill: 'none', 'aria-hidden': true };
+  const sw = { stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round', strokeLinejoin: 'round' };
+  switch (name) {
+    case 'search':
+      return (<svg {...p}><circle cx="8" cy="8" r="5" {...sw} /><path d="M12 12l4 4" {...sw} /></svg>);
+    case 'history':
+      return (<svg {...p}><circle cx="9" cy="9" r="6.5" {...sw} /><path d="M9 5v4l2.6 1.7" {...sw} /></svg>);
+    case 'heart':
+      return (<svg {...p}><path d="M9 15.5S2.5 11.5 2.5 6.8A3.2 3.2 0 0 1 9 5.1 3.2 3.2 0 0 1 15.5 6.8C15.5 11.5 9 15.5 9 15.5Z" {...sw} /></svg>);
+    case 'guides':
+      return (<svg {...p}><path d="M9 5.2V15M9 5.2C7.7 4.3 5.8 4 3.5 4.2V13c2.3-.2 4.2.1 5.5 1 1.3-.9 3.2-1.2 5.5-1V4.2C12.2 4 10.3 4.3 9 5.2Z" {...sw} /></svg>);
+    case 'gift':
+      return (<svg {...p}><rect x="3.5" y="8" width="11" height="6.5" rx="1" {...sw} /><path d="M2.5 8h13M9 8v6.5" {...sw} /><path d="M9 8C8 6 6.5 4.2 5.4 4.8 4.3 5.4 5.5 8 9 8Zm0 0c1-2 2.5-3.8 3.6-3.2C13.7 5.4 12.5 8 9 8Z" {...sw} /></svg>);
+    case 'calendar':
+      return (<svg {...p}><rect x="3" y="4" width="12" height="11" rx="1.5" {...sw} /><path d="M3 7.5h12M6.5 2.5v3M11.5 2.5v3" {...sw} /></svg>);
+    default:
+      return (<svg {...p}><circle cx="9" cy="9" r="6" {...sw} /></svg>);
+  }
+}
+
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifPing, onOpenGift, onOpenLegal, onOpenGuide, onOpenGuides, onLoadConvo, onOpenProduct }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -283,148 +305,127 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
   };
 
   return (
-    <div className="home">
-      <div className="home-topbar">
-        <button
-          type="button"
-          className="auth-trigger auth-trigger-home"
-          onClick={onOpenSelections}
-          aria-label={t('home.selectionsTitle')}
-          title={t('home.selectionsTitle')}
-        >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path
-              d="M8 14S2 10.3 2 6.1A2.9 2.9 0 0 1 8 4.6 2.9 2.9 0 0 1 14 6.1C14 10.3 8 14 8 14Z"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinejoin="round"
-            />
-          </svg>
-          {t('home.selections')}
-        </button>
-        <FriendRequestsBell onOpen={onOpenNotifications} pingKey={notifPing} />
-        <LangToggle />
-        <AuthMenu variant="home" onOpenSelections={onOpenSelections} onOpenProfile={onOpenProfile} onOpenFriends={onOpenFriends} onOpenHistory={onOpenHistory} onOpenAsk={onOpenAsk} />
-      </div>
-      <main className="home-main">
-        <h1 className="home-logo">Oraklia</h1>
-        <p className="home-greeting">
-          {firstName ? t('m.greetingLead', { name: firstName }) : t('m.greetingLeadAnon')}{' '}
-          <span className="home-greeting-hl">{t('m.greetingHighlight')}</span>
-        </p>
-        <form className="home-search" onSubmit={submit}>
-          <span className="home-search-icon" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.6" />
-              <path d="M14 14L17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
+    <div className="home home--rail">
+      <aside className="home-rail">
+        <div className="rail-brand">Oraklia</div>
+        <nav className="rail-nav">
+          <span className="rail-item is-active">
+            <RailIcon name="search" />
+            {t('rail.search')}
           </span>
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder={t('home.searchPlaceholder')}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <button type="submit" disabled={!query.trim()} className="home-search-submit" aria-label={t('home.search')}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M2 8 L14 8 M9 3 L14 8 L9 13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+          <button type="button" className="rail-item" onClick={onOpenHistory}>
+            <RailIcon name="history" />
+            {t('rail.history')}
           </button>
-        </form>
-
-        <div className="home-cta-row">
-          <button type="button" className="home-gift-cta" onClick={onOpenGift}>
-            <span aria-hidden="true" className="home-gift-cta-emoji">🎁</span>
-            {t('home.gift')}
+          <button type="button" className="rail-item" onClick={onOpenSelections}>
+            <RailIcon name="heart" />
+            {t('rail.selections')}
           </button>
-          <button type="button" className="home-occ-cta" onClick={onOpenNotifications}>
-            <span aria-hidden="true" className="home-gift-cta-emoji">📅</span>
-            {t('notif.occasions')}
+          <button type="button" className="rail-item" onClick={onOpenGuides}>
+            <RailIcon name="guides" />
+            {t('rail.guides')}
           </button>
+          <button type="button" className="rail-item gift-trigger" onClick={onOpenGift}>
+            <RailIcon name="gift" />
+            {t('rail.gift')}
+          </button>
+          <button type="button" className="rail-item" onClick={onOpenNotifications}>
+            <RailIcon name="calendar" />
+            {t('rail.occasions')}
+          </button>
+        </nav>
+        <div className="rail-foot">
+          <FriendRequestsBell onOpen={onOpenNotifications} pingKey={notifPing} />
+          <LangToggle />
+          <AuthMenu variant="home" onOpenSelections={onOpenSelections} onOpenProfile={onOpenProfile} onOpenFriends={onOpenFriends} onOpenHistory={onOpenHistory} onOpenAsk={onOpenAsk} />
         </div>
+      </aside>
 
-        <div className="home-suggestions">
-          {suggestions.map((s) => {
-            const label = t(s.key);
-            return (
-              <button key={s.key} type="button" className="suggestion-chip"
-                onClick={() => onPick(detectCategory(label) || label, label)}>
-                <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
-                {label}
-              </button>
-            );
-          })}
-        </div>
+      <div className="home-body">
+        <main className="home-main">
+          <h1 className="home-logo">Oraklia</h1>
+          <p className="home-greeting">
+            {firstName ? t('m.greetingLead', { name: firstName }) : t('m.greetingLeadAnon')}{' '}
+            <span className="home-greeting-hl">{t('m.greetingHighlight')}</span>
+          </p>
+          <form className="home-search" onSubmit={submit}>
+            <span className="home-search-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.6" />
+                <path d="M14 14L17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            </span>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder={t('home.searchPlaceholder')}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <button type="submit" disabled={!query.trim()} className="home-search-submit" aria-label={t('home.search')}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 8 L14 8 M9 3 L14 8 L9 13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </form>
 
-        <TrendingCircle onOpen={onOpenProduct} />
-
-        {recents.length > 0 && (
-          <section className="home-history">
-            <div className="home-guides-head home-history-head">
-              <h2 className="home-guides-title">{t('home.history')}</h2>
-              <button type="button" className="home-history-all" onClick={onOpenHistory}>
-                {t('m.seeAll')}
-              </button>
-            </div>
-            <div className="home-history-grid">
-              {recents.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  className="home-history-card"
-                  onClick={() => onLoadConvo?.(c)}
-                >
-                  <span className="home-history-card-title">{c.title || t('history.conversation')}</span>
-                  <span className="home-history-card-meta">
-                    {formatRelative(c.updatedAt)}
-                    {c.done ? ` · ${t('history.done')}` : ''}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <section className="home-guides">
-          <div className="home-guides-head">
-            <h2 className="home-guides-title">{t('guides.sectionTitle')}</h2>
-            <p className="home-guides-sub">{t('guides.sectionSub')}</p>
-          </div>
-          <div className="home-guides-grid">
-            {GUIDES.map((g) => {
-              const lg = localizeGuide(g, lang);
+          <div className="home-suggestions">
+            {suggestions.map((s) => {
+              const label = t(s.key);
               return (
-                <button
-                  key={g.slug}
-                  type="button"
-                  className="guide-card"
-                  onClick={() => onOpenGuide(g.slug)}
-                >
-                  <div className="guide-card-eyebrow">{t('guides.cardEyebrow', { time: lg.readTime })}</div>
-                  <h3 className="guide-card-title">{lg.title}</h3>
-                  <p className="guide-card-sub">{lg.subtitle}</p>
-                  <span className="guide-card-link">{t('guides.read')}</span>
+                <button key={s.key} type="button" className="suggestion-chip"
+                  onClick={() => onPick(detectCategory(label) || label, label)}>
+                  <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
+                  {label}
                 </button>
               );
             })}
           </div>
-        </section>
-      </main>
 
-      <footer className="home-footer">
-        <p className="home-footer-affiliate">{t('footer.affiliate')}</p>
-        <div className="home-footer-inner">
-          <div className="home-footer-left">
-            {t('footer.rights', { year: new Date().getFullYear() })}
+          <TrendingCircle onOpen={onOpenProduct} />
+
+          {recents.length > 0 && (
+            <section className="home-history">
+              <div className="home-guides-head home-history-head">
+                <h2 className="home-guides-title">{t('home.history')}</h2>
+                <button type="button" className="home-history-all" onClick={onOpenHistory}>
+                  {t('m.seeAll')}
+                </button>
+              </div>
+              <div className="home-history-grid">
+                {recents.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className="home-history-card"
+                    onClick={() => onLoadConvo?.(c)}
+                  >
+                    <span className="home-history-card-title">{c.title || t('history.conversation')}</span>
+                    <span className="home-history-card-meta">
+                      {formatRelative(c.updatedAt)}
+                      {c.done ? ` · ${t('history.done')}` : ''}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+        </main>
+
+        <footer className="home-footer">
+          <p className="home-footer-affiliate">{t('footer.affiliate')}</p>
+          <div className="home-footer-inner">
+            <div className="home-footer-left">
+              {t('footer.rights', { year: new Date().getFullYear() })}
+            </div>
+            <div className="home-footer-right">
+              <button type="button" className="home-footer-link" onClick={onOpenLegal}>
+                {t('footer.legal')}
+              </button>
+            </div>
           </div>
-          <div className="home-footer-right">
-            <button type="button" className="home-footer-link" onClick={onOpenLegal}>
-              {t('footer.legal')}
-            </button>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }
@@ -537,6 +538,7 @@ export default function App() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
+  const [guidesOpen, setGuidesOpen] = useState(false);
   const [giftPrefill, setGiftPrefill] = useState(null); // {occasion} when opened from a reminder
   const [gift, setGift] = useState(null);   // recipient payload when in gift mode
   const [shareCopied, setShareCopied] = useState(false);
@@ -881,6 +883,7 @@ export default function App() {
   const navOpenNotifications = () => { pushHistory(); setNotifOpen(true); };
   const navOpenAsk = () => { pushHistory(); setAskOpen(true); };
   const navOpenGift = () => { setGiftPrefill(null); pushHistory(); setGiftOpen(true); };
+  const navOpenGuides = () => { pushHistory(); setGuidesOpen(true); };
   // From a reminder: friend birthday → start directly; holiday/occasion → open
   // the gift form prefilled with the occasion so the user can link a recipient.
   const giftFromReminder = (payload) => {
@@ -940,13 +943,14 @@ export default function App() {
       if (profileOpen) { setProfileOpen(false); return; }
       if (selectionsOpen) { setSelectionsOpen(false); return; }
       if (historyOpen) { setHistoryOpen(false); return; }
+      if (guidesOpen) { setGuidesOpen(false); return; }
       if (activeGuide) { setActiveGuide(null); return; }
       if (category) { handleHome(); return; }
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, giftOpen, notifOpen, askOpen, friendsOpen, profileOpen, selectionsOpen, historyOpen, activeGuide, category]);
+  }, [selected, legalOpen, giftOpen, notifOpen, askOpen, friendsOpen, profileOpen, selectionsOpen, guidesOpen, historyOpen, activeGuide, category]);
 
   // Keep the tab title in sync with the open guide (matches the prerendered
   // per-guide <title>); reset to the brand title elsewhere.
@@ -1063,6 +1067,7 @@ export default function App() {
           onOpenGift={navOpenGift}
           onOpenLegal={navOpenLegal}
           onOpenGuide={navOpenGuide}
+          onOpenGuides={navOpenGuides}
           onLoadConvo={loadConversation}
           onOpenProduct={navOpenProduct}
         />
@@ -1081,6 +1086,7 @@ export default function App() {
           {notifOpen && <NotificationsPanel open onClose={navBack} onGift={giftFromReminder} />}
           {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
           {giftOpen && <GiftPanel open onClose={navBack} onSubmit={startGift} initial={giftPrefill} />}
+          {guidesOpen && <GuidesPanel open onClose={navBack} onOpenGuide={navOpenGuide} />}
           {legalOpen && <LegalNotices open onClose={navBack} />}
         </Suspense>
       </>
