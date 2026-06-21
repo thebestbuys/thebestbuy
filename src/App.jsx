@@ -160,7 +160,7 @@ function ResultsPlaceholder({ category }) {
 // "Tendances dans mon cercle" — products most saved/clicked by the signed-in
 // user's consenting friends (aggregated server-side by circle_trending). Hidden
 // for guests and when the circle has nothing to show yet.
-function TrendingCircle({ onOpen }) {
+function TrendingCircle({ onOpen, hideHeader }) {
   const { t } = useI18n();
   const { user, cloudReady } = useAuth();
   const [items, setItems] = useState([]);
@@ -193,10 +193,12 @@ function TrendingCircle({ onOpen }) {
 
   return (
     <section className="home-trending">
-      <div className="home-guides-head">
-        <h2 className="home-guides-title">{t('trending.title')}</h2>
-        <p className="home-guides-sub">{t('trending.sub')}</p>
-      </div>
+      {!hideHeader && (
+        <div className="home-guides-head">
+          <h2 className="home-guides-title">{t('trending.title')}</h2>
+          <p className="home-guides-sub">{t('trending.sub')}</p>
+        </div>
+      )}
       {items.length > 0 ? (
         <div className="trending-row">
           {items.map((p) => (
@@ -207,6 +209,37 @@ function TrendingCircle({ onOpen }) {
         <p className="trending-empty">{t('trending.empty')}</p>
       )}
     </section>
+  );
+}
+
+// "Tendances" overlay (rail tab) — wraps TrendingCircle in panel chrome so the
+// feature gets its own dedicated tab instead of crowding the home hero.
+function TrendingPanel({ onClose, onOpen }) {
+  const { t } = useI18n();
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="auth-modal-bg" onClick={onClose}>
+      <div
+        className="side-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="trending-panel-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="history-head">
+          <div>
+            <h2 id="trending-panel-title" className="history-title">{t('trending.title')}</h2>
+            <p className="history-sub">{t('trending.sub')}</p>
+          </div>
+          <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+        </header>
+        <TrendingCircle onOpen={onOpen} hideHeader />
+      </div>
+    </div>
   );
 }
 
@@ -226,18 +259,19 @@ function RailIcon({ name }) {
       return (<svg {...p}><rect x="3.5" y="8" width="11" height="6.5" rx="1" {...sw} /><path d="M2.5 8h13M9 8v6.5" {...sw} /><path d="M9 8C8 6 6.5 4.2 5.4 4.8 4.3 5.4 5.5 8 9 8Zm0 0c1-2 2.5-3.8 3.6-3.2C13.7 5.4 12.5 8 9 8Z" {...sw} /></svg>);
     case 'calendar':
       return (<svg {...p}><rect x="3" y="4" width="12" height="11" rx="1.5" {...sw} /><path d="M3 7.5h12M6.5 2.5v3M11.5 2.5v3" {...sw} /></svg>);
+    case 'trending':
+      return (<svg {...p}><path d="M2.5 12.5 7 8l3 3 5-6" {...sw} /><path d="M12 5h3v3" {...sw} /></svg>);
     default:
       return (<svg {...p}><circle cx="9" cy="9" r="6" {...sw} /></svg>);
   }
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifPing, onOpenGift, onOpenLegal, onOpenGuide, onOpenGuides, onLoadConvo, onOpenProduct }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifPing, onOpenGift, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTrending, onLoadConvo, onOpenProduct }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
-  const recents = useMemo(() => listConversations(user?.sub).slice(0, 6), [user?.sub]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -333,6 +367,10 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             <RailIcon name="calendar" />
             {t('rail.occasions')}
           </button>
+          <button type="button" className="rail-item" onClick={onOpenTrending}>
+            <RailIcon name="trending" />
+            {t('rail.trending')}
+          </button>
         </nav>
         <div className="rail-foot">
           <FriendRequestsBell onOpen={onOpenNotifications} pingKey={notifPing} />
@@ -382,34 +420,6 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             })}
           </div>
 
-          <TrendingCircle onOpen={onOpenProduct} />
-
-          {recents.length > 0 && (
-            <section className="home-history">
-              <div className="home-guides-head home-history-head">
-                <h2 className="home-guides-title">{t('home.history')}</h2>
-                <button type="button" className="home-history-all" onClick={onOpenHistory}>
-                  {t('m.seeAll')}
-                </button>
-              </div>
-              <div className="home-history-grid">
-                {recents.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    className="home-history-card"
-                    onClick={() => onLoadConvo?.(c)}
-                  >
-                    <span className="home-history-card-title">{c.title || t('history.conversation')}</span>
-                    <span className="home-history-card-meta">
-                      {formatRelative(c.updatedAt)}
-                      {c.done ? ` · ${t('history.done')}` : ''}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
         </main>
 
         <footer className="home-footer">
@@ -539,6 +549,7 @@ export default function App() {
   const [askOpen, setAskOpen] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
   const [guidesOpen, setGuidesOpen] = useState(false);
+  const [trendingOpen, setTrendingOpen] = useState(false);
   const [giftPrefill, setGiftPrefill] = useState(null); // {occasion} when opened from a reminder
   const [gift, setGift] = useState(null);   // recipient payload when in gift mode
   const [shareCopied, setShareCopied] = useState(false);
@@ -884,6 +895,7 @@ export default function App() {
   const navOpenAsk = () => { pushHistory(); setAskOpen(true); };
   const navOpenGift = () => { setGiftPrefill(null); pushHistory(); setGiftOpen(true); };
   const navOpenGuides = () => { pushHistory(); setGuidesOpen(true); };
+  const navOpenTrending = () => { pushHistory(); setTrendingOpen(true); };
   // From a reminder: friend birthday → start directly; holiday/occasion → open
   // the gift form prefilled with the occasion so the user can link a recipient.
   const giftFromReminder = (payload) => {
@@ -944,13 +956,14 @@ export default function App() {
       if (selectionsOpen) { setSelectionsOpen(false); return; }
       if (historyOpen) { setHistoryOpen(false); return; }
       if (guidesOpen) { setGuidesOpen(false); return; }
+      if (trendingOpen) { setTrendingOpen(false); return; }
       if (activeGuide) { setActiveGuide(null); return; }
       if (category) { handleHome(); return; }
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, giftOpen, notifOpen, askOpen, friendsOpen, profileOpen, selectionsOpen, guidesOpen, historyOpen, activeGuide, category]);
+  }, [selected, legalOpen, giftOpen, notifOpen, askOpen, friendsOpen, profileOpen, selectionsOpen, guidesOpen, trendingOpen, historyOpen, activeGuide, category]);
 
   // Keep the tab title in sync with the open guide (matches the prerendered
   // per-guide <title>); reset to the brand title elsewhere.
@@ -1068,6 +1081,7 @@ export default function App() {
           onOpenLegal={navOpenLegal}
           onOpenGuide={navOpenGuide}
           onOpenGuides={navOpenGuides}
+          onOpenTrending={navOpenTrending}
           onLoadConvo={loadConversation}
           onOpenProduct={navOpenProduct}
         />
@@ -1087,6 +1101,7 @@ export default function App() {
           {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
           {giftOpen && <GiftPanel open onClose={navBack} onSubmit={startGift} initial={giftPrefill} />}
           {guidesOpen && <GuidesPanel open onClose={navBack} onOpenGuide={navOpenGuide} />}
+          {trendingOpen && <TrendingPanel onClose={navBack} onOpen={navOpenProduct} />}
           {legalOpen && <LegalNotices open onClose={navBack} />}
         </Suspense>
       </>
