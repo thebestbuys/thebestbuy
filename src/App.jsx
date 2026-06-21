@@ -285,20 +285,28 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
   };
 
   const suggestions = [
+    { key: 'suggestion.ac', icon: 'ac' },
+    { key: 'suggestion.fan', icon: 'fan' },
     { key: 'suggestion.phone', icon: 'phone' },
     { key: 'suggestion.laptop', icon: 'laptop' },
     { key: 'suggestion.tv', icon: 'tv' },
     { key: 'suggestion.earbuds', icon: 'earbuds' },
     { key: 'suggestion.watch', icon: 'watch' },
     { key: 'suggestion.vacuum', icon: 'vacuum' },
-    { key: 'suggestion.coffee', icon: 'coffee' },
-    { key: 'suggestion.speaker', icon: 'speaker' },
   ];
 
   const SuggestionIcon = ({ icon }) => {
     const p = { width: 14, height: 14, viewBox: '0 0 14 14', fill: 'none', 'aria-hidden': true };
     const sw = { stroke: 'currentColor', strokeWidth: 1.2, strokeLinecap: 'round', strokeLinejoin: 'round' };
     switch (icon) {
+      case 'ac':
+        return (
+          <svg {...p}><rect x="1.5" y="3.5" width="11" height="4.5" rx="1.4" {...sw} /><line x1="3" y1="6.2" x2="11" y2="6.2" {...sw} /><path d="M4 10.3q1 1 0 2M7 10.3q1 1 0 2M10 10.3q1 1 0 2" {...sw} /></svg>
+        );
+      case 'fan':
+        return (
+          <svg {...p}><circle cx="7" cy="7" r="5.2" {...sw} /><circle cx="7" cy="7" r="1" {...sw} /><path d="M7 6V2.5M7.9 7.4l3 1.7M6.1 7.4l-3 1.7" {...sw} /></svg>
+        );
       case 'phone':
         return (
           <svg {...p}><rect x="3.5" y="1.5" width="7" height="11" rx="1.6" {...sw} /><line x1="6" y1="10.5" x2="8" y2="10.5" {...sw} /></svg>
@@ -359,10 +367,6 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             <RailIcon name="guides" />
             {t('rail.guides')}
           </button>
-          <button type="button" className="rail-item gift-trigger" onClick={onOpenGift}>
-            <RailIcon name="gift" />
-            {t('rail.gift')}
-          </button>
           <button type="button" className="rail-item" onClick={onOpenNotifications}>
             <RailIcon name="calendar" />
             {t('rail.occasions')}
@@ -418,6 +422,13 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
                 </button>
               );
             })}
+          </div>
+
+          <div className="home-cta-row">
+            <button type="button" className="home-gift-cta" onClick={onOpenGift}>
+              <span aria-hidden="true" className="home-gift-cta-emoji">🎁</span>
+              {t('home.gift')}
+            </button>
           </div>
 
         </main>
