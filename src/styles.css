@@ -1894,6 +1894,10 @@ button.chat-bubble.chat-editable {
   grid-template-columns: 1fr 1fr;
   gap: 0;
 }
+/* No real image → single full-width content column (no empty image half). */
+.modal-grid.no-image {
+  grid-template-columns: 1fr;
+}
 .modal-left {
   background: var(--bg-soft);
   padding: 32px;

@@ -485,14 +485,19 @@ function ProductDetail({ product, onClose, onBuy }) {
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   const amazonUrl = product.amazon_url ||
     `https://www.amazon.fr/s?k=${encodeURIComponent(`${product.brand} ${product.model}`)}&tag=oraklia123-21`;
+  // No real (verified) Amazon image → don't show a placeholder at all; let the
+  // detail content take the full width.
+  const hasImage = product.amazon_verified && !!product.image_url;
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
-        <div className="modal-grid">
-          <div className="modal-left">
-            <ProductImage product={product} size="modal" />
-          </div>
+        <div className={'modal-grid' + (hasImage ? '' : ' no-image')}>
+          {hasImage && (
+            <div className="modal-left">
+              <ProductImage product={product} size="modal" />
+            </div>
+          )}
           <div className="modal-right">
             <div className="modal-brand">{product.brand}</div>
             <h2 className="modal-title">{product.model}</h2>
