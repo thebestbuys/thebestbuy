@@ -132,10 +132,14 @@ function LoginModal({ onClose }) {
   );
 }
 
-function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk }) {
+function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk, variant }) {
   const { t } = useI18n();
   const wrapRef = useRef(null);
   const count = listSelections(user?.sub).length;
+  // On the home the left rail already holds the navigation, so the account menu
+  // stays account-only (profile / appearance / sign out). Other surfaces (the
+  // advisor view, which has no rail) keep the full menu.
+  const showNav = variant !== 'home';
   useEffect(() => {
     const onDoc = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) onClose();
@@ -163,17 +167,19 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
         </div>
       </div>
       <div className="auth-dropdown-sep" />
-      <button
-        type="button"
-        className="auth-dropdown-item"
-        onClick={() => {
-          onOpenSelections?.();
-          onClose();
-        }}
-      >
-        {t('auth.mySelections')}
-        {count > 0 && <span className="auth-dropdown-count">{count}</span>}
-      </button>
+      {showNav && (
+        <button
+          type="button"
+          className="auth-dropdown-item"
+          onClick={() => {
+            onOpenSelections?.();
+            onClose();
+          }}
+        >
+          {t('auth.mySelections')}
+          {count > 0 && <span className="auth-dropdown-count">{count}</span>}
+        </button>
+      )}
       <button
         type="button"
         className="auth-dropdown-item"
@@ -184,36 +190,40 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
       >
         {t('auth.myProfile')}
       </button>
-      <button
-        type="button"
-        className="auth-dropdown-item"
-        onClick={() => {
-          onOpenHistory?.();
-          onClose();
-        }}
-      >
-        {t('home.history')}
-      </button>
-      <button
-        type="button"
-        className="auth-dropdown-item"
-        onClick={() => {
-          onOpenFriends?.();
-          onClose();
-        }}
-      >
-        {t('auth.myFriends')}
-      </button>
-      <button
-        type="button"
-        className="auth-dropdown-item"
-        onClick={() => {
-          onOpenAsk?.();
-          onClose();
-        }}
-      >
-        {t('poll.ask')}
-      </button>
+      {showNav && (
+        <>
+          <button
+            type="button"
+            className="auth-dropdown-item"
+            onClick={() => {
+              onOpenHistory?.();
+              onClose();
+            }}
+          >
+            {t('home.history')}
+          </button>
+          <button
+            type="button"
+            className="auth-dropdown-item"
+            onClick={() => {
+              onOpenFriends?.();
+              onClose();
+            }}
+          >
+            {t('auth.myFriends')}
+          </button>
+          <button
+            type="button"
+            className="auth-dropdown-item"
+            onClick={() => {
+              onOpenAsk?.();
+              onClose();
+            }}
+          >
+            {t('poll.ask')}
+          </button>
+        </>
+      )}
       <div className="auth-dropdown-sep" />
       <AppearanceToggle />
       <div className="auth-dropdown-sep" />
@@ -295,6 +305,7 @@ export default function AuthMenu({ variant = 'home', onOpenSelections, onOpenPro
           onOpenFriends={onOpenFriends}
           onOpenHistory={onOpenHistory}
           onOpenAsk={onOpenAsk}
+          variant={variant}
         />
       )}
     </div>

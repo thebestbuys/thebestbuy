@@ -261,6 +261,10 @@ function RailIcon({ name }) {
       return (<svg {...p}><rect x="3" y="4" width="12" height="11" rx="1.5" {...sw} /><path d="M3 7.5h12M6.5 2.5v3M11.5 2.5v3" {...sw} /></svg>);
     case 'trending':
       return (<svg {...p}><path d="M2.5 12.5 7 8l3 3 5-6" {...sw} /><path d="M12 5h3v3" {...sw} /></svg>);
+    case 'friends':
+      return (<svg {...p}><circle cx="6.5" cy="6" r="2.4" {...sw} /><path d="M2.5 14.2c0-2.2 1.8-3.7 4-3.7s4 1.5 4 3.7" {...sw} /><path d="M11.6 4.1a2.2 2.2 0 0 1 0 3.8M12.4 13.6c0-1.7-1-2.9-2.4-3.4" {...sw} /></svg>);
+    case 'ask':
+      return (<svg {...p}><path d="M3 3.8h12a1 1 0 0 1 1 1V11a1 1 0 0 1-1 1H8l-3 3v-3H3a1 1 0 0 1-1-1V4.8a1 1 0 0 1 1-1Z" {...sw} /><path d="M7.5 6.7a1.6 1.6 0 1 1 2 1.6c-.5.2-.9.5-.9 1.1" {...sw} /></svg>);
     default:
       return (<svg {...p}><circle cx="9" cy="9" r="6" {...sw} /></svg>);
   }
@@ -365,6 +369,11 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 5h12M3 9h12M3 13h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
         )}
       </button>
+      <div className="home-topbar">
+        <FriendRequestsBell onOpen={onOpenNotifications} pingKey={notifPing} />
+        <LangToggle />
+        <AuthMenu variant="home" onOpenProfile={onOpenProfile} />
+      </div>
       {railOpen && <div className="rail-scrim" onClick={() => setRailOpen(false)} />}
       <aside className="home-rail">
         <nav className="rail-nav" onClick={() => { if (narrow) setRailOpen(false); }}>
@@ -392,12 +401,15 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             <RailIcon name="trending" />
             {t('rail.trending')}
           </button>
+          <button type="button" className="rail-item" onClick={onOpenFriends}>
+            <RailIcon name="friends" />
+            {t('rail.friends')}
+          </button>
+          <button type="button" className="rail-item" onClick={onOpenAsk}>
+            <RailIcon name="ask" />
+            {t('rail.ask')}
+          </button>
         </nav>
-        <div className="rail-foot">
-          <FriendRequestsBell onOpen={onOpenNotifications} pingKey={notifPing} />
-          <LangToggle />
-          <AuthMenu variant="home" onOpenSelections={onOpenSelections} onOpenProfile={onOpenProfile} onOpenFriends={onOpenFriends} onOpenHistory={onOpenHistory} onOpenAsk={onOpenAsk} />
-        </div>
       </aside>
 
       <div className="home-body">
