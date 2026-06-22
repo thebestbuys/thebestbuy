@@ -2432,6 +2432,16 @@ button.chat-bubble.chat-editable {
   z-index: 50;
   animation: bb-rise 0.18s ease-out;
 }
+/* In the rail footer the trigger sits at the bottom of a full-height rail, so
+   open the menu UPWARD and anchor it LEFT to avoid overflowing the screen. */
+.rail-foot .auth-dropdown {
+  top: auto;
+  bottom: calc(100% + 8px);
+  right: auto;
+  left: 0;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+}
 .auth-dropdown-head {
   display: flex;
   align-items: center;
