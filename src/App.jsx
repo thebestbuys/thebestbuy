@@ -271,6 +271,10 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
   const [query, setQuery] = useState('');
+  const narrow = useIsNarrow();
+  // Rail is retractable: open by default on desktop, collapsed (off-canvas
+  // drawer) on phones where it would otherwise eat the screen.
+  const [railOpen, setRailOpen] = useState(!narrow);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -347,10 +351,23 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
   };
 
   return (
-    <div className="home home--rail">
+    <div className={'home home--rail' + (railOpen ? ' rail-open' : ' rail-closed')}>
+      <button
+        type="button"
+        className="rail-toggle"
+        onClick={() => setRailOpen((v) => !v)}
+        aria-label={railOpen ? t('rail.hide') : t('rail.show')}
+        aria-expanded={railOpen}
+      >
+        {railOpen ? (
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 5h12M3 9h12M3 13h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+        )}
+      </button>
+      {railOpen && <div className="rail-scrim" onClick={() => setRailOpen(false)} />}
       <aside className="home-rail">
-        <div className="rail-brand">Oraklia</div>
-        <nav className="rail-nav">
+        <nav className="rail-nav" onClick={() => { if (narrow) setRailOpen(false); }}>
           <span className="rail-item is-active">
             <RailIcon name="search" />
             {t('rail.search')}
