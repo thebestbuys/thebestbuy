@@ -2175,6 +2175,29 @@ button.chat-bubble.chat-editable {
   .modal-grid {
     grid-template-columns: 1fr;
   }
+  /* Product detail: turn the big square image into a compact banner and tighten
+     spacing so the whole card fits on small screens without scrolling. */
+  .modal-left { padding: 16px; }
+  .prod-img-wrap[data-size="modal"] {
+    aspect-ratio: auto;
+    min-height: 0;
+    height: 170px;
+  }
+  .modal-right { padding: 20px; }
+  .modal-title { font-size: 24px; }
+  .modal-score-row { margin-bottom: 14px; }
+  .modal-specs { margin-bottom: 14px; }
+  .modal-bottom { margin-top: 12px; padding-top: 14px; }
+}
+@media (max-width: 560px) {
+  .modal-bg { padding: 0; }
+  .modal { max-height: 100dvh; border-radius: 0; }
+  .prod-img-wrap[data-size="modal"] { height: 120px; }
+  .modal-left { padding: 12px; }
+  .modal-right { padding: 14px 16px 18px; }
+  .modal-title { font-size: 21px; margin-bottom: 8px; }
+  .modal-price { font-size: 26px; }
+  .modal-specs li { font-size: 13px; }
 }
 
 /* Narrow viewports (phones / small tablets): the advisor is a single chat
@@ -2215,6 +2238,18 @@ button.chat-bubble.chat-editable {
   }
   .app-narrow .chat-header-actions .auth-userbtn-name {
     display: none;
+  }
+  /* Account menu: anchor it to the actions row's right edge (≈ screen edge) so
+     it can't spill off the left of the screen on mobile. */
+  .app-narrow .chat-header-actions { position: relative; }
+  .app-narrow .chat-header-actions .auth-userwrap { position: static; }
+  .app-narrow .chat-header-actions .auth-dropdown {
+    top: calc(100% + 8px);
+    right: 0;
+    left: auto;
+    max-width: calc(100vw - 20px);
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
   }
 }
 
