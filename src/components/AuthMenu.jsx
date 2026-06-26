@@ -136,10 +136,10 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
   const { t } = useI18n();
   const wrapRef = useRef(null);
   const count = listSelections(user?.sub).length;
-  // On the home the left rail already holds the navigation, so the account menu
-  // stays account-only (profile / appearance / sign out). Other surfaces (the
-  // advisor view, which has no rail) keep the full menu.
-  const showNav = variant !== 'home';
+  // Selections / history / friends / ask live in this account menu (on every
+  // surface). The home rail keeps only the broad-discovery tabs (search,
+  // guides, occasions, trending); these personal tabs moved under the name.
+  const showNav = true;
   useEffect(() => {
     const onDoc = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) onClose();

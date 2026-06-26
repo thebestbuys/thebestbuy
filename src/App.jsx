@@ -383,7 +383,14 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
       <div className="home-topbar">
         <FriendRequestsBell onOpen={onOpenNotifications} pingKey={notifPing} />
         <LangToggle />
-        <AuthMenu variant="home" onOpenProfile={onOpenProfile} />
+        <AuthMenu
+          variant="home"
+          onOpenProfile={onOpenProfile}
+          onOpenSelections={onOpenSelections}
+          onOpenHistory={onOpenHistory}
+          onOpenFriends={onOpenFriends}
+          onOpenAsk={onOpenAsk}
+        />
       </div>
       {railOpen && <div className="rail-scrim" onClick={() => setRailOpen(false)} />}
       <aside className="home-rail">
@@ -392,14 +399,6 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             <RailIcon name="search" />
             {t('rail.search')}
           </span>
-          <button type="button" className="rail-item" onClick={onOpenHistory}>
-            <RailIcon name="history" />
-            {t('rail.history')}
-          </button>
-          <button type="button" className="rail-item" onClick={onOpenSelections}>
-            <RailIcon name="heart" />
-            {t('rail.selections')}
-          </button>
           <button type="button" className="rail-item" onClick={onOpenGuides}>
             <RailIcon name="guides" />
             {t('rail.guides')}
@@ -411,14 +410,6 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           <button type="button" className="rail-item" onClick={onOpenTrending}>
             <RailIcon name="trending" />
             {t('rail.trending')}
-          </button>
-          <button type="button" className="rail-item" onClick={onOpenFriends}>
-            <RailIcon name="friends" />
-            {t('rail.friends')}
-          </button>
-          <button type="button" className="rail-item" onClick={onOpenAsk}>
-            <RailIcon name="ask" />
-            {t('rail.ask')}
           </button>
         </nav>
       </aside>
@@ -471,7 +462,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
                     </button>
                   );
                 })
-              : [78, 96, 66, 110, 84].map((w, i) => (
+              : [128, 92, 156, 104, 140, 84, 120].map((w, i) => (
                   <span key={i} className="suggestion-chip-skel" style={{ width: w }} aria-hidden="true" />
                 ))}
           </div>
