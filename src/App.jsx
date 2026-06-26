@@ -243,42 +243,11 @@ function TrendingPanel({ onClose, onOpen }) {
   );
 }
 
-function RailIcon({ name }) {
-  const p = { width: 18, height: 18, viewBox: '0 0 18 18', fill: 'none', 'aria-hidden': true };
-  const sw = { stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round', strokeLinejoin: 'round' };
-  switch (name) {
-    case 'search':
-      return (<svg {...p}><circle cx="8" cy="8" r="5" {...sw} /><path d="M12 12l4 4" {...sw} /></svg>);
-    case 'history':
-      return (<svg {...p}><circle cx="9" cy="9" r="6.5" {...sw} /><path d="M9 5v4l2.6 1.7" {...sw} /></svg>);
-    case 'heart':
-      return (<svg {...p}><path d="M9 15.5S2.5 11.5 2.5 6.8A3.2 3.2 0 0 1 9 5.1 3.2 3.2 0 0 1 15.5 6.8C15.5 11.5 9 15.5 9 15.5Z" {...sw} /></svg>);
-    case 'guides':
-      return (<svg {...p}><path d="M9 5.2V15M9 5.2C7.7 4.3 5.8 4 3.5 4.2V13c2.3-.2 4.2.1 5.5 1 1.3-.9 3.2-1.2 5.5-1V4.2C12.2 4 10.3 4.3 9 5.2Z" {...sw} /></svg>);
-    case 'gift':
-      return (<svg {...p}><rect x="3.5" y="8" width="11" height="6.5" rx="1" {...sw} /><path d="M2.5 8h13M9 8v6.5" {...sw} /><path d="M9 8C8 6 6.5 4.2 5.4 4.8 4.3 5.4 5.5 8 9 8Zm0 0c1-2 2.5-3.8 3.6-3.2C13.7 5.4 12.5 8 9 8Z" {...sw} /></svg>);
-    case 'calendar':
-      return (<svg {...p}><rect x="3" y="4" width="12" height="11" rx="1.5" {...sw} /><path d="M3 7.5h12M6.5 2.5v3M11.5 2.5v3" {...sw} /></svg>);
-    case 'trending':
-      return (<svg {...p}><path d="M2.5 12.5 7 8l3 3 5-6" {...sw} /><path d="M12 5h3v3" {...sw} /></svg>);
-    case 'friends':
-      return (<svg {...p}><circle cx="6.5" cy="6" r="2.4" {...sw} /><path d="M2.5 14.2c0-2.2 1.8-3.7 4-3.7s4 1.5 4 3.7" {...sw} /><path d="M11.6 4.1a2.2 2.2 0 0 1 0 3.8M12.4 13.6c0-1.7-1-2.9-2.4-3.4" {...sw} /></svg>);
-    case 'ask':
-      return (<svg {...p}><path d="M3 3.8h12a1 1 0 0 1 1 1V11a1 1 0 0 1-1 1H8l-3 3v-3H3a1 1 0 0 1-1-1V4.8a1 1 0 0 1 1-1Z" {...sw} /><path d="M7.5 6.7a1.6 1.6 0 1 1 2 1.6c-.5.2-.9.5-.9 1.1" {...sw} /></svg>);
-    default:
-      return (<svg {...p}><circle cx="9" cy="9" r="6" {...sw} /></svg>);
-  }
-}
-
 function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifPing, onOpenGift, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTrending, onLoadConvo, onOpenProduct }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
   const [query, setQuery] = useState('');
-  const narrow = useIsNarrow();
-  // Rail is retractable: open by default on desktop, collapsed (off-canvas
-  // drawer) on phones where it would otherwise eat the screen.
-  const [railOpen, setRailOpen] = useState(!narrow);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -375,20 +344,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
   };
 
   return (
-    <div className={'home home--rail' + (railOpen ? ' rail-open' : ' rail-closed')}>
-      <button
-        type="button"
-        className="rail-toggle"
-        onClick={() => setRailOpen((v) => !v)}
-        aria-label={railOpen ? t('rail.hide') : t('rail.show')}
-        aria-expanded={railOpen}
-      >
-        {railOpen ? (
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
-        ) : (
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 5h12M3 9h12M3 13h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
-        )}
-      </button>
+    <div className="home">
       <div className="home-topbar">
         <FriendRequestsBell onOpen={onOpenNotifications} pingKey={notifPing} />
         <LangToggle />
@@ -399,29 +355,10 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           onOpenHistory={onOpenHistory}
           onOpenFriends={onOpenFriends}
           onOpenAsk={onOpenAsk}
+          onOpenNotifications={onOpenNotifications}
+          onOpenTrending={onOpenTrending}
         />
       </div>
-      {railOpen && <div className="rail-scrim" onClick={() => setRailOpen(false)} />}
-      <aside className="home-rail">
-        <nav className="rail-nav" onClick={() => { if (narrow) setRailOpen(false); }}>
-          <span className="rail-item is-active">
-            <RailIcon name="search" />
-            {t('rail.search')}
-          </span>
-          <button type="button" className="rail-item" onClick={onOpenGuides}>
-            <RailIcon name="guides" />
-            {t('rail.guides')}
-          </button>
-          <button type="button" className="rail-item" onClick={onOpenNotifications}>
-            <RailIcon name="calendar" />
-            {t('rail.occasions')}
-          </button>
-          <button type="button" className="rail-item" onClick={onOpenTrending}>
-            <RailIcon name="trending" />
-            {t('rail.trending')}
-          </button>
-        </nav>
-      </aside>
 
       <div className="home-body">
         <main className="home-main">
@@ -430,26 +367,41 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             {firstName ? t('m.greetingLead', { name: firstName }) : t('m.greetingLeadAnon')}{' '}
             <span className="home-greeting-hl">{t('m.greetingHighlight')}</span>
           </p>
-          <form className="home-search" onSubmit={submit}>
-            <span className="home-search-icon" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.6" />
-                <path d="M14 14L17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
-            </span>
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder={t('home.searchPlaceholder')}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <button type="submit" disabled={!query.trim()} className="home-search-submit" aria-label={t('home.search')}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M2 8 L14 8 M9 3 L14 8 L9 13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+          <div className="home-search-row">
+            <form className="home-search" onSubmit={submit}>
+              <span className="home-search-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.6" />
+                  <path d="M14 14L17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              </span>
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={t('home.searchPlaceholder')}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <button type="submit" disabled={!query.trim()} className="home-search-submit" aria-label={t('home.search')}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 8 L14 8 M9 3 L14 8 L9 13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </form>
+            <button
+              type="button"
+              className="home-help-btn"
+              onClick={onOpenGuides}
+              title={t('home.helpTooltip')}
+              aria-label={t('home.helpTooltip')}
+            >
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M7.7 7.6a2.3 2.3 0 0 1 4.3 1.1c0 1.5-2 1.7-2 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="10" cy="14.3" r="0.9" fill="currentColor" />
               </svg>
             </button>
-          </form>
+          </div>
 
           <div className="home-cta-row">
             <button type="button" className="home-gift-cta" onClick={onOpenGift}>
@@ -1216,7 +1168,7 @@ export default function App() {
             )}
             <FriendRequestsBell onOpen={navOpenNotifications} pingKey={notifOpen} />
             <LangToggle />
-            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} />
           </>
         ) : null}
       />
@@ -1242,7 +1194,7 @@ export default function App() {
             )}
             <FriendRequestsBell onOpen={navOpenNotifications} pingKey={notifOpen} />
             <LangToggle />
-            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} />
           </div>
         </header>
 
@@ -1322,6 +1274,7 @@ export default function App() {
         {friendsOpen && <FriendsPanel open onClose={navBack} />}
         {notifOpen && <NotificationsPanel open onClose={navBack} onGift={giftFromReminder} />}
         {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
+        {trendingOpen && <TrendingPanel onClose={navBack} onOpen={navOpenProduct} />}
         {legalOpen && <LegalNotices open onClose={navBack} />}
       </Suspense>
 

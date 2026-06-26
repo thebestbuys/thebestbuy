@@ -95,125 +95,13 @@ ul {
   background: var(--bg);
 }
 
-/* ── Left rail navigation (desktop home) ── */
-.home--rail {
-  flex-direction: row;
-  align-items: stretch;
-}
-.home-rail {
-  flex-shrink: 0;
-  width: 236px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 60px 16px 22px;
-  border-right: 0.5px solid var(--border);
-  background: var(--bg-elev);
-  position: sticky;
-  top: 0;
-  align-self: flex-start;
-  height: 100vh;
-}
-.rail-brand {
-  font-family: "Outfit", var(--sans);
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--accent);
-  padding: 4px 10px 14px;
-  user-select: none;
-}
-.rail-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.rail-item {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  font-family: var(--sans);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.rail-item svg { flex-shrink: 0; }
-.rail-item:hover,
-.rail-item.is-active { background: var(--accent-light); color: var(--accent); }
-.rail-item.is-active { cursor: default; }
-.rail-foot {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  padding-top: 14px;
-  border-top: 0.5px solid var(--border);
-}
+/* The left rail was retired — all navigation now lives in the account menu
+   (top-right). The home is a simple centered column again. */
 .home-body {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-}
-/* Retractable rail: a floating hamburger toggles the rail open/closed. */
-.rail-toggle {
-  position: fixed;
-  top: 14px;
-  left: 14px;
-  z-index: 60;
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  border: 0.5px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg-elev);
-  color: var(--text);
-  cursor: pointer;
-  box-shadow: 0 1px 6px rgba(26, 24, 20, 0.06);
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.rail-toggle:hover { background: var(--accent-light); color: var(--accent); }
-.rail-scrim { display: none; }
-/* Desktop: collapsing the rail hides it; the hero reclaims the full width. */
-.home--rail.rail-closed .home-rail { display: none; }
-/* Small windows / phones: the rail becomes an off-canvas drawer that slides in
-   over the content (toggled by the hamburger), with a scrim behind it. */
-@media (max-width: 900px) {
-  .home-rail {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    width: 250px;
-    z-index: 55;
-    transform: translateX(-100%);
-    transition: transform 0.22s ease;
-  }
-  .home--rail.rail-open .home-rail {
-    transform: translateX(0);
-    box-shadow: var(--shadow-lg);
-  }
-  /* keep it rendered (not display:none) so it can slide back out */
-  .home--rail.rail-closed .home-rail { display: flex; }
-  .home--rail.rail-open .rail-scrim {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(20, 12, 8, 0.4);
-    z-index: 50;
-  }
 }
 .home-main {
   flex: 1;
@@ -314,6 +202,40 @@ ul {
 .home-search-submit:not(:disabled):hover {
   background: var(--accent);
   transform: scale(1.05);
+}
+/* Search bar + a "?" help affordance that opens the guides ("how to use"). */
+.home-search-row {
+  width: 100%;
+  max-width: 636px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.home-search-row .home-search {
+  flex: 1;
+  max-width: none;
+}
+.home-help-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0.5px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg-elev);
+  color: var(--text-muted);
+  cursor: pointer;
+  box-shadow: 0 1px 6px rgba(26, 24, 20, 0.04);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+.home-help-btn:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-color: transparent;
+}
+.home-help-btn:active {
+  transform: scale(0.96);
 }
 .home-cta-row {
   display: flex;
@@ -2516,6 +2438,8 @@ button.chat-bubble.chat-editable {
   top: calc(100% + 8px);
   right: 0;
   min-width: 240px;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
   background: var(--bg-elev);
   border: 0.5px solid var(--border);
   border-radius: var(--radius);
@@ -2523,16 +2447,6 @@ button.chat-bubble.chat-editable {
   padding: 12px;
   z-index: 50;
   animation: bb-rise 0.18s ease-out;
-}
-/* In the rail footer the trigger sits at the bottom of a full-height rail, so
-   open the menu UPWARD and anchor it LEFT to avoid overflowing the screen. */
-.rail-foot .auth-dropdown {
-  top: auto;
-  bottom: calc(100% + 8px);
-  right: auto;
-  left: 0;
-  max-height: calc(100vh - 96px);
-  overflow-y: auto;
 }
 .auth-dropdown-head {
   display: flex;

@@ -132,14 +132,26 @@ function LoginModal({ onClose }) {
   );
 }
 
-function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk, variant }) {
+function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk, onOpenNotifications, onOpenTrending }) {
   const { t } = useI18n();
   const wrapRef = useRef(null);
   const count = listSelections(user?.sub).length;
-  // Selections / history / friends / ask live in this account menu (on every
-  // surface). The home rail keeps only the broad-discovery tabs (search,
-  // guides, occasions, trending); these personal tabs moved under the name.
-  const showNav = true;
+  // The left rail was retired, so the account menu is now the single home for
+  // all navigation (selections / history / occasions / friends / ask / trends)
+  // on every surface, plus the account actions (profile / appearance / sign out).
+  const item = (label, onOpen, extra = null) => (
+    <button
+      type="button"
+      className="auth-dropdown-item"
+      onClick={() => {
+        onOpen?.();
+        onClose();
+      }}
+    >
+      {label}
+      {extra}
+    </button>
+  );
   useEffect(() => {
     const onDoc = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) onClose();
@@ -167,61 +179,17 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
         </div>
       </div>
       <div className="auth-dropdown-sep" />
-      <button
-        type="button"
-        className="auth-dropdown-item"
-        onClick={() => {
-          onOpenProfile?.();
-          onClose();
-        }}
-      >
-        {t('auth.myProfile')}
-      </button>
-      {showNav && (
-        <>
-          <button
-            type="button"
-            className="auth-dropdown-item"
-            onClick={() => {
-              onOpenSelections?.();
-              onClose();
-            }}
-          >
-            {t('auth.mySelections')}
-            {count > 0 && <span className="auth-dropdown-count">{count}</span>}
-          </button>
-          <button
-            type="button"
-            className="auth-dropdown-item"
-            onClick={() => {
-              onOpenHistory?.();
-              onClose();
-            }}
-          >
-            {t('home.history')}
-          </button>
-          <button
-            type="button"
-            className="auth-dropdown-item"
-            onClick={() => {
-              onOpenFriends?.();
-              onClose();
-            }}
-          >
-            {t('auth.myFriends')}
-          </button>
-          <button
-            type="button"
-            className="auth-dropdown-item"
-            onClick={() => {
-              onOpenAsk?.();
-              onClose();
-            }}
-          >
-            {t('poll.ask')}
-          </button>
-        </>
+      {item(t('auth.myProfile'), onOpenProfile)}
+      {item(
+        t('auth.mySelections'),
+        onOpenSelections,
+        count > 0 ? <span className="auth-dropdown-count">{count}</span> : null,
       )}
+      {item(t('home.history'), onOpenHistory)}
+      {item(t('auth.occasions'), onOpenNotifications)}
+      {item(t('auth.myFriends'), onOpenFriends)}
+      {item(t('poll.ask'), onOpenAsk)}
+      {item(t('auth.myTrends'), onOpenTrending)}
       <div className="auth-dropdown-sep" />
       <AppearanceToggle />
       <div className="auth-dropdown-sep" />
@@ -239,7 +207,7 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
   );
 }
 
-export default function AuthMenu({ variant = 'home', onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk }) {
+export default function AuthMenu({ variant = 'home', onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk, onOpenNotifications, onOpenTrending }) {
   const { user, signOut } = useAuth();
   const { t } = useI18n();
   const [openLogin, setOpenLogin] = useState(false);
@@ -303,7 +271,8 @@ export default function AuthMenu({ variant = 'home', onOpenSelections, onOpenPro
           onOpenFriends={onOpenFriends}
           onOpenHistory={onOpenHistory}
           onOpenAsk={onOpenAsk}
-          variant={variant}
+          onOpenNotifications={onOpenNotifications}
+          onOpenTrending={onOpenTrending}
         />
       )}
     </div>

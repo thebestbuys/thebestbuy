@@ -13,6 +13,7 @@ const TRANSLATIONS = {
     "home.selections": "Sélections",
     "home.selectionsTitle": "Mes sélections",
     "home.gift": "Trouver un cadeau",
+    "home.helpTooltip": "Comment utiliser Oraklia ?",
     "rail.search": "Recherche",
     "rail.history": "Historique",
     "rail.selections": "Sélections",
@@ -139,6 +140,8 @@ const TRANSLATIONS = {
     "appearance.light": "Clair",
     "appearance.dark": "Sombre",
     "auth.myFriends": "Mes amis",
+    "auth.occasions": "Occasions",
+    "auth.myTrends": "Tendances de mes amis",
 
     // Friends (social graph)
     "friends.title": "Mes amis",
@@ -398,6 +401,7 @@ const TRANSLATIONS = {
     "home.selections": "Selections",
     "home.selectionsTitle": "My selections",
     "home.gift": "Find a gift",
+    "home.helpTooltip": "How to use Oraklia?",
     "rail.search": "Search",
     "rail.history": "History",
     "rail.selections": "Selections",
@@ -523,6 +527,8 @@ const TRANSLATIONS = {
     "appearance.light": "Light",
     "appearance.dark": "Dark",
     "auth.myFriends": "My friends",
+    "auth.occasions": "Occasions",
+    "auth.myTrends": "My friends' trends",
 
     // Friends (social graph)
     "friends.title": "My friends",
