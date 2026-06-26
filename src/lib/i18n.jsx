@@ -146,10 +146,11 @@ const TRANSLATIONS = {
 
     // Déjà acheté ("owned")
     "owned.title": "Déjà acheté",
-    "owned.sub": "Parmi les produits qu'on t'a proposés, indique ceux que tu possèdes déjà — on arrête de te les proposer.",
-    "owned.emptyText": "Aucune proposition pour le moment.",
-    "owned.emptySub": "Lance une recherche : les produits recommandés apparaîtront ici, prêts à être marqués comme déjà achetés.",
-    "owned.mark": "Je l'ai déjà",
+    "owned.sub": "Parmi les produits que tu as ouverts dans les propositions, indique ceux que tu possèdes déjà — on arrête de te les proposer.",
+    "owned.emptyText": "Tu n'as encore ouvert aucun produit.",
+    "owned.emptySub": "Clique sur une recommandation pour voir son détail : elle apparaîtra ici, prête à être marquée comme déjà achetée.",
+    "owned.selectPrompt": "Sélectionne un produit à gauche pour voir le détail.",
+    "owned.mark": "Je l'ai déjà acheté",
     "owned.marked": "Déjà acheté",
     "owned.count": "{n} marqué(s) comme déjà acheté(s)",
 
@@ -550,10 +551,11 @@ const TRANSLATIONS = {
 
     // Déjà acheté ("owned")
     "owned.title": "Already bought",
-    "owned.sub": "Among the products we've suggested, mark the ones you already own — we'll stop recommending them.",
-    "owned.emptyText": "No suggestions yet.",
-    "owned.emptySub": "Start a search: recommended products show up here, ready to be marked as already bought.",
-    "owned.mark": "I own this",
+    "owned.sub": "Among the products you've opened from the suggestions, mark the ones you already own — we'll stop recommending them.",
+    "owned.emptyText": "You haven't opened any product yet.",
+    "owned.emptySub": "Click a recommendation to view its details: it'll show up here, ready to be marked as already bought.",
+    "owned.selectPrompt": "Select a product on the left to see its details.",
+    "owned.mark": "I already bought this",
     "owned.marked": "Already bought",
     "owned.count": "{n} marked as already bought",
 

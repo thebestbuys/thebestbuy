@@ -1,29 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
-import { PriceTag, ProductImage, VerifiedBadge } from './ProductCard.jsx';
-import { listConversations } from '../lib/history.js';
+import { PriceTag, ProductImage, ScoreRing, VerifiedBadge, VerifiedRating } from './ProductCard.jsx';
+import { listClicked } from '../lib/clicked.js';
 import { listOwned, ownedIdSet, toggleOwned } from '../lib/owned.js';
 
-// "Déjà acheté" — among the products the advisor has proposed (gathered from the
-// user's conversation history), let them mark the ones they already own. Marked
-// products are added to the `exclude` sent on every recommendation (see App's
-// ownedExclude) so the advisor stops proposing them, and are filtered from
-// on-screen results. Cloud-synced via owned.js.
+// "Déjà acheté" — full-page, master/detail. Left: the products the user clicked
+// on among the advisor's proposals (their detail was opened); right: the
+// selected product's detail with a "Je l'ai déjà acheté" toggle. Owned products
+// are appended to the `exclude` sent on every recommendation (see App's
+// ownedExclude) so the advisor stops proposing them. Owned marks sync via
+// owned.js; the clicked list is local (clicked.js).
 export default function OwnedPanel({ open, onClose }) {
   const { user } = useAuth();
   const { t, lang } = useI18n();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   const [ownedSet, setOwnedSet] = useState(() => new Set());
-  // Snapshots of owned products that are NOT in the proposal history (e.g.
-  // synced from another device), so the user can still see & un-mark them.
+  const [clicked, setClicked] = useState([]);
   const [ownedExtra, setOwnedExtra] = useState([]);
+  const [activeId, setActiveId] = useState(null);
 
   useEffect(() => {
     if (!open) return;
     setOwnedSet(ownedIdSet(user?.sub));
+    setClicked(listClicked(user?.sub));
     setOwnedExtra(listOwned(user?.sub));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user?.sub]);
 
   useEffect(() => {
@@ -33,30 +34,32 @@ export default function OwnedPanel({ open, onClose }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  // All products the user has been proposed, most-recent first, deduped by id
-  // (conversations are stored newest-first, so the first sighting wins). Owned
-  // products with no matching proposal are appended so they remain manageable.
-  const proposals = useMemo(() => {
+  // List = clicked products (most-recent first), plus any owned product not in
+  // that list (e.g. synced from another device) so it stays visible / un-markable.
+  const items = useMemo(() => {
     if (!open) return [];
     const seen = new Set();
     const out = [];
-    for (const c of listConversations(user?.sub)) {
-      for (const p of c.recommendedProducts || []) {
-        if (!p || p.id == null || seen.has(p.id)) continue;
-        seen.add(p.id);
-        out.push(p);
-      }
+    for (const p of clicked) {
+      if (p?.id != null && !seen.has(p.id)) { seen.add(p.id); out.push(p); }
     }
     for (const p of ownedExtra) {
-      if (p?.id != null && !seen.has(p.id)) {
-        seen.add(p.id);
-        out.push(p);
-      }
+      if (p?.id != null && !seen.has(p.id)) { seen.add(p.id); out.push(p); }
     }
     return out;
-  }, [open, user?.sub, ownedExtra]);
+  }, [open, clicked, ownedExtra]);
+
+  // Auto-select the first item (and keep a valid selection as the list changes).
+  useEffect(() => {
+    if (!open || !items.length) return;
+    if (activeId == null || !items.some((p) => p.id === activeId)) {
+      setActiveId(items[0].id);
+    }
+  }, [open, items, activeId]);
 
   if (!open) return null;
+
+  const active = items.find((p) => p.id === activeId) || null;
 
   const toggle = (p) => {
     const nowOwned = toggleOwned(user?.sub, p);
@@ -66,78 +69,158 @@ export default function OwnedPanel({ open, onClose }) {
       else next.delete(p.id);
       return next;
     });
+    setOwnedExtra(listOwned(user?.sub));
   };
 
-  const ownedCount = proposals.filter((p) => ownedSet.has(p.id)).length;
-
   return (
-    <div className="auth-modal-bg" onClick={onClose}>
-      <div
-        className="history-panel owned-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="owned-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="history-head">
-          <div>
-            <h2 id="owned-title" className="history-title">{t('owned.title')}</h2>
-            <p className="history-sub">{t('owned.sub')}</p>
-          </div>
-          <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
-        </header>
+    <div className="owned-page" role="dialog" aria-modal="true" aria-labelledby="owned-title">
+      <header className="owned-page-head">
+        <div>
+          <h2 id="owned-title" className="owned-page-title">{t('owned.title')}</h2>
+          <p className="owned-page-sub">{t('owned.sub')}</p>
+        </div>
+        <button type="button" className="owned-page-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+      </header>
 
-        {proposals.length === 0 ? (
-          <div className="history-empty">
-            <div className="history-empty-icon">🛍️</div>
-            <div className="history-empty-text">{t('owned.emptyText')}</div>
-            <div className="history-empty-sub">{t('owned.emptySub')}</div>
-          </div>
-        ) : (
-          <>
-            {ownedCount > 0 && (
-              <p className="owned-count">{t('owned.count', { n: ownedCount })}</p>
-            )}
+      {items.length === 0 ? (
+        <div className="owned-empty">
+          <div className="owned-empty-icon">🛍️</div>
+          <div className="owned-empty-text">{t('owned.emptyText')}</div>
+          <div className="owned-empty-sub">{t('owned.emptySub')}</div>
+        </div>
+      ) : (
+        <div className="owned-layout">
+          <aside className="owned-listcol">
             <ul className="owned-list">
-              {proposals.map((p) => {
-                const owned = ownedSet.has(p.id);
+              {items.map((p) => {
+                const isOwned = ownedSet.has(p.id);
                 return (
-                  <li key={p.id} className={'owned-row' + (owned ? ' is-owned' : '')}>
-                    <span className="owned-thumb">
-                      <ProductImage product={p} size="small" />
-                    </span>
-                    <span className="owned-info">
-                      <span className="owned-name">
-                        {[p.brand, p.model].filter(Boolean).join(' ')}
-                        <VerifiedBadge product={p} compact />
-                      </span>
-                      <span className="owned-price">
-                        <PriceTag product={p} locale={locale} t={t} variant="small" />
-                      </span>
-                    </span>
+                  <li key={p.id}>
                     <button
                       type="button"
-                      className={'owned-toggle' + (owned ? ' on' : '')}
-                      onClick={() => toggle(p)}
-                      aria-pressed={owned}
+                      className={
+                        'owned-row' +
+                        (p.id === activeId ? ' is-active' : '') +
+                        (isOwned ? ' is-owned' : '')
+                      }
+                      onClick={() => setActiveId(p.id)}
                     >
-                      {owned ? (
-                        <>
-                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                            <path d="M2 8.5 6 12l8-8.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                      <span className="owned-thumb">
+                        <ProductImage product={p} size="small" />
+                      </span>
+                      <span className="owned-row-info">
+                        <span className="owned-row-name">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
+                        <span className="owned-row-price">
+                          <PriceTag product={p} locale={locale} t={t} variant="small" />
+                        </span>
+                      </span>
+                      {isOwned && (
+                        <span className="owned-row-check" title={t('owned.marked')}>
+                          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <path d="M2 8.5 6 12l8-8.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
-                          {t('owned.marked')}
-                        </>
-                      ) : (
-                        t('owned.mark')
+                        </span>
                       )}
                     </button>
                   </li>
                 );
               })}
             </ul>
+          </aside>
+
+          <section className="owned-detailcol">
+            {active ? (
+              <OwnedDetail
+                product={active}
+                owned={ownedSet.has(active.id)}
+                onToggle={() => toggle(active)}
+                locale={locale}
+                t={t}
+              />
+            ) : (
+              <div className="owned-detail-empty">{t('owned.selectPrompt')}</div>
+            )}
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OwnedDetail({ product, owned, onToggle, locale, t }) {
+  const hasImage = product.amazon_verified && !!product.image_url;
+  const amazonUrl =
+    product.amazon_url ||
+    `https://www.amazon.fr/s?k=${encodeURIComponent(`${product.brand} ${product.model}`)}&tag=oraklia123-21`;
+  return (
+    <div className={'owned-detail' + (hasImage ? '' : ' no-image')}>
+      {hasImage && (
+        <div className="owned-detail-img">
+          <ProductImage product={product} size="modal" />
+        </div>
+      )}
+      <div className="owned-detail-body">
+        <div className="owned-detail-brandrow">
+          <span className="owned-detail-brand">{product.brand}</span>
+          <VerifiedBadge product={product} />
+        </div>
+        <h3 className="owned-detail-model">{product.model}</h3>
+        {product.amazon_verified && product.rating != null && (
+          <VerifiedRating product={product} locale={locale} />
+        )}
+        {product.score != null && (
+          <div className="owned-detail-score">
+            <ScoreRing score={product.score} size={52} />
+            <span>{t('product.matchPct', { score: product.score })}</span>
+          </div>
+        )}
+        {product.why && (
+          <>
+            <div className="owned-detail-h">{t('product.why')}</div>
+            <p className="owned-detail-why">{product.why}</p>
           </>
         )}
+        {Array.isArray(product.specs) && product.specs.length > 0 && (
+          <>
+            <div className="owned-detail-h">{t('product.features')}</div>
+            <ul className="owned-detail-specs">
+              {product.specs.map((s, i) => <li key={i}>{s}</li>)}
+            </ul>
+          </>
+        )}
+        <div className="owned-detail-price">
+          <span className="owned-detail-price-label">
+            {product.amazon_verified ? t('product.price') : t('product.priceEstimate')}
+          </span>
+          <PriceTag product={product} locale={locale} t={t} variant="hero" />
+        </div>
+        <div className="owned-detail-actions">
+          <button
+            type="button"
+            className={'owned-toggle big' + (owned ? ' on' : '')}
+            onClick={onToggle}
+            aria-pressed={owned}
+          >
+            {owned ? (
+              <>
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M2 8.5 6 12l8-8.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {t('owned.marked')}
+              </>
+            ) : (
+              t('owned.mark')
+            )}
+          </button>
+          <a
+            className="owned-detail-amazon"
+            href={amazonUrl}
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+          >
+            {t('product.viewAmazon')}
+          </a>
+        </div>
       </div>
     </div>
   );

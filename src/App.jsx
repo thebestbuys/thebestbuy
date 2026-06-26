@@ -30,6 +30,7 @@ import { getProfile, profileToPrompt } from './lib/profile.js';
 import { giftToPrompt, giftTitle, buildShareUrl, loadSharedPayload } from './lib/gift.js';
 import { getAccessToken, circleTrending, logLinkClick } from './lib/cloud.js';
 import { getOwnedNames, ownedIdSet } from './lib/owned.js';
+import { recordClick } from './lib/clicked.js';
 import { toast } from './lib/toast.js';
 import {
   deriveTitle,
@@ -938,7 +939,7 @@ export default function App() {
       setGiftOpen(true);
     }
   };
-  const navOpenProduct = (p) => { pushHistory(); setSelected(p); };
+  const navOpenProduct = (p) => { recordClick(user?.sub, p); pushHistory(); setSelected(p); };
   // Start a gift advisor session from the recipient form. Reuses the normal
   // advisor pipeline with a pseudo-category ('gift') and the recipient payload;
   // the auto-start effect (keyed on convoId) fires the first recommend + ask.

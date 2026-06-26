@@ -2975,12 +2975,73 @@ button.chat-bubble.chat-editable {
   text-align: center;
 }
 
-/* ── Déjà acheté ("owned") panel ── */
-.owned-count {
-  margin: 2px 6px 12px;
-  font-size: 12px;
-  font-weight: 600;
+/* ── Déjà acheté ("owned") — full-page master/detail ── */
+.owned-page {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  animation: bb-rise 0.18s ease-out;
+}
+.owned-page-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 28px;
+  border-bottom: 0.5px solid var(--border);
+  background: var(--bg-elev);
+}
+.owned-page-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 24px;
+  color: var(--text);
+}
+.owned-page-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 680px;
+}
+.owned-page-close {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0.5px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.owned-page-close:hover {
+  background: var(--accent-light);
   color: var(--accent);
+}
+.owned-layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 340px 1fr;
+}
+.owned-listcol {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+  border-right: 0.5px solid var(--border);
+  background: var(--bg-soft);
+}
+.owned-detailcol {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 28px 32px;
 }
 .owned-list {
   list-style: none;
@@ -2988,48 +3049,180 @@ button.chat-bubble.chat-editable {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .owned-row {
+  width: 100%;
+  appearance: none;
+  text-align: left;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px;
-  border: 0.5px solid var(--border);
+  padding: 9px 10px;
+  border: 0.5px solid transparent;
   border-radius: 12px;
-  background: var(--bg-elev);
+  background: transparent;
+  cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
-.owned-row.is-owned {
-  background: var(--accent-light);
-  border-color: transparent;
+.owned-row:hover {
+  background: var(--bg-elev);
+}
+.owned-row.is-active {
+  background: var(--bg-elev);
+  border-color: var(--accent);
 }
 .owned-thumb {
   flex-shrink: 0;
-  width: 54px;
+  width: 48px;
 }
 .owned-thumb .prod-img-wrap {
-  width: 54px;
-  height: 54px;
+  width: 48px;
+  height: 48px;
 }
-.owned-info {
+.owned-row-info {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
-.owned-name {
-  font-size: 14px;
+.owned-row-name {
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--text);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.owned-price {
+.owned-row-price {
   font-size: 12px;
   color: var(--text-muted);
+}
+.owned-row-check {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-good, var(--accent));
+  color: #fff;
+}
+/* Detail pane */
+.owned-detail-empty,
+.owned-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.owned-detail-empty {
+  height: 100%;
+}
+.owned-empty-icon {
+  font-size: 40px;
+}
+.owned-empty-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.owned-empty-sub {
+  font-size: 13px;
+  max-width: 420px;
+}
+.owned-detail {
+  max-width: 720px;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 28px;
+}
+.owned-detail.no-image {
+  grid-template-columns: 1fr;
+}
+.owned-detail-img .prod-img-wrap {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+.owned-detail-brandrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.owned-detail-brand {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.owned-detail-model {
+  margin: 4px 0 10px;
+  font-family: var(--display);
+  font-size: 22px;
+  color: var(--text);
+}
+.owned-detail-score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.owned-detail-h {
+  margin: 16px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+.owned-detail-why {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.owned-detail-specs {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.owned-detail-price {
+  margin: 18px 0 0;
+}
+.owned-detail-price-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+.owned-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+}
+.owned-detail-amazon {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+.owned-detail-amazon:hover {
+  text-decoration: underline;
 }
 .owned-toggle {
   flex-shrink: 0;
@@ -3051,10 +3244,35 @@ button.chat-bubble.chat-editable {
   border-color: var(--accent);
   color: var(--accent);
 }
+.owned-toggle.big {
+  padding: 11px 20px;
+  font-size: 14px;
+}
 .owned-toggle.on {
   background: var(--accent-good, var(--accent));
   border-color: transparent;
   color: #fff;
+}
+.owned-toggle.on:hover {
+  color: #fff;
+  filter: brightness(0.96);
+}
+@media (max-width: 860px) {
+  .owned-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 42vh) 1fr;
+  }
+  .owned-listcol {
+    border-right: 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .owned-detail {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .owned-detail-img {
+    max-width: 220px;
+  }
 }
 
 /* Favorite → list picker popover */
