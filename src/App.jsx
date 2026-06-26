@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { CATEGORIES } from './data.js';
-import { askQuestion, recommend, enrichProduct } from './lib/askAI.js';
+import { askQuestion, recommend, enrichProduct, fetchSuggestions } from './lib/askAI.js';
 import AuthMenu from './components/AuthMenu.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
 import FriendRequestsBell from './components/FriendRequestsBell.jsx';
@@ -285,6 +285,19 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
     inputRef.current?.focus();
   }, []);
 
+  // Suggestion chips picked by the AI for the current season / events, tailored
+  // to the user's profile when signed in. Null until loaded → the static list
+  // below is shown meanwhile and as a fallback if the call fails.
+  const [aiSuggestions, setAiSuggestions] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    const profile = profileToPrompt(getProfile(user?.sub), lang);
+    fetchSuggestions({ lang, profile })
+      .then((s) => { if (alive && Array.isArray(s) && s.length) setAiSuggestions(s); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [lang, user?.sub]);
+
   const submit = (e) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -292,7 +305,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
     onPick(cat, query.trim());
   };
 
-  const suggestions = [
+  const fallbackSuggestions = [
     { key: 'suggestion.ac', icon: 'ac' },
     { key: 'suggestion.fan', icon: 'fan' },
     { key: 'suggestion.phone', icon: 'phone' },
@@ -301,7 +314,9 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
     { key: 'suggestion.earbuds', icon: 'earbuds' },
     { key: 'suggestion.watch', icon: 'watch' },
     { key: 'suggestion.vacuum', icon: 'vacuum' },
-  ];
+  ].map((s) => ({ label: t(s.key), icon: s.icon }));
+  // AI-picked chips when available (season/events + profile), else the static set.
+  const suggestions = (aiSuggestions && aiSuggestions.length) ? aiSuggestions : fallbackSuggestions;
 
   const SuggestionIcon = ({ icon }) => {
     const p = { width: 14, height: 14, viewBox: '0 0 14 14', fill: 'none', 'aria-hidden': true };
@@ -441,10 +456,10 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           </form>
 
           <div className="home-suggestions">
-            {suggestions.map((s) => {
-              const label = t(s.key);
+            {suggestions.map((s, i) => {
+              const label = s.label;
               return (
-                <button key={s.key} type="button" className="suggestion-chip"
+                <button key={`${label}-${i}`} type="button" className="suggestion-chip"
                   onClick={() => onPick(detectCategory(label) || label, label)}>
                   <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
                   {label}

@@ -212,6 +212,31 @@ Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 {"reply":"<courte phrase d'introduction>","products":[{"id":"p1","brand":"Marque","model":"Modèle exact","price":999,"score":94,"specs":["Spec 1","Spec 2","Spec 3","Spec 4"],"why":"Raison courte"}]}`;
 }
 
+// ── Home-page suggestion chips ──────────────────────────────────────────────
+// Icon slugs the home page can actually render (see SuggestionIcon in App.jsx).
+// Gemini must pick from this exact list so every chip gets a matching glyph.
+const SUGGESTION_ICONS = ['ac', 'fan', 'phone', 'laptop', 'tv', 'earbuds', 'watch', 'vacuum', 'coffee', 'speaker', 'default'];
+
+// Prompt to pick ~8 product-category chips adapted to the season / current
+// events (in France) and, when available, the user's profile.
+function buildSuggestionsPrompt(lang, profile, dateStr) {
+  const profileBullet = profile
+    ? "\n- du PROFIL de l'utilisateur ci-dessus (adapte discrètement à ses centres d'intérêt probables, sans le citer),"
+    : '';
+  return `Tu es Oraklia, un conseiller d'achat. ${langLineFor(lang)}
+Nous sommes le ${dateStr}.${profileLine(profile)}
+
+Propose EXACTEMENT 8 idées de produits à acheter, sous forme de "chips" courts à afficher sur la page d'accueil. Choisis-les en fonction :
+- de la PÉRIODE de l'année et de la SAISON en France (météo, vacances, fêtes, soldes, rentrée, Black Friday, Noël… selon la date),
+- de l'actualité et des usages typiques du moment,${profileBullet}
+- en VARIANT les catégories (high-tech, maison, saisonnier, loisirs…).
+
+Chaque chip = une catégorie de produit COURTE (1 à 3 mots), concrète et achetable sur Amazon.fr, SANS marque précise. Donne aussi un "icon" choisi dans cette liste EXACTE (le plus proche, sinon "default") : ${SUGGESTION_ICONS.join(', ')}.
+
+Réponds UNIQUEMENT par un objet JSON valide de cette forme:
+{"suggestions":[{"label":"Climatiseur","icon":"ac"}]}`;
+}
+
 // ── Gift mode ──────────────────────────────────────────────────────────────
 // One next question to refine gift ideas for the described recipient.
 function buildGiftAskPrompt(giftStr, answers, lang) {
@@ -429,6 +454,42 @@ export default async function handler(req, res) {
   const t1_ms = ms(t1);
 
   const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', conversationId = '', requestId = '', exclude = [] } = body;
+
+  // Home-page suggestion chips: a light, self-contained path (no Amazon
+  // verification). Gemini picks ~8 product categories for the current season /
+  // events, personalized by the optional profile. Any failure → 502 and the
+  // client falls back to its static chip list.
+  if (mode === 'suggestions') {
+    const dateStr = new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+    const payload = {
+      systemInstruction: { parts: [{ text: buildSuggestionsPrompt(lang, profile, dateStr) }] },
+      contents: [{ role: 'user', parts: [{ text: 'Donne les suggestions.' }] }],
+      generationConfig: { temperature: 0.9, responseMimeType: 'application/json' },
+    };
+    try {
+      const up = await callGemini(apiKey, payload);
+      if (!up.ok) {
+        const text = await up.text().catch(() => '');
+        return send(res, up.status, { error: 'Upstream error', gemini_status: up.status, gemini_raw: text });
+      }
+      const j = await up.json();
+      const c = j.candidates?.[0]?.content?.parts?.[0]?.text;
+      const parsedS = JSON.parse(c);
+      const suggestions = (Array.isArray(parsedS.suggestions) ? parsedS.suggestions : [])
+        .map((s) => ({
+          label: String(s?.label ?? '').trim().slice(0, 40),
+          icon: SUGGESTION_ICONS.includes(s?.icon) ? s.icon : 'default',
+        }))
+        .filter((s) => s.label)
+        .slice(0, 8);
+      return send(res, 200, { suggestions, _debug: { model: GEMINI_MODEL, request_id: requestId || null } });
+    } catch (e) {
+      return send(res, 502, { error: 'suggestions failed', detail: String(e) });
+    }
+  }
+
   // Products the client already saw and wants different from ("show me others").
   const excludeNames = (Array.isArray(exclude) ? exclude : []).map((s) => String(s || '').trim()).filter(Boolean).slice(0, 30);
   // Legacy clients (mobile) send a full transcript in "messages" with no "mode".

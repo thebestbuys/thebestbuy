@@ -94,6 +94,18 @@ export function recommend({ objet, answers, lang = 'fr', profile = '', gift = ''
   return postChat({ mode: 'recommend', objet, answers, lang, profile, gift, surprise, friendId, conversationId, exclude }, token);
 }
 
+// Home-page suggestion chips chosen by the AI for the current season / events,
+// personalized by the optional free-form `profile`. Returns [{label, icon}]
+// ([] on any failure, so the caller keeps its static fallback list).
+export async function fetchSuggestions({ lang = 'fr', profile = '' } = {}) {
+  try {
+    const json = await postChat({ mode: 'suggestions', lang, profile });
+    return Array.isArray(json?.suggestions) ? json.suggestions : [];
+  } catch {
+    return [];
+  }
+}
+
 // Enrich a product with real Amazon data (image, URL, rating, reviews).
 // Returns the same product object with extra fields merged in.
 export async function enrichProduct(product) {
