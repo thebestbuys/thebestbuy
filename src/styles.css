@@ -408,6 +408,18 @@ ul {
 @media (prefers-reduced-motion: reduce) {
   .suggestion-chip--pop { animation: none; opacity: 1; }
 }
+/* Skeleton chips shown while the AI suggestions load (shimmer sweep). Same
+   pill shape as a real chip; reuses the recommendation skeleton's shimmer. */
+.suggestion-chip-skel {
+  height: 31px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--border-soft) 25%, var(--bg-softer) 37%, var(--border-soft) 63%);
+  background-size: 480px 100%;
+  animation: skelShimmer 1.3s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .suggestion-chip-skel { animation: none; }
+}
 .home-footer {
   border-top: 0.5px solid var(--border-soft);
   background: var(--bg-soft);

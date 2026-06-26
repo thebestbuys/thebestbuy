@@ -459,17 +459,21 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           </div>
 
           <div className="home-suggestions">
-            {suggestions?.map((s, i) => {
-              const label = s.label;
-              return (
-                <button key={`${label}-${i}`} type="button" className="suggestion-chip suggestion-chip--pop"
-                  style={{ animationDelay: `${i * 160}ms` }}
-                  onClick={() => onPick(detectCategory(label) || label, label)}>
-                  <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
-                  {label}
-                </button>
-              );
-            })}
+            {suggestions
+              ? suggestions.map((s, i) => {
+                  const label = s.label;
+                  return (
+                    <button key={`${label}-${i}`} type="button" className="suggestion-chip suggestion-chip--pop"
+                      style={{ animationDelay: `${i * 160}ms` }}
+                      onClick={() => onPick(detectCategory(label) || label, label)}>
+                      <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
+                      {label}
+                    </button>
+                  );
+                })
+              : [78, 96, 66, 110, 84].map((w, i) => (
+                  <span key={i} className="suggestion-chip-skel" style={{ width: w }} aria-hidden="true" />
+                ))}
           </div>
 
         </main>
