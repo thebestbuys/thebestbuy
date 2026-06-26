@@ -739,7 +739,6 @@ ul {
 }
 .product-link-card:hover {
   border-color: var(--text-muted);
-  transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
 }
 .product-link-card:active {
@@ -1222,7 +1221,6 @@ button.chat-bubble.chat-editable {
   pointer-events: none;
 }
 .hero-card:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 .hero-badge {
@@ -1490,7 +1488,6 @@ button.chat-bubble.chat-editable {
     border-color 0.2s ease;
 }
 .small-card:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
   border-color: rgba(26, 24, 20, 0.18);
 }
