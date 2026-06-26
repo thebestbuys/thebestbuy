@@ -206,6 +206,9 @@ const TRANSLATIONS = {
     "poll.outgoing": "Tes sondages",
     "poll.noVotes": "En attente de votes…",
     "poll.votes": "Votes",
+    "poll.dismiss": "Ignorer ce sondage",
+    "poll.delete": "Supprimer ce sondage",
+    "notif.dismiss": "Masquer",
 
     // Profile (personalization)
     "profile.title": "Mon profil",
@@ -593,6 +596,9 @@ const TRANSLATIONS = {
     "poll.outgoing": "Your polls",
     "poll.noVotes": "Waiting for votes…",
     "poll.votes": "Votes",
+    "poll.dismiss": "Dismiss this poll",
+    "poll.delete": "Delete this poll",
+    "notif.dismiss": "Dismiss",
 
     // Profile (personalization)
     "profile.title": "My profile",

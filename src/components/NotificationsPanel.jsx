@@ -8,7 +8,10 @@ import {
   incomingPolls,
   outgoingPolls,
   votePoll,
+  deletePoll,
+  dismissPoll,
 } from '../lib/cloud.js';
+import { getDismissed, dismissNotif } from '../lib/dismissed.js';
 import { AmazonPrice, ProductImage } from './ProductCard.jsx';
 import {
   listOccasions,
@@ -34,6 +37,7 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
   const [occasions, setOccasions] = useState([]);
   const [inPolls, setInPolls] = useState([]);
   const [outPolls, setOutPolls] = useState([]);
+  const [hidden, setHidden] = useState(() => getDismissed(user?.sub));
   const [label, setLabel] = useState('');
   const [date, setDate] = useState('');
 
@@ -43,6 +47,25 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
     setOccasions(listOccasions(user?.sub));
     incomingPolls().then(setInPolls);
     outgoingPolls().then(setOutPolls);
+    setHidden(getDismissed(user?.sub));
+  };
+
+  // Dismiss an incoming poll (remove myself as recipient) — optimistic.
+  const dismissIn = async (pollId) => {
+    setInPolls((cur) => cur.filter((p) => p.id !== pollId));
+    await dismissPoll(pollId);
+  };
+
+  // Delete one of my own polls — optimistic.
+  const deleteOut = async (pollId) => {
+    setOutPolls((cur) => cur.filter((p) => p.id !== pollId));
+    await deletePoll(pollId);
+  };
+
+  // Hide a derived reminder (birthday / holiday) for this occurrence.
+  const hideReminder = (dismissKey) => {
+    dismissNotif(user?.sub, dismissKey);
+    setHidden((cur) => new Set(cur).add(dismissKey));
   };
 
   const amazonUrl = (p) =>
@@ -74,6 +97,11 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
     refresh();
   };
 
+  // Occurrence-scoped key for a derived reminder, so hiding it only hides this
+  // year's instance (it comes back next year).
+  const occurrenceKey = (base, days) =>
+    `${base}:${new Date(Date.now() + days * 86400000).getFullYear()}`;
+
   // Build the sorted upcoming list (next 365 days).
   const upcoming = [];
   for (const f of friends) {
@@ -88,6 +116,7 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
       avatar: f.avatar_url,
       days: d,
       age: turningAge(f.birthday),
+      dismissKey: occurrenceKey('f_' + f.user_id, d),
     });
   }
   for (const o of occasions) {
@@ -102,9 +131,11 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
       name: t('holiday.' + h.key),
       emoji: h.emoji,
       days: h.days,
+      dismissKey: occurrenceKey('h_' + h.key, h.days),
     });
   }
-  upcoming.sort((a, b) => a.days - b.days);
+  const visibleUpcoming = upcoming.filter((e) => !e.dismissKey || !hidden.has(e.dismissKey));
+  visibleUpcoming.sort((a, b) => a.days - b.days);
 
   const whenLabel = (d) =>
     d === 0 ? t('occ.today') : d === 1 ? t('occ.tomorrow') : t('occ.inDays', { n: d });
@@ -134,7 +165,7 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
     setOccasions(listOccasions(user?.sub));
   };
 
-  const nothing = incoming.length === 0 && upcoming.length === 0;
+  const nothing = incoming.length === 0 && visibleUpcoming.length === 0;
 
   return (
     <div className="auth-modal-bg" onClick={onClose}>
@@ -186,7 +217,18 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
                 <div className="friends-section">{t('poll.incoming')}</div>
                 {inPolls.map((poll) => (
                   <div key={poll.id} className="poll-card">
-                    <div className="poll-card-head">{t('poll.from', { name: poll.owner_name })}</div>
+                    <div className="poll-card-head">
+                      <span>{t('poll.from', { name: poll.owner_name })}</span>
+                      <button
+                        type="button"
+                        className="poll-card-x"
+                        aria-label={t('poll.dismiss')}
+                        title={t('poll.dismiss')}
+                        onClick={() => dismissIn(poll.id)}
+                      >
+                        ✕
+                      </button>
+                    </div>
                     <ul className="pub-items poll-vote-items">
                       {(poll.items || []).map((p, idx) => {
                         const chosen = poll.my_vote === idx;
@@ -216,11 +258,11 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
             )}
 
             <div className="friends-section">{t('notif.occasions')}</div>
-            {upcoming.length === 0 ? (
+            {visibleUpcoming.length === 0 ? (
               <div className="friends-hint">{nothing ? t('notif.empty') : '—'}</div>
             ) : (
               <ul className="friends-list">
-                {upcoming.map((e) => (
+                {visibleUpcoming.map((e) => (
                   <li key={e.key} className="friend-row occ-row">
                     <span className="occ-emoji" aria-hidden="true">{e.kind === 'bday' ? '🎂' : e.emoji || '🎉'}</span>
                     <span className="friend-name occ-main">
@@ -233,11 +275,15 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
                     <button type="button" className="friend-btn" onClick={() => giftFor(e)}>
                       🎁
                     </button>
-                    {e.kind === 'occ' && (
-                      <button type="button" className="friend-btn ghost" onClick={() => delManual(e.occId)}>
-                        ✕
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className="friend-btn ghost notif-x"
+                      aria-label={t('notif.dismiss')}
+                      title={t('notif.dismiss')}
+                      onClick={() => (e.kind === 'occ' ? delManual(e.occId) : hideReminder(e.dismissKey))}
+                    >
+                      ✕
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -250,6 +296,17 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
                   const votes = Array.isArray(poll.votes) ? poll.votes : [];
                   return (
                     <div key={poll.id} className="poll-card">
+                      <div className="poll-card-head poll-card-head-end">
+                        <button
+                          type="button"
+                          className="poll-card-x"
+                          aria-label={t('poll.delete')}
+                          title={t('poll.delete')}
+                          onClick={() => deleteOut(poll.id)}
+                        >
+                          ✕
+                        </button>
+                      </div>
                       <ul className="pub-items">
                         {(poll.items || []).map((p, idx) => {
                           const voters = votes.filter((v) => v.choice === idx);

@@ -173,6 +173,20 @@ export async function votePoll(pollId, choice) {
   return { ok: !error, error };
 }
 
+// Owner deletes one of their own polls ("Mes sondages").
+export async function deletePoll(pollId) {
+  if (!hasCloudSession() || !pollId) return { ok: false };
+  const { error } = await supabase.rpc('delete_poll', { p_id: pollId });
+  return { ok: !error, error };
+}
+
+// Recipient dismisses a poll they were asked to vote on ("On te demande ton avis").
+export async function dismissPoll(pollId) {
+  if (!hasCloudSession() || !pollId) return { ok: false };
+  const { error } = await supabase.rpc('dismiss_poll', { p_id: pollId });
+  return { ok: !error, error };
+}
+
 // ─── Occasions (reminders) ──────────────────────────────────────────────────
 export async function cloudUpsertOccasion(o) {
   if (!hasCloudSession() || !o?.id) return;

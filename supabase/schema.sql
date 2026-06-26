@@ -274,6 +274,28 @@ end;
 $$;
 grant execute on function public.vote_poll(text, integer) to authenticated;
 
+-- Owner deletes their own poll ("Mes sondages"); recipients + votes cascade.
+create or replace function public.delete_poll(p_id text)
+returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  delete from public.polls where id = p_id and owner_id = auth.uid();
+end;
+$$;
+grant execute on function public.delete_poll(text) to authenticated;
+
+-- Recipient dismisses a poll addressed to them ("On te demande ton avis"):
+-- removes only their recipient row + vote; the poll stays for the owner/others.
+create or replace function public.dismiss_poll(p_id text)
+returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  delete from public.poll_votes where poll_id = p_id and voter_id = auth.uid();
+  delete from public.poll_recipients where poll_id = p_id and recipient_id = auth.uid();
+end;
+$$;
+grant execute on function public.dismiss_poll(text) to authenticated;
+
 -- ── Friend directory functions (SECURITY DEFINER) ──────────────────────────
 -- These read the public identity columns of OTHER users without opening the
 -- profiles table to everyone. They always scope to auth.uid().
