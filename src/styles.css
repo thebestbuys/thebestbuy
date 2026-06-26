@@ -413,7 +413,12 @@ ul {
 .suggestion-chip-skel {
   height: 31px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--border-soft) 25%, var(--bg-softer) 37%, var(--border-soft) 63%);
+  /* Same base colour as a real chip (--accent-light), with a slightly lighter
+     band sweeping across so it still reads as loading. */
+  background: linear-gradient(90deg,
+    var(--accent-light) 25%,
+    color-mix(in oklch, var(--accent-light) 62%, white) 37%,
+    var(--accent-light) 63%);
   background-size: 480px 100%;
   animation: skelShimmer 1.3s ease-in-out infinite;
 }

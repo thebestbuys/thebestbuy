@@ -462,7 +462,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
                     </button>
                   );
                 })
-              : [128, 92, 156, 104, 140, 84, 120].map((w, i) => (
+              : [170, 150, 190, 160, 140].map((w, i) => (
                   <span key={i} className="suggestion-chip-skel" style={{ width: w }} aria-hidden="true" />
                 ))}
           </div>
