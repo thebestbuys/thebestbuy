@@ -59,9 +59,17 @@ export default function FavoriteButton({ product, variant = 'card', onChange }) 
     const r = btnRef.current?.getBoundingClientRect();
     if (r) {
       const W = 248;
+      const EST_H = 300; // approx popup height; used only to pick a side
       const left = Math.max(8, Math.min(r.left, window.innerWidth - W - 8));
-      const top = Math.min(r.bottom + 6, window.innerHeight - 8);
-      setPos({ top, left, width: W });
+      const spaceBelow = window.innerHeight - r.bottom;
+      // Flip the popover above the button when there isn't enough room below
+      // (e.g. a saved-product card low on screen) and there's more room above —
+      // otherwise it gets pinned to the bottom edge and is unreachable.
+      if (spaceBelow < EST_H && r.top > spaceBelow) {
+        setPos({ bottom: Math.max(8, window.innerHeight - r.top + 6), left, width: W });
+      } else {
+        setPos({ top: Math.max(8, r.bottom + 6), left, width: W });
+      }
     }
     setOpen(true);
   };
@@ -126,7 +134,17 @@ export default function FavoriteButton({ product, variant = 'card', onChange }) 
         <div
           className="fav-pop"
           role="menu"
-          style={pos ? { position: 'fixed', top: pos.top, left: pos.left, width: pos.width } : undefined}
+          style={
+            pos
+              ? {
+                  position: 'fixed',
+                  left: pos.left,
+                  width: pos.width,
+                  ...(pos.top != null ? { top: pos.top } : { bottom: pos.bottom }),
+                }
+              : undefined
+          }
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="fav-pop-head">{t('lists.addTo')}</div>
