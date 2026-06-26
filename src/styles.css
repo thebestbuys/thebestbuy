@@ -363,13 +363,28 @@ ul {
 .home-gift-cta-emoji {
   font-size: 18px;
 }
+/* Fixed-height slot so the title / search bar / gift CTA never shift when the
+   chips swap between skeleton, real (1–2 rows) and back. The chips are absolutely
+   positioned inside it and vertically centred, so their height can't push siblings. */
+.home-suggestions-slot {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  height: 70px; /* ~2 rows of chips (31px each + 8px gap) */
+  margin-top: 4px;
+}
 .home-suggestions {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
-  max-width: 640px;
-  margin-top: 4px;
+  align-content: center;
+}
+/* Narrower viewport: chips wrap onto more rows, so reserve more height. */
+@media (max-width: 639px) {
+  .home-suggestions-slot { height: 116px; } /* ~3 rows */
 }
 .suggestion-chip {
   appearance: none;
@@ -422,8 +437,17 @@ ul {
   background-size: 480px 100%;
   animation: skelShimmer 1.3s ease-in-out infinite;
 }
+/* Reverse-pop: skeletons fade/shrink out before the real chips pop in. */
+@keyframes chip-pop-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(5px) scale(0.96); }
+}
+.suggestion-chip-skel.is-leaving {
+  animation: chip-pop-out 0.22s ease-in both;
+}
 @media (prefers-reduced-motion: reduce) {
   .suggestion-chip-skel { animation: none; }
+  .suggestion-chip-skel.is-leaving { animation: none; opacity: 0; }
 }
 .home-footer {
   border-top: 0.5px solid var(--border-soft);

@@ -286,13 +286,16 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
   }, []);
 
   // Suggestion chips picked by the AI for the current season / events, tailored
-  // to the user's profile when signed in. `null` while loading → nothing is
-  // rendered; once resolved the chips pop in one by one (staggered animation).
-  // The static list is only a fallback used if the AI call fails/returns empty.
+  // to the user's profile when signed in. `null` while loading → skeleton chips
+  // are shown; once resolved the skeletons reverse-pop out, then the real chips
+  // pop in one by one. The static list is a fallback if the AI call fails/empties.
   const [suggestions, setSuggestions] = useState(null);
+  const [skelOut, setSkelOut] = useState(false); // skeletons playing their exit
   useEffect(() => {
     let alive = true;
+    let swapTimer;
     setSuggestions(null); // reset on lang/user change so the chips re-pop
+    setSkelOut(false);
     const profile = profileToPrompt(getProfile(user?.sub), lang);
     const fallback = [
       { key: 'suggestion.ac', icon: 'ac' },
@@ -301,10 +304,16 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
       { key: 'suggestion.laptop', icon: 'laptop' },
       { key: 'suggestion.tv', icon: 'tv' },
     ].map((s) => ({ label: t(s.key), icon: s.icon }));
+    // Play the skeleton exit, then swap in the real chips once it has finished.
+    const resolve = (list) => {
+      if (!alive) return;
+      setSkelOut(true);
+      swapTimer = setTimeout(() => { if (alive) setSuggestions(list); }, 230);
+    };
     fetchSuggestions({ lang, profile })
-      .then((s) => { if (alive) setSuggestions(Array.isArray(s) && s.length ? s : fallback); })
-      .catch(() => { if (alive) setSuggestions(fallback); });
-    return () => { alive = false; };
+      .then((s) => resolve(Array.isArray(s) && s.length ? s : fallback))
+      .catch(() => resolve(fallback));
+    return () => { alive = false; clearTimeout(swapTimer); };
   }, [lang, user?.sub]);
 
   const submit = (e) => {
@@ -449,22 +458,26 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             </button>
           </div>
 
-          <div className="home-suggestions">
-            {suggestions
-              ? suggestions.map((s, i) => {
-                  const label = s.label;
-                  return (
-                    <button key={`${label}-${i}`} type="button" className="suggestion-chip suggestion-chip--pop"
-                      style={{ animationDelay: `${i * 160}ms` }}
-                      onClick={() => onPick(detectCategory(label) || label, label)}>
-                      <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
-                      {label}
-                    </button>
-                  );
-                })
-              : [170, 150, 190, 160, 140].map((w, i) => (
-                  <span key={i} className="suggestion-chip-skel" style={{ width: w }} aria-hidden="true" />
-                ))}
+          <div className="home-suggestions-slot">
+            <div className="home-suggestions">
+              {suggestions
+                ? suggestions.map((s, i) => {
+                    const label = s.label;
+                    return (
+                      <button key={`${label}-${i}`} type="button" className="suggestion-chip suggestion-chip--pop"
+                        style={{ animationDelay: `${i * 160}ms` }}
+                        onClick={() => onPick(detectCategory(label) || label, label)}>
+                        <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
+                        {label}
+                      </button>
+                    );
+                  })
+                : [170, 150, 190, 160, 140].map((w, i) => (
+                    <span key={i}
+                      className={'suggestion-chip-skel' + (skelOut ? ' is-leaving' : '')}
+                      style={{ width: w }} aria-hidden="true" />
+                  ))}
+            </div>
           </div>
 
         </main>
