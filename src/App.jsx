@@ -451,6 +451,13 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             </button>
           </form>
 
+          <div className="home-cta-row">
+            <button type="button" className="home-gift-cta" onClick={onOpenGift}>
+              <span aria-hidden="true" className="home-gift-cta-emoji">🎁</span>
+              {t('home.gift')}
+            </button>
+          </div>
+
           <div className="home-suggestions">
             {suggestions?.map((s, i) => {
               const label = s.label;
@@ -463,13 +470,6 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
                 </button>
               );
             })}
-          </div>
-
-          <div className="home-cta-row">
-            <button type="button" className="home-gift-cta" onClick={onOpenGift}>
-              <span aria-hidden="true" className="home-gift-cta-emoji">🎁</span>
-              {t('home.gift')}
-            </button>
           </div>
 
         </main>
