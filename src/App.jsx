@@ -435,12 +435,10 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
         </main>
 
         <footer className="home-footer">
-          <p className="home-footer-affiliate">{t('footer.affiliate')}</p>
           <div className="home-footer-inner">
-            <div className="home-footer-left">
-              {t('footer.rights', { year: new Date().getFullYear() })}
-            </div>
-            <div className="home-footer-right">
+            <p className="home-footer-affiliate">{t('footer.affiliate')}</p>
+            <div className="home-footer-meta">
+              <span>{t('footer.rights', { year: new Date().getFullYear() })}</span>
               <button type="button" className="home-footer-link" onClick={onOpenLegal}>
                 {t('footer.legal')}
               </button>
