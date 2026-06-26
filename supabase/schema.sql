@@ -10,6 +10,16 @@ create table if not exists public.selections (
   primary key (user_id, product_id)
 );
 
+-- ── Owned ("Déjà acheté") — products the user already has, so the advisor
+--    stops recommending them. Same shape as selections.
+create table if not exists public.owned (
+  user_id    uuid        not null references auth.users (id) on delete cascade,
+  product_id text        not null,
+  data       jsonb       not null,
+  added_at   timestamptz not null default now(),
+  primary key (user_id, product_id)
+);
+
 -- ── Conversations (chat history) ──────────────────────────────────────────
 create table if not exists public.conversations (
   user_id    uuid        not null references auth.users (id) on delete cascade,
@@ -121,6 +131,7 @@ create table if not exists public.shared_lists (
 
 -- ── Row Level Security ────────────────────────────────────────────────────
 alter table public.selections    enable row level security;
+alter table public.owned         enable row level security;
 alter table public.conversations enable row level security;
 alter table public.recipients    enable row level security;
 alter table public.profiles      enable row level security;
@@ -134,6 +145,12 @@ alter table public.poll_votes      enable row level security;
 
 drop policy if exists "own selections" on public.selections;
 create policy "own selections" on public.selections
+  for all
+  using      (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "own owned" on public.owned;
+create policy "own owned" on public.owned
   for all
   using      (auth.uid() = user_id)
   with check (auth.uid() = user_id);
@@ -469,6 +486,8 @@ grant execute on function public.list_incoming_requests() to authenticated;
 -- Helpful index for the ordered fetches the client does.
 create index if not exists selections_added_idx
   on public.selections (user_id, added_at desc);
+create index if not exists owned_added_idx
+  on public.owned (user_id, added_at desc);
 create index if not exists conversations_updated_idx
   on public.conversations (user_id, updated_at desc);
 create index if not exists recipients_added_idx

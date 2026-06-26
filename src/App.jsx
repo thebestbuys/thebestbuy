@@ -21,6 +21,7 @@ const AskOpinionPanel = lazy(() => import('./components/AskOpinionPanel.jsx'));
 const LegalNotices = lazy(() => import('./components/LegalNotices.jsx'));
 const GuideArticle = lazy(() => import('./components/GuideArticle.jsx'));
 const GuidesPanel = lazy(() => import('./components/GuidesPanel.jsx'));
+const OwnedPanel = lazy(() => import('./components/OwnedPanel.jsx'));
 import { GUIDES, localizeGuide, getGuide } from './data/guides.js';
 import { HeroCard, PriceTag, ProductImage, ProductLinkCard, ProductSkeleton, ScoreRing, SmallCard, VerifiedRating } from './components/ProductCard.jsx';
 import { useAuth } from './lib/auth.jsx';
@@ -28,6 +29,7 @@ import { useI18n } from './lib/i18n.jsx';
 import { getProfile, profileToPrompt } from './lib/profile.js';
 import { giftToPrompt, giftTitle, buildShareUrl, loadSharedPayload } from './lib/gift.js';
 import { getAccessToken, circleTrending, logLinkClick } from './lib/cloud.js';
+import { getOwnedNames, ownedIdSet } from './lib/owned.js';
 import { toast } from './lib/toast.js';
 import {
   deriveTitle,
@@ -243,7 +245,7 @@ function TrendingPanel({ onClose, onOpen }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifPing, onOpenGift, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTrending, onLoadConvo, onOpenProduct }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifPing, onOpenGift, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTrending, onOpenOwned, onLoadConvo, onOpenProduct }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -357,6 +359,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           onOpenAsk={onOpenAsk}
           onOpenNotifications={onOpenNotifications}
           onOpenTrending={onOpenTrending}
+          onOpenOwned={onOpenOwned}
         />
       </div>
 
@@ -565,6 +568,7 @@ export default function App() {
   const [giftOpen, setGiftOpen] = useState(false);
   const [guidesOpen, setGuidesOpen] = useState(false);
   const [trendingOpen, setTrendingOpen] = useState(false);
+  const [ownedOpen, setOwnedOpen] = useState(false);
   const [giftPrefill, setGiftPrefill] = useState(null); // {occasion} when opened from a reminder
   const [gift, setGift] = useState(null);   // recipient payload when in gift mode
   const [shareCopied, setShareCopied] = useState(false);
@@ -661,10 +665,20 @@ export default function App() {
     };
   }, []);
 
+  // "brand model" names of products the user marked as already bought, appended
+  // to every recommendation's `exclude` so the advisor stops proposing them.
+  const ownedExclude = () => getOwnedNames(user?.sub);
+
   const loadProducts = (products) => {
     if (!Array.isArray(products) || !products.length) return;
+    // Drop anything the user already owns (defence in depth: the name is also in
+    // `exclude`, but Gemini can still echo it back).
+    const owned = ownedIdSet(user?.sub);
+    const base = products
+      .map((p) => ({ ...p, id: productKey(p), category }))
+      .filter((p) => !owned.has(p.id));
+    if (!base.length) return;
     setDone(true);
-    const base = products.map((p) => ({ ...p, id: productKey(p), category }));
     setRecommendedProducts(base);
     base.forEach((p, i) => {
       enrichProduct(p).then((enriched) => {
@@ -695,7 +709,7 @@ export default function App() {
     if (willRecommend) setLoadingProducts(true);
     try {
       if (willRecommend) {
-        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId });
+        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId, exclude: ownedExclude() });
         if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
         loadProducts(rec?.products);
       }
@@ -777,7 +791,7 @@ export default function App() {
     const friendId = gift?.friendId || '';
     const token = friendId ? getAccessToken() : '';
     try {
-      const rec = await recommend({ objet, answers: answersForApi, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId, exclude });
+      const rec = await recommend({ objet, answers: answersForApi, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId, exclude: [...ownedExclude(), ...exclude] });
       if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
       loadProducts(rec?.products);
     } catch (e) {
@@ -911,6 +925,7 @@ export default function App() {
   const navOpenGift = () => { setGiftPrefill(null); pushHistory(); setGiftOpen(true); };
   const navOpenGuides = () => { pushHistory(); setGuidesOpen(true); };
   const navOpenTrending = () => { pushHistory(); setTrendingOpen(true); };
+  const navOpenOwned = () => { pushHistory(); setOwnedOpen(true); };
   // From a reminder: friend birthday → start directly; holiday/occasion → open
   // the gift form prefilled with the occasion so the user can link a recipient.
   const giftFromReminder = (payload) => {
@@ -972,13 +987,14 @@ export default function App() {
       if (historyOpen) { setHistoryOpen(false); return; }
       if (guidesOpen) { setGuidesOpen(false); return; }
       if (trendingOpen) { setTrendingOpen(false); return; }
+      if (ownedOpen) { setOwnedOpen(false); return; }
       if (activeGuide) { setActiveGuide(null); return; }
       if (category) { handleHome(); return; }
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, giftOpen, notifOpen, askOpen, friendsOpen, profileOpen, selectionsOpen, guidesOpen, trendingOpen, historyOpen, activeGuide, category]);
+  }, [selected, legalOpen, giftOpen, notifOpen, askOpen, friendsOpen, profileOpen, selectionsOpen, guidesOpen, trendingOpen, ownedOpen, historyOpen, activeGuide, category]);
 
   // Keep the tab title in sync with the open guide (matches the prerendered
   // per-guide <title>); reset to the brand title elsewhere.
@@ -1097,6 +1113,7 @@ export default function App() {
           onOpenGuide={navOpenGuide}
           onOpenGuides={navOpenGuides}
           onOpenTrending={navOpenTrending}
+          onOpenOwned={navOpenOwned}
           onLoadConvo={loadConversation}
           onOpenProduct={navOpenProduct}
         />
@@ -1117,6 +1134,7 @@ export default function App() {
           {giftOpen && <GiftPanel open onClose={navBack} onSubmit={startGift} initial={giftPrefill} />}
           {guidesOpen && <GuidesPanel open onClose={navBack} onOpenGuide={navOpenGuide} />}
           {trendingOpen && <TrendingPanel onClose={navBack} onOpen={navOpenProduct} />}
+          {ownedOpen && <OwnedPanel open onClose={navBack} />}
           {legalOpen && <LegalNotices open onClose={navBack} />}
         </Suspense>
       </>
@@ -1166,7 +1184,7 @@ export default function App() {
             )}
             <FriendRequestsBell onOpen={navOpenNotifications} pingKey={notifOpen} />
             <LangToggle />
-            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} onOpenOwned={navOpenOwned} />
           </>
         ) : null}
       />
@@ -1192,7 +1210,7 @@ export default function App() {
             )}
             <FriendRequestsBell onOpen={navOpenNotifications} pingKey={notifOpen} />
             <LangToggle />
-            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} onOpenOwned={navOpenOwned} />
           </div>
         </header>
 
@@ -1273,6 +1291,7 @@ export default function App() {
         {notifOpen && <NotificationsPanel open onClose={navBack} onGift={giftFromReminder} />}
         {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
         {trendingOpen && <TrendingPanel onClose={navBack} onOpen={navOpenProduct} />}
+        {ownedOpen && <OwnedPanel open onClose={navBack} />}
         {legalOpen && <LegalNotices open onClose={navBack} />}
       </Suspense>
 

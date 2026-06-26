@@ -67,6 +67,44 @@ export async function cloudFetchSelections() {
   return (data || []).map((r) => r.data).filter(Boolean);
 }
 
+// ─── Owned ("Déjà acheté") ─────────────────────────────────────────────────
+export async function cloudUpsertOwned(item) {
+  if (!hasCloudSession() || item?.id == null) return;
+  await supabase.from('owned').upsert(
+    {
+      user_id: uid(),
+      product_id: String(item.id),
+      data: item,
+      added_at: new Date(item.addedAt || Date.now()).toISOString(),
+    },
+    { onConflict: 'user_id,product_id' },
+  );
+}
+
+export async function cloudDeleteOwned(productId) {
+  if (!hasCloudSession() || productId == null) return;
+  await supabase
+    .from('owned')
+    .delete()
+    .eq('user_id', uid())
+    .eq('product_id', String(productId));
+}
+
+export async function cloudClearOwned() {
+  if (!hasCloudSession()) return;
+  await supabase.from('owned').delete().eq('user_id', uid());
+}
+
+export async function cloudFetchOwned() {
+  if (!hasCloudSession()) return null;
+  const { data, error } = await supabase
+    .from('owned')
+    .select('data, added_at')
+    .order('added_at', { ascending: false });
+  if (error) return null;
+  return (data || []).map((r) => r.data).filter(Boolean);
+}
+
 // ─── Recipients (saved gift profiles) ──────────────────────────────────────
 export async function cloudUpsertRecipient(item) {
   if (!hasCloudSession() || item?.id == null) return;

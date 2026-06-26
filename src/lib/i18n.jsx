@@ -142,6 +142,16 @@ const TRANSLATIONS = {
     "auth.myFriends": "Mes amis",
     "auth.occasions": "Occasions",
     "auth.myTrends": "Tendances de mes amis",
+    "auth.owned": "Déjà acheté",
+
+    // Déjà acheté ("owned")
+    "owned.title": "Déjà acheté",
+    "owned.sub": "Parmi les produits qu'on t'a proposés, indique ceux que tu possèdes déjà — on arrête de te les proposer.",
+    "owned.emptyText": "Aucune proposition pour le moment.",
+    "owned.emptySub": "Lance une recherche : les produits recommandés apparaîtront ici, prêts à être marqués comme déjà achetés.",
+    "owned.mark": "Je l'ai déjà",
+    "owned.marked": "Déjà acheté",
+    "owned.count": "{n} marqué(s) comme déjà acheté(s)",
 
     // Friends (social graph)
     "friends.title": "Mes amis",
@@ -536,6 +546,16 @@ const TRANSLATIONS = {
     "auth.myFriends": "My friends",
     "auth.occasions": "Occasions",
     "auth.myTrends": "My friends' trends",
+    "auth.owned": "Already bought",
+
+    // Déjà acheté ("owned")
+    "owned.title": "Already bought",
+    "owned.sub": "Among the products we've suggested, mark the ones you already own — we'll stop recommending them.",
+    "owned.emptyText": "No suggestions yet.",
+    "owned.emptySub": "Start a search: recommended products show up here, ready to be marked as already bought.",
+    "owned.mark": "I own this",
+    "owned.marked": "Already bought",
+    "owned.count": "{n} marked as already bought",
 
     // Friends (social graph)
     "friends.title": "My friends",
