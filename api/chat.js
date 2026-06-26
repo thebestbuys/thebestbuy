@@ -226,7 +226,7 @@ function buildSuggestionsPrompt(lang, profile, dateStr) {
   return `Tu es Oraklia, un conseiller d'achat. ${langLineFor(lang)}
 Nous sommes le ${dateStr}.${profileLine(profile)}
 
-Propose EXACTEMENT 8 idées de produits à acheter, sous forme de "chips" courts à afficher sur la page d'accueil. Choisis-les en fonction :
+Propose EXACTEMENT 5 idées de produits à acheter, sous forme de "chips" courts à afficher sur la page d'accueil. Choisis-les en fonction :
 - de la PÉRIODE de l'année et de la SAISON en France (météo, vacances, fêtes, soldes, rentrée, Black Friday, Noël… selon la date),
 - de l'actualité et des usages typiques du moment,${profileBullet}
 - en VARIANT les catégories (high-tech, maison, saisonnier, loisirs…).
@@ -483,7 +483,7 @@ export default async function handler(req, res) {
           icon: SUGGESTION_ICONS.includes(s?.icon) ? s.icon : 'default',
         }))
         .filter((s) => s.label)
-        .slice(0, 8);
+        .slice(0, 5);
       return send(res, 200, { suggestions, _debug: { model: GEMINI_MODEL, request_id: requestId || null } });
     } catch (e) {
       return send(res, 502, { error: 'suggestions failed', detail: String(e) });

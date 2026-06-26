@@ -300,9 +300,6 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
       { key: 'suggestion.phone', icon: 'phone' },
       { key: 'suggestion.laptop', icon: 'laptop' },
       { key: 'suggestion.tv', icon: 'tv' },
-      { key: 'suggestion.earbuds', icon: 'earbuds' },
-      { key: 'suggestion.watch', icon: 'watch' },
-      { key: 'suggestion.vacuum', icon: 'vacuum' },
     ].map((s) => ({ label: t(s.key), icon: s.icon }));
     fetchSuggestions({ lang, profile })
       .then((s) => { if (alive) setSuggestions(Array.isArray(s) && s.length ? s : fallback); })
@@ -459,7 +456,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
               const label = s.label;
               return (
                 <button key={`${label}-${i}`} type="button" className="suggestion-chip suggestion-chip--pop"
-                  style={{ animationDelay: `${i * 70}ms` }}
+                  style={{ animationDelay: `${i * 160}ms` }}
                   onClick={() => onPick(detectCategory(label) || label, label)}>
                   <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
                   {label}
