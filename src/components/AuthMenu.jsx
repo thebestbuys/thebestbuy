@@ -167,19 +167,6 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
         </div>
       </div>
       <div className="auth-dropdown-sep" />
-      {showNav && (
-        <button
-          type="button"
-          className="auth-dropdown-item"
-          onClick={() => {
-            onOpenSelections?.();
-            onClose();
-          }}
-        >
-          {t('auth.mySelections')}
-          {count > 0 && <span className="auth-dropdown-count">{count}</span>}
-        </button>
-      )}
       <button
         type="button"
         className="auth-dropdown-item"
@@ -192,6 +179,17 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
       </button>
       {showNav && (
         <>
+          <button
+            type="button"
+            className="auth-dropdown-item"
+            onClick={() => {
+              onOpenSelections?.();
+              onClose();
+            }}
+          >
+            {t('auth.mySelections')}
+            {count > 0 && <span className="auth-dropdown-count">{count}</span>}
+          </button>
           <button
             type="button"
             className="auth-dropdown-item"
