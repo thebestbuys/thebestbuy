@@ -3436,6 +3436,40 @@ button.chat-bubble.chat-editable {
 .notif-restore:hover {
   text-decoration: underline;
 }
+.poll-list-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.poll-list-chip {
+  appearance: none;
+  border: 0.5px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.poll-list-chip:hover {
+  border-color: var(--accent);
+}
+.poll-list-chip.is-on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.poll-list-chip-n {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.7;
+}
 .poll-vote-items .pub-item {
   align-items: center;
 }

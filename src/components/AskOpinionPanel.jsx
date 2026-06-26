@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
 import { AmazonPrice, ProductImage } from './ProductCard.jsx';
 import { listSelections } from '../lib/selections.js';
+import { listLists } from '../lib/lists.js';
 import { listFriends, createPoll } from '../lib/cloud.js';
 
 function initials(name = '') {
@@ -15,18 +16,22 @@ export default function AskOpinionPanel({ open, onClose, getAmazonUrl }) {
   const { user } = useAuth();
   const { t } = useI18n();
   const [items, setItems] = useState([]);
+  const [lists, setLists] = useState([]);
   const [friends, setFriends] = useState([]);
   const [pickedP, setPickedP] = useState([]); // product ids
   const [pickedF, setPickedF] = useState([]); // friend user ids
+  const [pickedList, setPickedList] = useState(''); // list applied as a shortcut
   const [name, setName] = useState('');
   const [sent, setSent] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setItems(listSelections(user?.sub));
+    setLists(listLists(user?.sub));
     listFriends().then(setFriends).catch(() => {});
     setPickedP([]);
     setPickedF([]);
+    setPickedList('');
     setName('');
     setSent(false);
     const onKey = (e) => e.key === 'Escape' && onClose();
@@ -36,12 +41,28 @@ export default function AskOpinionPanel({ open, onClose, getAmazonUrl }) {
 
   if (!open) return null;
 
-  const toggleP = (id) =>
+  const toggleP = (id) => {
+    setPickedList(''); // manual tweak detaches from the list shortcut
     setPickedP((cur) => {
       if (cur.includes(id)) return cur.filter((x) => x !== id);
       if (cur.length >= 4) return cur; // cap at 4
       return [...cur, id];
     });
+  };
+
+  // Shortcut: pick a whole list → its first (up to 4) products. Click again to clear.
+  const products = items;
+  const listProductIds = (listId) =>
+    products.filter((p) => (p.listIds || []).includes(listId)).map((p) => p.id);
+  const pickList = (listId) => {
+    if (pickedList === listId) {
+      setPickedList('');
+      setPickedP([]);
+      return;
+    }
+    setPickedList(listId);
+    setPickedP(listProductIds(listId).slice(0, 4));
+  };
   const toggleF = (id) =>
     setPickedF((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
 
@@ -96,6 +117,28 @@ export default function AskOpinionPanel({ open, onClose, getAmazonUrl }) {
               placeholder={t('poll.namePlaceholder')}
               onChange={(e) => setName(e.target.value)}
             />
+            {lists.length > 0 && (
+              <>
+                <div className="friends-section">{t('poll.pickList')}</div>
+                <div className="poll-list-chips">
+                  {lists.map((l) => {
+                    const n = listProductIds(l.id).length;
+                    if (n === 0) return null;
+                    return (
+                      <button
+                        key={l.id}
+                        type="button"
+                        className={'poll-list-chip' + (pickedList === l.id ? ' is-on' : '')}
+                        onClick={() => pickList(l.id)}
+                      >
+                        {l.name} <span className="poll-list-chip-n">{n}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
             <div className="friends-section">
               {t('poll.pickProducts')} <span className="sel-list-n">{pickedP.length}/4</span>
             </div>

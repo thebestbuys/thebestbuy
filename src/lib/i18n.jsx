@@ -193,6 +193,7 @@ const TRANSLATIONS = {
     // Ask a friend's opinion (polls)
     "poll.ask": "Demander l'avis d'un ami",
     "poll.title": "Demander un avis",
+    "poll.pickList": "Choisis une liste",
     "poll.pickProducts": "Choisis 2 à 4 produits",
     "poll.pickFriends": "À qui demander ?",
     "poll.noProducts": "Ajoute d'abord des produits à tes sélections.",
@@ -586,6 +587,7 @@ const TRANSLATIONS = {
     // Ask a friend's opinion (polls)
     "poll.ask": "Ask a friend's opinion",
     "poll.title": "Ask for advice",
+    "poll.pickList": "Pick a list",
     "poll.pickProducts": "Pick 2 to 4 products",
     "poll.pickFriends": "Who to ask?",
     "poll.noProducts": "Add some products to your selections first.",
