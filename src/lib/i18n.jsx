@@ -208,7 +208,10 @@ const TRANSLATIONS = {
     "poll.votes": "Votes",
     "poll.dismiss": "Ignorer ce sondage",
     "poll.delete": "Supprimer ce sondage",
+    "poll.name": "Nom du sondage (optionnel)",
+    "poll.namePlaceholder": "Ex : Quel casque pour courir ?",
     "notif.dismiss": "Masquer",
+    "notif.restoreHidden": "Réafficher les masquées ({n})",
 
     // Profile (personalization)
     "profile.title": "Mon profil",
@@ -598,7 +601,10 @@ const TRANSLATIONS = {
     "poll.votes": "Votes",
     "poll.dismiss": "Dismiss this poll",
     "poll.delete": "Delete this poll",
+    "poll.name": "Poll name (optional)",
+    "poll.namePlaceholder": "e.g. Which headphones for running?",
     "notif.dismiss": "Dismiss",
+    "notif.restoreHidden": "Show hidden ({n})",
 
     // Profile (personalization)
     "profile.title": "My profile",

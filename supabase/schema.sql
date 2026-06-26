@@ -92,8 +92,11 @@ create table if not exists public.polls (
   id         text        primary key,
   owner_id   uuid        not null references auth.users (id) on delete cascade,
   items      jsonb       not null,            -- [{b,m,p,u,i}, …]
+  title      text,                            -- optional poll name / question
   created_at timestamptz not null default now()
 );
+-- Backfill for existing deployments (create table if not exists won't add it).
+alter table public.polls add column if not exists title text;
 create table if not exists public.poll_recipients (
   poll_id      text not null references public.polls (id) on delete cascade,
   recipient_id uuid not null references auth.users (id) on delete cascade,
@@ -212,12 +215,13 @@ create policy "own polls" on public.polls
   using      (auth.uid() = owner_id)
   with check (auth.uid() = owner_id);
 
--- Create a poll and address it to accepted friends only.
-create or replace function public.create_poll(p_id text, p_items jsonb, p_recipients uuid[])
+-- Create a poll (optional title) and address it to accepted friends only.
+drop function if exists public.create_poll(text, jsonb, uuid[]);
+create or replace function public.create_poll(p_id text, p_items jsonb, p_recipients uuid[], p_title text default null)
 returns void
 language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.polls (id, owner_id, items) values (p_id, auth.uid(), p_items);
+  insert into public.polls (id, owner_id, items, title) values (p_id, auth.uid(), p_items, nullif(btrim(p_title), ''));
   insert into public.poll_recipients (poll_id, recipient_id)
   select p_id, r
   from unnest(p_recipients) as r
@@ -229,13 +233,14 @@ begin
   );
 end;
 $$;
-grant execute on function public.create_poll(text, jsonb, uuid[]) to authenticated;
+grant execute on function public.create_poll(text, jsonb, uuid[], text) to authenticated;
 
--- Polls addressed to me (with the asker's identity + my current vote).
+-- Polls addressed to me (with the asker's identity, the poll title + my vote).
+drop function if exists public.incoming_polls();
 create or replace function public.incoming_polls()
-returns table (id text, owner_id uuid, owner_name text, owner_avatar text, items jsonb, created_at timestamptz, my_vote integer)
+returns table (id text, owner_id uuid, owner_name text, owner_avatar text, title text, items jsonb, created_at timestamptz, my_vote integer)
 language sql security definer set search_path = public as $$
-  select pl.id, pl.owner_id, pr.display_name, pr.avatar_url, pl.items, pl.created_at,
+  select pl.id, pl.owner_id, pr.display_name, pr.avatar_url, pl.title, pl.items, pl.created_at,
     (select v.choice from public.poll_votes v where v.poll_id = pl.id and v.voter_id = auth.uid())
   from public.polls pl
   join public.poll_recipients prr on prr.poll_id = pl.id and prr.recipient_id = auth.uid()
@@ -244,11 +249,12 @@ language sql security definer set search_path = public as $$
 $$;
 grant execute on function public.incoming_polls() to authenticated;
 
--- My polls with per-voter results.
+-- My polls (with title) and per-voter results.
+drop function if exists public.outgoing_polls();
 create or replace function public.outgoing_polls()
-returns table (id text, items jsonb, created_at timestamptz, votes jsonb)
+returns table (id text, title text, items jsonb, created_at timestamptz, votes jsonb)
 language sql security definer set search_path = public as $$
-  select pl.id, pl.items, pl.created_at,
+  select pl.id, pl.title, pl.items, pl.created_at,
     coalesce((
       select jsonb_agg(jsonb_build_object('choice', v.choice, 'name', p.display_name))
       from public.poll_votes v join public.profiles p on p.user_id = v.voter_id

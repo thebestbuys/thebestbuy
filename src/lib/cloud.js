@@ -142,13 +142,14 @@ export async function cloudFetchProfileData() {
 }
 
 // ─── Polls (ask a friend's opinion) ─────────────────────────────────────────
-export async function createPoll(items, recipientIds) {
+export async function createPoll(items, recipientIds, title = '') {
   if (!hasCloudSession() || !items?.length || !recipientIds?.length) return { ok: false };
   const id = `poll_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   const { error } = await supabase.rpc('create_poll', {
     p_id: id,
     p_items: items,
     p_recipients: recipientIds,
+    p_title: title?.trim() ? title.trim().slice(0, 120) : null,
   });
   return { ok: !error, id, error };
 }

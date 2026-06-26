@@ -18,6 +18,7 @@ export default function AskOpinionPanel({ open, onClose, getAmazonUrl }) {
   const [friends, setFriends] = useState([]);
   const [pickedP, setPickedP] = useState([]); // product ids
   const [pickedF, setPickedF] = useState([]); // friend user ids
+  const [name, setName] = useState('');
   const [sent, setSent] = useState(false);
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export default function AskOpinionPanel({ open, onClose, getAmazonUrl }) {
     listFriends().then(setFriends).catch(() => {});
     setPickedP([]);
     setPickedF([]);
+    setName('');
     setSent(false);
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -55,7 +57,7 @@ export default function AskOpinionPanel({ open, onClose, getAmazonUrl }) {
       u: getAmazonUrl ? getAmazonUrl(p) : p.amazon_url,
       i: p.image_url || null,
     }));
-    const { ok } = await createPoll(payload, pickedF);
+    const { ok } = await createPoll(payload, pickedF, name);
     if (ok) {
       setSent(true);
       setTimeout(() => onClose(), 1200);
@@ -85,6 +87,15 @@ export default function AskOpinionPanel({ open, onClose, getAmazonUrl }) {
           </div>
         ) : (
           <div className="friends-body">
+            <div className="friends-section">{t('poll.name')}</div>
+            <input
+              type="text"
+              className="profile-input"
+              value={name}
+              maxLength={120}
+              placeholder={t('poll.namePlaceholder')}
+              onChange={(e) => setName(e.target.value)}
+            />
             <div className="friends-section">
               {t('poll.pickProducts')} <span className="sel-list-n">{pickedP.length}/4</span>
             </div>

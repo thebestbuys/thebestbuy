@@ -11,7 +11,7 @@ import {
   deletePoll,
   dismissPoll,
 } from '../lib/cloud.js';
-import { getDismissed, dismissNotif } from '../lib/dismissed.js';
+import { getDismissed, dismissNotif, clearDismissed } from '../lib/dismissed.js';
 import { AmazonPrice, ProductImage } from './ProductCard.jsx';
 import {
   listOccasions,
@@ -66,6 +66,12 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
   const hideReminder = (dismissKey) => {
     dismissNotif(user?.sub, dismissKey);
     setHidden((cur) => new Set(cur).add(dismissKey));
+  };
+
+  // Bring back everything hidden by mistake.
+  const restoreHidden = () => {
+    clearDismissed(user?.sub);
+    setHidden(new Set());
   };
 
   const amazonUrl = (p) =>
@@ -229,6 +235,7 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
                         ✕
                       </button>
                     </div>
+                    {poll.title && <div className="poll-card-title">{poll.title}</div>}
                     <ul className="pub-items poll-vote-items">
                       {(poll.items || []).map((p, idx) => {
                         const chosen = poll.my_vote === idx;
@@ -257,7 +264,14 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
               </>
             )}
 
-            <div className="friends-section">{t('notif.occasions')}</div>
+            <div className="friends-section notif-occ-head">
+              <span>{t('notif.occasions')}</span>
+              {hidden.size > 0 && (
+                <button type="button" className="notif-restore" onClick={restoreHidden}>
+                  {t('notif.restoreHidden', { n: hidden.size })}
+                </button>
+              )}
+            </div>
             {visibleUpcoming.length === 0 ? (
               <div className="friends-hint">{nothing ? t('notif.empty') : '—'}</div>
             ) : (
@@ -296,7 +310,8 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
                   const votes = Array.isArray(poll.votes) ? poll.votes : [];
                   return (
                     <div key={poll.id} className="poll-card">
-                      <div className="poll-card-head poll-card-head-end">
+                      <div className={'poll-card-head' + (poll.title ? '' : ' poll-card-head-end')}>
+                        {poll.title && <span>{poll.title}</span>}
                         <button
                           type="button"
                           className="poll-card-x"

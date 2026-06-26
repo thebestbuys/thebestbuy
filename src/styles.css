@@ -3410,6 +3410,33 @@ button.chat-bubble.chat-editable {
   background: var(--bg-softer);
   color: var(--text);
 }
+.poll-card-title {
+  padding: 0 12px 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.notif-occ-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.notif-restore {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+.notif-restore:hover {
+  text-decoration: underline;
+}
 .poll-vote-items .pub-item {
   align-items: center;
 }

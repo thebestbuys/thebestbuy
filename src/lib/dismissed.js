@@ -27,3 +27,11 @@ export function dismissNotif(userId, key) {
     localStorage.setItem(keyFor(userId), JSON.stringify([...set]));
   } catch {}
 }
+
+// Un-hide everything — used by the "show hidden reminders" action when the user
+// dismissed an occasion by mistake.
+export function clearDismissed(userId) {
+  try {
+    localStorage.removeItem(keyFor(userId));
+  } catch {}
+}
