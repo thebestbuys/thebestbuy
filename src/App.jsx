@@ -286,15 +286,27 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
   }, []);
 
   // Suggestion chips picked by the AI for the current season / events, tailored
-  // to the user's profile when signed in. Null until loaded → the static list
-  // below is shown meanwhile and as a fallback if the call fails.
-  const [aiSuggestions, setAiSuggestions] = useState(null);
+  // to the user's profile when signed in. `null` while loading → nothing is
+  // rendered; once resolved the chips pop in one by one (staggered animation).
+  // The static list is only a fallback used if the AI call fails/returns empty.
+  const [suggestions, setSuggestions] = useState(null);
   useEffect(() => {
     let alive = true;
+    setSuggestions(null); // reset on lang/user change so the chips re-pop
     const profile = profileToPrompt(getProfile(user?.sub), lang);
+    const fallback = [
+      { key: 'suggestion.ac', icon: 'ac' },
+      { key: 'suggestion.fan', icon: 'fan' },
+      { key: 'suggestion.phone', icon: 'phone' },
+      { key: 'suggestion.laptop', icon: 'laptop' },
+      { key: 'suggestion.tv', icon: 'tv' },
+      { key: 'suggestion.earbuds', icon: 'earbuds' },
+      { key: 'suggestion.watch', icon: 'watch' },
+      { key: 'suggestion.vacuum', icon: 'vacuum' },
+    ].map((s) => ({ label: t(s.key), icon: s.icon }));
     fetchSuggestions({ lang, profile })
-      .then((s) => { if (alive && Array.isArray(s) && s.length) setAiSuggestions(s); })
-      .catch(() => {});
+      .then((s) => { if (alive) setSuggestions(Array.isArray(s) && s.length ? s : fallback); })
+      .catch(() => { if (alive) setSuggestions(fallback); });
     return () => { alive = false; };
   }, [lang, user?.sub]);
 
@@ -304,19 +316,6 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
     const cat = detectCategory(query) || query.trim();
     onPick(cat, query.trim());
   };
-
-  const fallbackSuggestions = [
-    { key: 'suggestion.ac', icon: 'ac' },
-    { key: 'suggestion.fan', icon: 'fan' },
-    { key: 'suggestion.phone', icon: 'phone' },
-    { key: 'suggestion.laptop', icon: 'laptop' },
-    { key: 'suggestion.tv', icon: 'tv' },
-    { key: 'suggestion.earbuds', icon: 'earbuds' },
-    { key: 'suggestion.watch', icon: 'watch' },
-    { key: 'suggestion.vacuum', icon: 'vacuum' },
-  ].map((s) => ({ label: t(s.key), icon: s.icon }));
-  // AI-picked chips when available (season/events + profile), else the static set.
-  const suggestions = (aiSuggestions && aiSuggestions.length) ? aiSuggestions : fallbackSuggestions;
 
   const SuggestionIcon = ({ icon }) => {
     const p = { width: 14, height: 14, viewBox: '0 0 14 14', fill: 'none', 'aria-hidden': true };
@@ -456,10 +455,11 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           </form>
 
           <div className="home-suggestions">
-            {suggestions.map((s, i) => {
+            {suggestions?.map((s, i) => {
               const label = s.label;
               return (
-                <button key={`${label}-${i}`} type="button" className="suggestion-chip"
+                <button key={`${label}-${i}`} type="button" className="suggestion-chip suggestion-chip--pop"
+                  style={{ animationDelay: `${i * 70}ms` }}
                   onClick={() => onPick(detectCategory(label) || label, label)}>
                   <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
                   {label}
