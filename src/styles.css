@@ -213,6 +213,7 @@ ul {
 }
 .home-search-row .home-search {
   flex: 1;
+  min-width: 0; /* allow the form to shrink below its content min so the "?" stays in view on phones */
   max-width: none;
 }
 .home-help-btn {
@@ -424,6 +425,19 @@ ul {
 }
 .home-footer-link:hover {
   color: var(--text);
+}
+/* Phones: stack the footer and let the copyright/legal meta wrap instead of
+   forcing one nowrap line that overflows the viewport. */
+@media (max-width: 560px) {
+  .home-footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .home-footer-meta {
+    flex-wrap: wrap;
+    white-space: normal;
+    gap: 4px 16px;
+  }
 }
 
 /* Results page footer */
