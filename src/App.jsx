@@ -488,8 +488,15 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
         <main className="home-main">
           <h1 className="home-logo">Oraklia</h1>
           <p className="home-greeting">
-            {firstName ? t('m.greetingLead', { name: firstName }) : t('m.greetingLeadAnon')}{' '}
-            <span className="home-greeting-hl">{t('m.greetingHighlight')}</span>
+            {firstName ? (
+              <>
+                {t('m.greetingPre')}
+                <span className="home-greeting-hl">{firstName}</span>
+                {t('m.greetingPost')}
+              </>
+            ) : (
+              t('m.greetingAnon')
+            )}
           </p>
           <div className="home-search-row">
             <form className="home-search" onSubmit={submit}>

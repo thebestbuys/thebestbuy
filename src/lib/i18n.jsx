@@ -400,9 +400,9 @@ const TRANSLATIONS = {
     "m.suggestions": "Suggestions",
     "m.searchHint":
       "Demandez en langage naturel — « un clavier silencieux à moins de 80 € »",
-    "m.greetingLead": "Salut {name},",
-    "m.greetingLeadAnon": "Salut,",
-    "m.greetingHighlight": "on cherche quoi aujourd'hui ?",
+    "m.greetingPre": "Salut ",
+    "m.greetingPost": ", on cherche quoi aujourd'hui ?",
+    "m.greetingAnon": "Salut, on cherche quoi aujourd'hui ?",
     "m.seeAll": "voir tout →",
     "m.resume": "Reprendre",
     "m.noRecents":
@@ -810,9 +810,9 @@ const TRANSLATIONS = {
     // Mobile
     "m.suggestions": "Suggestions",
     "m.searchHint": 'Ask in plain words — "a quiet keyboard under €80"',
-    "m.greetingLead": "Hey {name},",
-    "m.greetingLeadAnon": "Hey there,",
-    "m.greetingHighlight": "what shall we find today?",
+    "m.greetingPre": "Hey ",
+    "m.greetingPost": ", what shall we find today?",
+    "m.greetingAnon": "Hey there, what shall we find today?",
     "m.seeAll": "see all →",
     "m.resume": "Resume",
     "m.noRecents": "No search yet. Start one and you'll find it here.",
