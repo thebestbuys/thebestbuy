@@ -132,7 +132,7 @@ function LoginModal({ onClose }) {
   );
 }
 
-function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk, onOpenNotifications, onOpenTrending }) {
+function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk, onOpenNotifications, onOpenTrending, onOpenOwned }) {
   const { t } = useI18n();
   const wrapRef = useRef(null);
   const count = listSelections(user?.sub).length;
@@ -186,6 +186,7 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
         count > 0 ? <span className="auth-dropdown-count">{count}</span> : null,
       )}
       {item(t('home.history'), onOpenHistory)}
+      {item(t('auth.owned'), onOpenOwned)}
       {item(t('auth.occasions'), onOpenNotifications)}
       {item(t('auth.myFriends'), onOpenFriends)}
       {item(t('poll.ask'), onOpenAsk)}
@@ -207,7 +208,7 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
   );
 }
 
-export default function AuthMenu({ variant = 'home', onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk, onOpenNotifications, onOpenTrending }) {
+export default function AuthMenu({ variant = 'home', onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk, onOpenNotifications, onOpenTrending, onOpenOwned }) {
   const { user, signOut } = useAuth();
   const { t } = useI18n();
   const [openLogin, setOpenLogin] = useState(false);
@@ -273,6 +274,7 @@ export default function AuthMenu({ variant = 'home', onOpenSelections, onOpenPro
           onOpenAsk={onOpenAsk}
           onOpenNotifications={onOpenNotifications}
           onOpenTrending={onOpenTrending}
+          onOpenOwned={onOpenOwned}
         />
       )}
     </div>
