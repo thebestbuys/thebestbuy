@@ -10,6 +10,16 @@ create table if not exists public.selections (
   primary key (user_id, product_id)
 );
 
+-- ── Owned ("Déjà acheté") — products the user already has, so the advisor
+--    stops recommending them. Same shape as selections.
+create table if not exists public.owned (
+  user_id    uuid        not null references auth.users (id) on delete cascade,
+  product_id text        not null,
+  data       jsonb       not null,
+  added_at   timestamptz not null default now(),
+  primary key (user_id, product_id)
+);
+
 -- ── Conversations (chat history) ──────────────────────────────────────────
 create table if not exists public.conversations (
   user_id    uuid        not null references auth.users (id) on delete cascade,
@@ -121,6 +131,7 @@ create table if not exists public.shared_lists (
 
 -- ── Row Level Security ────────────────────────────────────────────────────
 alter table public.selections    enable row level security;
+alter table public.owned         enable row level security;
 alter table public.conversations enable row level security;
 alter table public.recipients    enable row level security;
 alter table public.profiles      enable row level security;
@@ -134,6 +145,12 @@ alter table public.poll_votes      enable row level security;
 
 drop policy if exists "own selections" on public.selections;
 create policy "own selections" on public.selections
+  for all
+  using      (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "own owned" on public.owned;
+create policy "own owned" on public.owned
   for all
   using      (auth.uid() = user_id)
   with check (auth.uid() = user_id);
@@ -409,9 +426,12 @@ create index if not exists link_clicks_product_idx on public.link_clicks (produc
 -- the products they saved (selections) or clicked (link_clicks). Sharing is
 -- OPT-OUT: a friend contributes unless profiles.data.shareTrends = 'false'.
 -- Ranked by the number of distinct friends behind each product; returns one
--- representative snapshot (most recent) per product plus that friend count.
+-- representative snapshot (most recent) per product, that friend count, plus a
+-- small array of the friends' public identities (name + avatar) so the UI can
+-- show who's behind it. Return signature changed → drop before recreate.
+drop function if exists public.circle_trending(int);
 create or replace function public.circle_trending(max_items int default 12)
-returns table (product_id text, data jsonb, friend_count int)
+returns table (product_id text, data jsonb, friend_count int, friends jsonb)
 language sql security definer set search_path = public as $$
   with friends as (
     select case when fr.requester_id = auth.uid() then fr.addressee_id else fr.requester_id end as fid
@@ -440,15 +460,32 @@ language sql security definer set search_path = public as $$
     from signals
     group by product_id
   ),
+  people as (
+    -- distinct friend identities per product (one row per friend), most recent first
+    select distinct on (s.product_id, s.user_id)
+      s.product_id, s.user_id, p.display_name, p.avatar_url, s.ts
+    from signals s
+    join public.profiles p on p.user_id = s.user_id
+    order by s.product_id, s.user_id, s.ts desc
+  ),
+  fr_list as (
+    -- up to 6 friends per product as a jsonb array {id,name,avatar}
+    select product_id,
+      jsonb_agg(jsonb_build_object('id', user_id, 'name', display_name, 'avatar', avatar_url)
+                order by ts desc) filter (where rn <= 6) as friends
+    from (select *, row_number() over (partition by product_id order by ts desc) as rn from people) ranked
+    group by product_id
+  ),
   rep as (
     -- one representative snapshot per product: the most recent signal
     select distinct on (product_id) product_id, data, ts
     from signals
     order by product_id, ts desc
   )
-  select a.product_id, r.data, a.friend_count::int
+  select a.product_id, r.data, a.friend_count::int, coalesce(fl.friends, '[]'::jsonb)
   from agg a
   join rep r on r.product_id = a.product_id
+  left join fr_list fl on fl.product_id = a.product_id
   order by a.friend_count desc, r.ts desc
   limit greatest(1, least(max_items, 50));
 $$;
@@ -469,6 +506,8 @@ grant execute on function public.list_incoming_requests() to authenticated;
 -- Helpful index for the ordered fetches the client does.
 create index if not exists selections_added_idx
   on public.selections (user_id, added_at desc);
+create index if not exists owned_added_idx
+  on public.owned (user_id, added_at desc);
 create index if not exists conversations_updated_idx
   on public.conversations (user_id, updated_at desc);
 create index if not exists recipients_added_idx

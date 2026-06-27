@@ -142,6 +142,17 @@ const TRANSLATIONS = {
     "auth.myFriends": "Mes amis",
     "auth.occasions": "Occasions",
     "auth.myTrends": "Tendances de mes amis",
+    "auth.owned": "Déjà acheté",
+
+    // Déjà acheté ("owned")
+    "owned.title": "Déjà acheté",
+    "owned.sub": "Parmi les produits que tu as ouverts dans les propositions, indique ceux que tu possèdes déjà — on arrête de te les proposer.",
+    "owned.emptyText": "Tu n'as encore ouvert aucun produit.",
+    "owned.emptySub": "Clique sur une recommandation pour voir son détail : elle apparaîtra ici, prête à être marquée comme déjà achetée.",
+    "owned.selectPrompt": "Sélectionne un produit à gauche pour voir le détail.",
+    "owned.mark": "Je l'ai déjà acheté",
+    "owned.marked": "Déjà acheté",
+    "owned.count": "{n} marqué(s) comme déjà acheté(s)",
 
     // Friends (social graph)
     "friends.title": "Mes amis",
@@ -254,6 +265,12 @@ const TRANSLATIONS = {
     "trending.friendsCount": "{n} ami(s) dans votre cercle",
     "trending.empty":
       "Rien pour l'instant. Dès que vos amis sauvegardent ou consultent des produits (partage activé), ils apparaîtront ici.",
+    "trending.spotlight": "Le plus sauvegardé cette semaine",
+    "trending.view": "Voir sur amazon.fr",
+    "trending.savedVerb": "l'ont sauvegardé",
+    "trending.savedVerbOne": "l'a sauvegardé",
+    "trending.andOthers": "et {n} autre(s)",
+    "trending.friendsSaved": "{n} ami(s) l'ont sauvegardé",
 
     // History
     "history.title": "Historique",
@@ -536,6 +553,17 @@ const TRANSLATIONS = {
     "auth.myFriends": "My friends",
     "auth.occasions": "Occasions",
     "auth.myTrends": "My friends' trends",
+    "auth.owned": "Already bought",
+
+    // Déjà acheté ("owned")
+    "owned.title": "Already bought",
+    "owned.sub": "Among the products you've opened from the suggestions, mark the ones you already own — we'll stop recommending them.",
+    "owned.emptyText": "You haven't opened any product yet.",
+    "owned.emptySub": "Click a recommendation to view its details: it'll show up here, ready to be marked as already bought.",
+    "owned.selectPrompt": "Select a product on the left to see its details.",
+    "owned.mark": "I already bought this",
+    "owned.marked": "Already bought",
+    "owned.count": "{n} marked as already bought",
 
     // Friends (social graph)
     "friends.title": "My friends",
@@ -648,6 +676,12 @@ const TRANSLATIONS = {
     "trending.friendsCount": "{n} friend(s) in your circle",
     "trending.empty":
       "Nothing yet. As soon as your friends save or view products (sharing on), they'll show up here.",
+    "trending.spotlight": "Most saved this week",
+    "trending.view": "View on amazon.fr",
+    "trending.savedVerb": "saved it",
+    "trending.savedVerbOne": "saved it",
+    "trending.andOthers": "and {n} other(s)",
+    "trending.friendsSaved": "{n} friend(s) saved it",
 
     // History
     "history.title": "History",

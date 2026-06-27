@@ -21,13 +21,16 @@ const AskOpinionPanel = lazy(() => import('./components/AskOpinionPanel.jsx'));
 const LegalNotices = lazy(() => import('./components/LegalNotices.jsx'));
 const GuideArticle = lazy(() => import('./components/GuideArticle.jsx'));
 const GuidesPanel = lazy(() => import('./components/GuidesPanel.jsx'));
+const OwnedPanel = lazy(() => import('./components/OwnedPanel.jsx'));
 import { GUIDES, localizeGuide, getGuide } from './data/guides.js';
-import { HeroCard, PriceTag, ProductImage, ProductLinkCard, ProductSkeleton, ScoreRing, SmallCard, VerifiedRating } from './components/ProductCard.jsx';
+import { HeroCard, PriceTag, ProductImage, ProductLinkCard, ProductSkeleton, ScoreRing, SmallCard, VerifiedBadge, VerifiedRating } from './components/ProductCard.jsx';
 import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './lib/i18n.jsx';
 import { getProfile, profileToPrompt } from './lib/profile.js';
 import { giftToPrompt, giftTitle, buildShareUrl, loadSharedPayload } from './lib/gift.js';
 import { getAccessToken, circleTrending, logLinkClick } from './lib/cloud.js';
+import { getOwnedNames, ownedIdSet } from './lib/owned.js';
+import { recordClick } from './lib/clicked.js';
 import { toast } from './lib/toast.js';
 import {
   deriveTitle,
@@ -157,11 +160,77 @@ function ResultsPlaceholder({ category }) {
   );
 }
 
+// Overlapping avatar pile of the friends behind a trending product. Uses the
+// friend's avatar when present, otherwise a coloured initial (deterministic
+// tone from the name/id) — never an invented identity. `count` is the true
+// distinct-friend count; if it exceeds the shown faces we add a "+N" chip.
+function FriendFaces({ friends = [], count, size = 32, max = 4 }) {
+  const list = (friends || []).slice(0, max);
+  const total = count ?? (friends || []).length;
+  const extra = total - list.length;
+  const tone = (seed) => {
+    let h = 0;
+    for (const ch of String(seed || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return `hsl(${h % 360} 38% 52%)`;
+  };
+  const initial = (f) => (String(f.name || '').trim().charAt(0) || '?').toUpperCase();
+  return (
+    <div className="tc-faces" aria-hidden="true">
+      {list.map((f, i) =>
+        f.avatar ? (
+          <img
+            key={f.id || i}
+            className="tc-face"
+            src={f.avatar}
+            alt=""
+            style={{ width: size, height: size }}
+          />
+        ) : (
+          <span
+            key={f.id || i}
+            className="tc-face tc-face-init"
+            style={{ width: size, height: size, background: tone(f.name || f.id || i) }}
+          >
+            {initial(f)}
+          </span>
+        ),
+      )}
+      {extra > 0 && (
+        <span className="tc-face tc-face-more" style={{ width: size, height: size }}>
+          +{extra}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// Human sentence for who saved a product, from the (possibly empty) friend
+// identities + the authoritative distinct count. Falls back to a count-only
+// phrase when names aren't available (older snapshots / no profile name).
+function savedByText(friends, count, t) {
+  const names = (friends || []).map((f) => String(f.name || '').trim()).filter(Boolean);
+  const total = count ?? names.length;
+  if (names.length === 0) return t('trending.friendsSaved', { n: total });
+  if (names.length === 1 && total <= 1) return `${names[0]} ${t('trending.savedVerbOne')}`;
+  const shown = names.slice(0, 3);
+  const rest = total - shown.length;
+  let who;
+  if (rest > 0) {
+    who = `${shown.join(', ')} ${t('trending.andOthers', { n: rest })}`;
+  } else if (shown.length === 1) {
+    who = shown[0];
+  } else {
+    who = `${shown.slice(0, -1).join(', ')} & ${shown[shown.length - 1]}`;
+  }
+  return `${who} ${t('trending.savedVerb')}`;
+}
+
 // "Tendances dans mon cercle" — products most saved/clicked by the signed-in
 // user's consenting friends (aggregated server-side by circle_trending). Hidden
 // for guests and when the circle has nothing to show yet.
 function TrendingCircle({ onOpen, hideHeader }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   const { user, cloudReady } = useAuth();
   const [items, setItems] = useState([]);
   const [loaded, setLoaded] = useState(false);
@@ -191,6 +260,8 @@ function TrendingCircle({ onOpen, hideHeader }) {
   // Hidden for guests, and until the first fetch resolves (no empty flash).
   if (!user || !cloudReady || !loaded) return null;
 
+  const [leader, ...rest] = items;
+
   return (
     <section className="home-trending">
       {!hideHeader && (
@@ -200,10 +271,69 @@ function TrendingCircle({ onOpen, hideHeader }) {
         </div>
       )}
       {items.length > 0 ? (
-        <div className="trending-row">
-          {items.map((p) => (
-            <ProductLinkCard key={p.id} product={p} friendCount={p.friend_count} onSelect={onOpen} />
-          ))}
+        <div className="tc-wrap">
+          {/* Spotlight — the single most-saved product across the circle. */}
+          <article
+            className="tc-spotlight"
+            role="button"
+            tabIndex={0}
+            onClick={() => onOpen(leader)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(leader); } }}
+          >
+            <div className="tc-spot-label">
+              <span className="tc-spot-fire" aria-hidden="true">🔥</span>
+              {t('trending.spotlight')}
+            </div>
+            <div className="tc-spot-main">
+              <div className="tc-spot-thumb">
+                <ProductImage product={leader} size="large" />
+              </div>
+              <div className="tc-spot-info">
+                <div className="tc-spot-brandrow">
+                  <span className="tc-spot-brand">{leader.brand}</span>
+                  <VerifiedBadge product={leader} compact />
+                </div>
+                <h3 className="tc-spot-model">{leader.model}</h3>
+                <div className="tc-spot-price">
+                  <PriceTag product={leader} locale={locale} t={t} variant="small" />
+                </div>
+                <div className="tc-spot-social">
+                  <FriendFaces friends={leader.friends} count={leader.friend_count} />
+                  <span className="tc-spot-socialtxt">
+                    {savedByText(leader.friends, leader.friend_count, t)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="tc-spot-cta"
+              onClick={(e) => { e.stopPropagation(); onOpen(leader); }}
+            >
+              {t('trending.view')} <span aria-hidden="true">→</span>
+            </button>
+          </article>
+
+          {/* Runners-up — the next most-popular picks, compact. */}
+          {rest.length > 0 && (
+            <div className="tc-grid">
+              {rest.slice(0, 4).map((p) => (
+                <button key={p.id} type="button" className="tc-mini" onClick={() => onOpen(p)}>
+                  <span className="tc-mini-thumb">
+                    <ProductImage product={p} size="small" />
+                  </span>
+                  <span className="tc-mini-info">
+                    <span className="tc-mini-model">{p.model}</span>
+                    <span className="tc-mini-meta">
+                      <PriceTag product={p} locale={locale} t={t} variant="small" />
+                      <span className="tc-mini-dot" aria-hidden="true">·</span>
+                      <span className="tc-mini-friends">👥 {p.friend_count}</span>
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <p className="trending-empty">{t('trending.empty')}</p>
@@ -243,7 +373,7 @@ function TrendingPanel({ onClose, onOpen }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifPing, onOpenGift, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTrending, onLoadConvo, onOpenProduct }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifPing, onOpenGift, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTrending, onOpenOwned, onLoadConvo, onOpenProduct }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -357,6 +487,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           onOpenAsk={onOpenAsk}
           onOpenNotifications={onOpenNotifications}
           onOpenTrending={onOpenTrending}
+          onOpenOwned={onOpenOwned}
         />
       </div>
 
@@ -565,6 +696,7 @@ export default function App() {
   const [giftOpen, setGiftOpen] = useState(false);
   const [guidesOpen, setGuidesOpen] = useState(false);
   const [trendingOpen, setTrendingOpen] = useState(false);
+  const [ownedOpen, setOwnedOpen] = useState(false);
   const [giftPrefill, setGiftPrefill] = useState(null); // {occasion} when opened from a reminder
   const [gift, setGift] = useState(null);   // recipient payload when in gift mode
   const [shareCopied, setShareCopied] = useState(false);
@@ -661,10 +793,20 @@ export default function App() {
     };
   }, []);
 
+  // "brand model" names of products the user marked as already bought, appended
+  // to every recommendation's `exclude` so the advisor stops proposing them.
+  const ownedExclude = () => getOwnedNames(user?.sub);
+
   const loadProducts = (products) => {
     if (!Array.isArray(products) || !products.length) return;
+    // Drop anything the user already owns (defence in depth: the name is also in
+    // `exclude`, but Gemini can still echo it back).
+    const owned = ownedIdSet(user?.sub);
+    const base = products
+      .map((p) => ({ ...p, id: productKey(p), category }))
+      .filter((p) => !owned.has(p.id));
+    if (!base.length) return;
     setDone(true);
-    const base = products.map((p) => ({ ...p, id: productKey(p), category }));
     setRecommendedProducts(base);
     base.forEach((p, i) => {
       enrichProduct(p).then((enriched) => {
@@ -695,7 +837,7 @@ export default function App() {
     if (willRecommend) setLoadingProducts(true);
     try {
       if (willRecommend) {
-        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId });
+        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId, exclude: ownedExclude() });
         if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
         loadProducts(rec?.products);
       }
@@ -777,7 +919,7 @@ export default function App() {
     const friendId = gift?.friendId || '';
     const token = friendId ? getAccessToken() : '';
     try {
-      const rec = await recommend({ objet, answers: answersForApi, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId, exclude });
+      const rec = await recommend({ objet, answers: answersForApi, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId, exclude: [...ownedExclude(), ...exclude] });
       if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
       loadProducts(rec?.products);
     } catch (e) {
@@ -911,6 +1053,7 @@ export default function App() {
   const navOpenGift = () => { setGiftPrefill(null); pushHistory(); setGiftOpen(true); };
   const navOpenGuides = () => { pushHistory(); setGuidesOpen(true); };
   const navOpenTrending = () => { pushHistory(); setTrendingOpen(true); };
+  const navOpenOwned = () => { pushHistory(); setOwnedOpen(true); };
   // From a reminder: friend birthday → start directly; holiday/occasion → open
   // the gift form prefilled with the occasion so the user can link a recipient.
   const giftFromReminder = (payload) => {
@@ -923,7 +1066,7 @@ export default function App() {
       setGiftOpen(true);
     }
   };
-  const navOpenProduct = (p) => { pushHistory(); setSelected(p); };
+  const navOpenProduct = (p) => { recordClick(user?.sub, p); pushHistory(); setSelected(p); };
   // Start a gift advisor session from the recipient form. Reuses the normal
   // advisor pipeline with a pseudo-category ('gift') and the recipient payload;
   // the auto-start effect (keyed on convoId) fires the first recommend + ask.
@@ -972,13 +1115,14 @@ export default function App() {
       if (historyOpen) { setHistoryOpen(false); return; }
       if (guidesOpen) { setGuidesOpen(false); return; }
       if (trendingOpen) { setTrendingOpen(false); return; }
+      if (ownedOpen) { setOwnedOpen(false); return; }
       if (activeGuide) { setActiveGuide(null); return; }
       if (category) { handleHome(); return; }
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, giftOpen, notifOpen, askOpen, friendsOpen, profileOpen, selectionsOpen, guidesOpen, trendingOpen, historyOpen, activeGuide, category]);
+  }, [selected, legalOpen, giftOpen, notifOpen, askOpen, friendsOpen, profileOpen, selectionsOpen, guidesOpen, trendingOpen, ownedOpen, historyOpen, activeGuide, category]);
 
   // Keep the tab title in sync with the open guide (matches the prerendered
   // per-guide <title>); reset to the brand title elsewhere.
@@ -1097,6 +1241,7 @@ export default function App() {
           onOpenGuide={navOpenGuide}
           onOpenGuides={navOpenGuides}
           onOpenTrending={navOpenTrending}
+          onOpenOwned={navOpenOwned}
           onLoadConvo={loadConversation}
           onOpenProduct={navOpenProduct}
         />
@@ -1117,6 +1262,7 @@ export default function App() {
           {giftOpen && <GiftPanel open onClose={navBack} onSubmit={startGift} initial={giftPrefill} />}
           {guidesOpen && <GuidesPanel open onClose={navBack} onOpenGuide={navOpenGuide} />}
           {trendingOpen && <TrendingPanel onClose={navBack} onOpen={navOpenProduct} />}
+          {ownedOpen && <OwnedPanel open onClose={navBack} />}
           {legalOpen && <LegalNotices open onClose={navBack} />}
         </Suspense>
       </>
@@ -1166,7 +1312,7 @@ export default function App() {
             )}
             <FriendRequestsBell onOpen={navOpenNotifications} pingKey={notifOpen} />
             <LangToggle />
-            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} onOpenOwned={navOpenOwned} />
           </>
         ) : null}
       />
@@ -1192,7 +1338,7 @@ export default function App() {
             )}
             <FriendRequestsBell onOpen={navOpenNotifications} pingKey={notifOpen} />
             <LangToggle />
-            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} onOpenOwned={navOpenOwned} />
           </div>
         </header>
 
@@ -1273,6 +1419,7 @@ export default function App() {
         {notifOpen && <NotificationsPanel open onClose={navBack} onGift={giftFromReminder} />}
         {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
         {trendingOpen && <TrendingPanel onClose={navBack} onOpen={navOpenProduct} />}
+        {ownedOpen && <OwnedPanel open onClose={navBack} />}
         {legalOpen && <LegalNotices open onClose={navBack} />}
       </Suspense>
 
