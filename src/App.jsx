@@ -351,21 +351,15 @@ function TrendingPanel({ onClose, onOpen }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
   return (
-    <div className="auth-modal-bg" onClick={onClose}>
-      <div
-        className="side-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="trending-panel-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="history-head">
-          <div>
-            <h2 id="trending-panel-title" className="history-title">{t('trending.title')}</h2>
-            <p className="history-sub">{t('trending.sub')}</p>
-          </div>
-          <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
-        </header>
+    <div className="sheet-page trending-panel" role="dialog" aria-modal="true" aria-labelledby="trending-panel-title">
+      <header className="sheet-head">
+        <div>
+          <h2 id="trending-panel-title" className="history-title">{t('trending.title')}</h2>
+          <p className="history-sub">{t('trending.sub')}</p>
+        </div>
+        <button className="sheet-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+      </header>
+      <div className="sheet-body">
         <TrendingCircle onOpen={onOpen} hideHeader />
       </div>
     </div>
