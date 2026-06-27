@@ -118,15 +118,8 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
   };
 
   return (
-    <div className="auth-modal-bg" onClick={onClose}>
-      <div
-        className="history-panel selections-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="selections-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="history-head">
+    <div className="sheet-page selections-panel" role="dialog" aria-modal="true" aria-labelledby="selections-title">
+        <header className="sheet-head">
           <div>
             <h2 id="selections-title" className="history-title">{t('selections.title')}</h2>
             <p className="history-sub">
@@ -140,9 +133,10 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
                 {shared ? t('selections.shareCopied') : t('selections.share')}
               </button>
             )}
-            <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+            <button className="sheet-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
           </div>
         </header>
+        <div className="sheet-body">
 
         {(lists.length > 0 || unfiledCount > 0) && (
           <div className="sel-lists-bar">

@@ -86,20 +86,14 @@ export default function AskOpinionPanel({ open, onClose, getAmazonUrl }) {
   };
 
   return (
-    <div className="auth-modal-bg" onClick={onClose}>
-      <div
-        className="history-panel notif-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="poll-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="history-head">
+    <div className="sheet-page notif-panel" role="dialog" aria-modal="true" aria-labelledby="poll-title">
+        <header className="sheet-head">
           <div>
             <h2 id="poll-title" className="history-title">{t('poll.title')}</h2>
           </div>
-          <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+          <button className="sheet-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
         </header>
+        <div className="sheet-body">
 
         {!user ? (
           <div className="history-empty">

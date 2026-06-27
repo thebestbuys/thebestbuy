@@ -34,15 +34,8 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
   };
 
   return (
-    <div className="auth-modal-bg" onClick={onClose}>
-      <div
-        className="history-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="history-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="history-head">
+    <div className="sheet-page history-sheet" role="dialog" aria-modal="true" aria-labelledby="history-title">
+        <header className="sheet-head">
           <div>
             <h2 id="history-title" className="history-title">
               {t('history.title')}
@@ -52,13 +45,14 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
             </p>
           </div>
           <button
-            className="auth-modal-close"
+            className="sheet-close"
             onClick={onClose}
             aria-label={t('auth.close')}
           >
             ✕
           </button>
         </header>
+        <div className="sheet-body">
 
         {items.length === 0 ? (
           <div className="history-empty">

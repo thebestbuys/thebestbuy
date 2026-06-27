@@ -52,15 +52,8 @@ export default function ProfilePanel({ open, onClose }) {
   const hasAny = Object.values(form).some((v) => String(v || '').trim());
 
   return (
-    <div className="auth-modal-bg" onClick={onClose}>
-      <div
-        className="history-panel profile-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="profile-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="history-head">
+    <div className="sheet-page profile-panel" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+        <header className="sheet-head">
           <div>
             <h2 id="profile-title" className="history-title">
               {t('profile.title')}
@@ -68,13 +61,14 @@ export default function ProfilePanel({ open, onClose }) {
             <p className="history-sub">{t('profile.sub')}</p>
           </div>
           <button
-            className="auth-modal-close"
+            className="sheet-close"
             onClick={onClose}
             aria-label={t('auth.close')}
           >
             ✕
           </button>
         </header>
+        <div className="sheet-body">
 
         <div className="profile-form">
           <div className="profile-grid">

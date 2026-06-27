@@ -29,7 +29,7 @@ function initials(name = '') {
 
 // Bell hub: pending friend requests + upcoming occasions (friends' birthdays +
 // manual occasions), each with a "find a gift" shortcut.
-export default function NotificationsPanel({ open, onClose, onGift }) {
+export default function NotificationsPanel({ open = true, onClose, onGift }) {
   const { user } = useAuth();
   const { t } = useI18n();
   const [incoming, setIncoming] = useState([]);
@@ -174,20 +174,13 @@ export default function NotificationsPanel({ open, onClose, onGift }) {
   const nothing = incoming.length === 0 && visibleUpcoming.length === 0;
 
   return (
-    <div className="auth-modal-bg" onClick={onClose}>
-      <div
-        className="history-panel notif-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="notif-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="history-head">
-          <div>
-            <h2 id="notif-title" className="history-title">{t('notif.title')}</h2>
-          </div>
-          <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
-        </header>
+    <div className="notif-pop" role="dialog" aria-label={t('notif.title')}>
+      <div className="notif-pop-caret" aria-hidden="true" />
+      <header className="notif-pop-head">
+        <h3 className="notif-pop-title">{t('notif.title')}</h3>
+        <button className="notif-pop-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+      </header>
+      <div className="notif-pop-body">
 
         {!user ? (
           <div className="history-empty">

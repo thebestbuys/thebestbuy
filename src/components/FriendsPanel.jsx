@@ -137,15 +137,8 @@ export default function FriendsPanel({ open, onClose }) {
     `https://www.amazon.fr/s?k=${encodeURIComponent(`${p.brand} ${p.model}`)}&tag=oraklia123-21`;
 
   return (
-    <div className="auth-modal-bg" onClick={onClose}>
-      <div
-        className="history-panel friends-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="friends-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="history-head">
+    <div className="sheet-page friends-panel" role="dialog" aria-modal="true" aria-labelledby="friends-title">
+        <header className="sheet-head">
           <div>
             {viewing ? (
               <>
@@ -161,8 +154,9 @@ export default function FriendsPanel({ open, onClose }) {
               </>
             )}
           </div>
-          <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+          <button className="sheet-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
         </header>
+        <div className="sheet-body">
 
         {!user ? (
           <div className="history-empty">
