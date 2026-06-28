@@ -403,6 +403,11 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
   // pop in one by one. The static list is a fallback if the AI call fails/empties.
   const [suggestions, setSuggestions] = useState(null);
   const [skelOut, setSkelOut] = useState(false); // skeletons playing their exit
+  // Bumped by the "other ideas" chip to re-roll the suggestions on demand.
+  const [refreshTick, setRefreshTick] = useState(0);
+  // While true, the real chips play the same pop-out exit as the skeletons,
+  // before we swap back to the loading state and re-fetch.
+  const [chipsLeaving, setChipsLeaving] = useState(false);
   useEffect(() => {
     let alive = true;
     let swapTimer;
@@ -426,7 +431,18 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
       .then((s) => resolve(Array.isArray(s) && s.length ? s : fallback))
       .catch(() => resolve(fallback));
     return () => { alive = false; clearTimeout(swapTimer); };
-  }, [lang, user?.sub]);
+  }, [lang, user?.sub, refreshTick]);
+
+  // "Other ideas": play the chips' pop-out exit, then re-roll (the effect above
+  // resets to skeletons and fetches a fresh set).
+  const reroll = () => {
+    if (chipsLeaving) return;
+    setChipsLeaving(true);
+    setTimeout(() => {
+      setChipsLeaving(false);
+      setRefreshTick((n) => n + 1);
+    }, 230);
+  };
 
   const submit = (e) => {
     e.preventDefault();
@@ -579,17 +595,34 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           <div className="home-suggestions-slot">
             <div className="home-suggestions">
               {suggestions
-                ? suggestions.map((s, i) => {
-                    const label = s.label;
-                    return (
-                      <button key={`${label}-${i}`} type="button" className="suggestion-chip suggestion-chip--pop"
-                        style={{ animationDelay: `${i * 160}ms` }}
-                        onClick={() => onPick(detectCategory(label) || label, label)}>
-                        <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
-                        {label}
-                      </button>
-                    );
-                  })
+                ? [
+                    ...suggestions.map((s, i) => {
+                      const label = s.label;
+                      return (
+                        <button key={`${label}-${i}`} type="button"
+                          className={'suggestion-chip suggestion-chip--pop' + (chipsLeaving ? ' is-leaving' : '')}
+                          style={{ animationDelay: `${i * 160}ms` }}
+                          onClick={() => onPick(detectCategory(label) || label, label)}>
+                          <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
+                          {label}
+                        </button>
+                      );
+                    }),
+                    // "Other ideas" — sits at the end of the chip row, same pop-in
+                    // (and pop-out) effect; re-rolls the whole set on click.
+                    <button key="__more" type="button"
+                      className={'suggestion-chip suggestion-chip--more suggestion-chip--pop' + (chipsLeaving ? ' is-leaving' : '')}
+                      style={{ animationDelay: `${suggestions.length * 160}ms` }}
+                      onClick={reroll}
+                      title={t('suggestion.refresh')}>
+                      <span className="suggestion-chip-icon">
+                        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                          <path d="M12 7a5 5 0 1 1-1.5-3.5M12 1.5V4H9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </span>
+                      {t('suggestion.refresh')}
+                    </button>,
+                  ]
                 : [170, 150, 190, 160, 140].map((w, i) => (
                     <span key={i}
                       className={'suggestion-chip-skel' + (skelOut ? ' is-leaving' : '')}

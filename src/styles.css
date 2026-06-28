@@ -334,6 +334,18 @@ ul {
 .suggestion-chip:hover {
   filter: brightness(0.94);
 }
+/* "Other ideas" — same chip shape/animation, ghost treatment so it reads as an
+   action that re-rolls the row rather than a category. */
+.suggestion-chip--more {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+.suggestion-chip--more:hover {
+  filter: none;
+  border-color: var(--accent-light-ink);
+  color: var(--accent-light-ink);
+}
 /* Chips pop in one by one once the AI suggestions resolve. `both` fill keeps
    each chip invisible until its staggered animation-delay (set inline) fires. */
 @keyframes chip-pop {
@@ -343,8 +355,13 @@ ul {
 .suggestion-chip--pop {
   animation: chip-pop 0.4s ease-out both;
 }
+/* On re-roll, the real chips leave with the same pop-out as the skeletons. */
+.suggestion-chip.is-leaving {
+  animation: chip-pop-out 0.22s ease-in both;
+}
 @media (prefers-reduced-motion: reduce) {
   .suggestion-chip--pop { animation: none; opacity: 1; }
+  .suggestion-chip.is-leaving { animation: none; opacity: 0; }
 }
 /* Skeleton chips shown while the AI suggestions load (shimmer sweep). Same
    pill shape as a real chip; reuses the recommendation skeleton's shimmer. */

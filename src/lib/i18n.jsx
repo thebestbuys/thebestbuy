@@ -35,6 +35,7 @@ const TRANSLATIONS = {
     "suggestion.vacuum": "Aspirateur robot",
     "suggestion.coffee": "Machine à café",
     "suggestion.speaker": "Enceinte Bluetooth",
+    "suggestion.refresh": "Autres idées",
     "guides.sectionTitle": "Nos guides d'achat",
     "guides.sectionSub":
       "Des conseils clairs et indépendants pour choisir le bon produit, sans jargon.",
@@ -499,6 +500,7 @@ const TRANSLATIONS = {
     "suggestion.vacuum": "Robot vacuum",
     "suggestion.coffee": "Coffee machine",
     "suggestion.speaker": "Bluetooth speaker",
+    "suggestion.refresh": "Other ideas",
     "guides.sectionTitle": "Our buying guides",
     "guides.sectionSub":
       "Clear, independent advice to choose the right product — no jargon.",
