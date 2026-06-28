@@ -638,20 +638,6 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
                       className={'suggestion-chip-skel' + (skelOut ? ' is-leaving' : '')}
                       style={{ width: w }} aria-hidden="true" />
                   ))}
-              {suggestions && (
-                <button
-                  type="button"
-                  className="suggestion-refresh"
-                  onClick={() => setRefreshTick((t) => t + 1)}
-                  title={t('suggestion.refresh')}
-                  aria-label={t('suggestion.refresh')}
-                >
-                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                    <path d="M12 7a5 5 0 1 1-1.5-3.5M12 1.5V4H9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  {t('suggestion.refresh')}
-                </button>
-              )}
             </div>
           </div>
 
