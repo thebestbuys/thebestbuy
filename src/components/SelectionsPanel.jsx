@@ -22,6 +22,7 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
   const [lists, setLists] = useState([]);
   const [active, setActive] = useState('all'); // 'all' | listId | 'unfiled'
   const [shared, setShared] = useState(false);
+  const [q, setQ] = useState('');
   const loadedSig = useRef(null);
 
   const reload = () => {
@@ -40,6 +41,7 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
 
   useEffect(() => {
     if (!open) return;
+    setQ('');
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -60,6 +62,13 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
       : items.filter((p) => inList(p, active));
 
   const activeList = lists.find((l) => l.id === active) || null;
+
+  const term = q.trim().toLowerCase();
+  const visible = term
+    ? shown.filter((p) =>
+        [p.brand, p.model].filter(Boolean).some((s) => String(s).toLowerCase().includes(term)),
+      )
+    : shown;
 
   const remove = (id, e) => {
     e.stopPropagation();
@@ -127,12 +136,6 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
             </p>
           </div>
           <div className="selections-head-actions">
-            {shown.length > 0 && (
-              <button type="button" className="selections-share-btn" onClick={shareList}>
-                <span aria-hidden="true">🔗</span>
-                {shared ? t('selections.shareCopied') : t('selections.share')}
-              </button>
-            )}
             <button className="sheet-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
           </div>
         </header>
@@ -181,6 +184,9 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
                 : t('lists.visibilityPrivateNote')}
             </span>
             <span className="sel-manage-spacer" />
+            <button type="button" className="sel-manage-btn" onClick={shareList}>
+              <span aria-hidden="true">🔗</span> {shared ? t('selections.shareCopied') : t('selections.share')}
+            </button>
             <button type="button" className="sel-manage-btn" onClick={onRenameList}>
               {t('lists.rename')}
             </button>
@@ -190,16 +196,30 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
           </div>
         )}
 
+        {items.length > 0 && (
+          <div className="friends-search">
+            <input
+              type="text"
+              className="profile-input"
+              value={q}
+              placeholder={t('selections.searchPlaceholder')}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </div>
+        )}
+
         {shown.length === 0 ? (
           <div className="history-empty">
             <div className="history-empty-icon">♡</div>
             <div className="history-empty-text">{t('selections.emptyText')}</div>
             <div className="history-empty-sub">{t('selections.emptySub')}</div>
           </div>
+        ) : visible.length === 0 ? (
+          <div className="friends-hint">{t('search.noResults')}</div>
         ) : (
           <>
             <ul className="selections-grid">
-              {shown.map((p) => {
+              {visible.map((p) => {
                 const url = getAmazonUrl ? getAmazonUrl(p) : p.amazon_url;
                 return (
                   <li key={p.id} className="amz-card">

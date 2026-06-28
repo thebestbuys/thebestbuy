@@ -5566,3 +5566,27 @@ select.profile-input {
 @media (prefers-reduced-motion: reduce) {
   .toast { animation: none; }
 }
+
+/* ── Verified Amazon photos sit on a white panel ─────────────────────────────
+   Amazon product photos ship on a pure-white background; on a tinted/dark card
+   that white square looked like a glitch. Give every container that holds a REAL
+   Amazon photo a matching white background plus a soft border + shadow so the
+   photo reads as a clean, delimited panel. Placeholders (mockups) are untouched
+   and keep their soft-tinted background. Appended last so it wins over the
+   per-surface `.x .prod-img-wrap { background }` overrides. */
+.prod-img-wrap.is-photo {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+:root[data-theme="dark"] .prod-img-wrap.is-photo {
+  border-color: rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+/* The panel already provides white background + border + shadow, so drop the
+   per-image filter entirely. On a white panel the image's drop-shadow drew a
+   faint rectangle around the photo (looking "stuck on"), and the dark-mode
+   brightness() left a grey seam — both gone now, so the photo sits flush. */
+.prod-img-wrap.is-photo .prod-img-amazon {
+  filter: none;
+}

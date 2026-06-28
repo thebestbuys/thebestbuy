@@ -10,6 +10,7 @@ import {
   removeFriend,
   friendPublicLists,
   publicListItems,
+  logLinkClick,
 } from '../lib/cloud.js';
 import { AmazonPrice, ProductImage } from './ProductCard.jsx';
 
@@ -181,12 +182,13 @@ export default function FriendsPanel({ open, onClose }) {
                     <ul className="pub-items">
                       {listItems.map((p, i) => {
                         const url = amazonUrl(p);
+                        const onAmazon = () => logLinkClick(p).catch(() => {});
                         return (
                           <li key={i} className="pub-item">
-                            <a className="pub-item-img" href={url} target="_blank" rel="noopener noreferrer sponsored" title={t('product.viewAmazon')}>
+                            <a className="pub-item-img" href={url} target="_blank" rel="noopener noreferrer sponsored" title={t('product.viewAmazon')} onClick={onAmazon}>
                               <ProductImage product={p} size="small" />
                             </a>
-                            <a className="pub-item-main" href={url} target="_blank" rel="noopener noreferrer sponsored">
+                            <a className="pub-item-main" href={url} target="_blank" rel="noopener noreferrer sponsored" onClick={onAmazon}>
                               <span className="pub-item-title">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
                               {p.price != null && (
                                 <span className="pub-item-price"><AmazonPrice price={p.price} /></span>

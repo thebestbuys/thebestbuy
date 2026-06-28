@@ -11,9 +11,13 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
   const { user } = useAuth();
   const { t } = useI18n();
   const [items, setItems] = useState([]);
+  const [q, setQ] = useState('');
 
   useEffect(() => {
-    if (open) setItems(listConversations(user?.sub));
+    if (open) {
+      setItems(listConversations(user?.sub));
+      setQ('');
+    }
   }, [open, user?.sub]);
 
   useEffect(() => {
@@ -32,6 +36,18 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
     deleteConversation(user?.sub, id);
     setItems((cur) => cur.filter((c) => c.id !== id));
   };
+
+  const catLabelOf = (c) =>
+    ['phone', 'laptop', 'headphones'].includes(c.category) ? t('cat.' + c.category) : c.category;
+
+  const term = q.trim().toLowerCase();
+  const shown = term
+    ? items.filter((c) =>
+        [c.title, c.objet, c.initialQuery, catLabelOf(c)]
+          .filter(Boolean)
+          .some((s) => String(s).toLowerCase().includes(term)),
+      )
+    : items;
 
   return (
     <div className="sheet-page history-sheet" role="dialog" aria-modal="true" aria-labelledby="history-title">
@@ -54,19 +70,31 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
         </header>
         <div className="sheet-body">
 
+        {items.length > 0 && (
+          <div className="friends-search">
+            <input
+              type="text"
+              className="profile-input"
+              value={q}
+              placeholder={t('history.searchPlaceholder')}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </div>
+        )}
+
         {items.length === 0 ? (
           <div className="history-empty">
             <div className="history-empty-icon">✦</div>
             <div className="history-empty-text">{t('history.emptyText')}</div>
             <div className="history-empty-sub">{t('history.emptySub')}</div>
           </div>
+        ) : shown.length === 0 ? (
+          <div className="friends-hint">{t('search.noResults')}</div>
         ) : (
           <ul className="history-list">
-            {items.map((c) => {
+            {shown.map((c) => {
               const isCurrent = c.id === currentId;
-              const catLabel = ['phone', 'laptop', 'headphones'].includes(c.category)
-                ? t('cat.' + c.category)
-                : c.category;
+              const catLabel = catLabelOf(c);
               return (
                 <li
                   key={c.id}
