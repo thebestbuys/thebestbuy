@@ -477,12 +477,12 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             className="auth-trigger auth-trigger-home"
             onClick={onOpenHistory}
             title={t('home.history')}
+            aria-label={t('home.history')}
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.4" />
               <path d="M8 4.8V8l2.2 1.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            {t('home.history')}
           </button>
         )}
         <LangToggle />
