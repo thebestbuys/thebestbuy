@@ -15,7 +15,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { GUIDES, localizeGuide, affiliateSearch } from '../src/data/guides.js';
+import { GUIDES, localizeGuide, affiliateSearch, giftGuides } from '../src/data/guides.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -26,10 +26,23 @@ const L = {
   back: 'Retour',
   meta: (updated, time) => `Guide d'achat · ${updated} · ${time} de lecture`,
   checklist: 'La checklist à retenir',
+  giftChecklist: 'Nos idées en bref',
   picks: 'Notre sélection par budget',
+  giftPicks: 'Notre sélection de cadeaux',
   picksIntro:
     'Des pistes pour démarrer vos recherches sur Amazon.fr selon votre budget. Les prix et la disponibilité évoluent ; seule la page Amazon fait foi.',
+  giftPicksIntro:
+    'Quelques idées concrètes pour démarrer vos recherches sur Amazon.fr selon le budget. Les prix et la disponibilité évoluent ; seule la page Amazon fait foi.',
   pickCta: 'Voir sur Amazon →',
+  // Hub /idees-cadeaux
+  giftHubEyebrow: 'Idées cadeaux',
+  giftHubTitle: 'Idées cadeaux : nos sélections par profil et par occasion',
+  giftHubSubtitle:
+    "Plus d'inspiration, moins de doute. Des idées cadeaux triées par personne à gâter, par centre d'intérêt et par budget.",
+  giftHubIntro:
+    "Trouver le bon cadeau peut vite tourner au casse-tête. On a réuni ici nos idées cadeaux classées par profil (homme, femme, ado…) et par occasion (Noël, anniversaire) pour vous aider à trouver l'idée juste, quel que soit votre budget. Et si vous hésitez encore, notre conseiller d'achat IA peut affiner la sélection en quelques questions.",
+  read: 'Lire le guide →',
+  cardEyebrow: (time) => `Idées cadeaux · ${time}`,
   advisorTitle: 'Besoin d’un conseil personnalisé ?',
   advisorText:
     'Répondez à quelques questions et notre conseiller intelligent sélectionne les produits les plus adaptés à vos besoins.',
@@ -98,6 +111,7 @@ function guideBody(g) {
       )}</div><div class="guide-pick-cta">${esc(L.pickCta)}</div></a>`;
     })
     .join('');
+  const isGift = g.type === 'gift';
   return `<div class="guide-page"><div class="guide-topbar"><button type="button" class="guide-back"><span aria-hidden="true">←</span> ${esc(
     L.back,
   )}</button><div class="guide-topbar-right"><span class="guide-brand">Oraklia</span></div></div><article class="guide-article"><header class="guide-header"><div class="guide-eyebrow">${esc(
@@ -107,14 +121,38 @@ function guideBody(g) {
   )}</p></header><p class="guide-intro">${esc(
     g.intro,
   )}</p>${sections}<section class="guide-checklist"><h2>${esc(
-    L.checklist,
+    isGift ? L.giftChecklist : L.checklist,
   )}</h2><ul>${checklist}</ul></section><section class="guide-picks"><h2>${esc(
-    L.picks,
+    isGift ? L.giftPicks : L.picks,
   )}</h2><p class="guide-picks-intro">${esc(
-    L.picksIntro,
+    isGift ? L.giftPicksIntro : L.picksIntro,
   )}</p><div class="guide-picks-grid">${picks}</div></section><section class="guide-advisor-cta"><h2>${esc(
     L.advisorTitle,
   )}</h2><p>${esc(L.advisorText)}</p></section><p class="guide-disclosure">${esc(
+    L.affiliate,
+  )}</p></article></div>`;
+}
+
+function giftHubBody() {
+  const cards = giftGuides()
+    .map((guide) => {
+      const g = localizeGuide(guide, 'fr');
+      return `<a class="guide-card" href="/guide/${escAttr(g.slug)}"><div class="guide-card-eyebrow">${esc(
+        L.cardEyebrow(g.readTime),
+      )}</div><h2 class="guide-card-title">${esc(g.title)}</h2><p class="guide-card-sub">${esc(
+        g.subtitle,
+      )}</p><span class="guide-card-link">${esc(L.read)}</span></a>`;
+    })
+    .join('');
+  return `<div class="guide-page"><div class="guide-topbar"><button type="button" class="guide-back"><span aria-hidden="true">←</span> ${esc(
+    L.back,
+  )}</button><div class="guide-topbar-right"><span class="guide-brand">Oraklia</span></div></div><article class="guide-article"><header class="guide-header"><div class="guide-eyebrow">${esc(
+    L.giftHubEyebrow,
+  )}</div><h1 class="guide-title">${esc(L.giftHubTitle)}</h1><p class="guide-subtitle">${esc(
+    L.giftHubSubtitle,
+  )}</p></header><p class="guide-intro">${esc(
+    L.giftHubIntro,
+  )}</p><div class="home-guides-grid">${cards}</div><p class="guide-disclosure">${esc(
     L.affiliate,
   )}</p></article></div>`;
 }
@@ -156,6 +194,37 @@ for (const guide of GUIDES) {
   write(`guide/${g.slug}`, html);
   urls.push(`/guide/${g.slug}`);
   console.log('prerendered', `/guide/${g.slug}`);
+}
+
+// ── Gift-ideas hub (/idees-cadeaux) ──────────────────────────────────────────
+{
+  const canonical = `${ORIGIN}/idees-cadeaux`;
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: L.giftHubTitle,
+    description: L.giftHubSubtitle,
+    inLanguage: 'fr-FR',
+    itemListElement: giftGuides().map((guide, i) => {
+      const g = localizeGuide(guide, 'fr');
+      return {
+        '@type': 'ListItem',
+        position: i + 1,
+        name: g.title,
+        url: `${ORIGIN}/guide/${g.slug}`,
+      };
+    }),
+  };
+  const html = renderPage({
+    title: `${L.giftHubTitle} — Oraklia`,
+    description: L.giftHubSubtitle,
+    canonical,
+    headExtra: `<script type="application/ld+json">\n${JSON.stringify(jsonLd)}\n  </script>`,
+    body: giftHubBody(),
+  });
+  write('idees-cadeaux', html);
+  urls.push('/idees-cadeaux');
+  console.log('prerendered', '/idees-cadeaux');
 }
 
 // ── Legal (light: correct head + a short crawlable body; JS renders the rest) ─

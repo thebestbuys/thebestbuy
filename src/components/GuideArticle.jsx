@@ -5,6 +5,7 @@ import LangToggle from './LangToggle.jsx';
 export default function GuideArticle({ guide, onBack, onStartAdvisor }) {
   const { t } = useI18n();
   if (!guide) return null;
+  const isGift = guide.type === 'gift';
 
   return (
     <div className="guide-page">
@@ -35,7 +36,7 @@ export default function GuideArticle({ guide, onBack, onStartAdvisor }) {
         ))}
 
         <section className="guide-checklist">
-          <h2>{t('guide.checklist')}</h2>
+          <h2>{isGift ? t('guide.giftChecklist') : t('guide.checklist')}</h2>
           <ul>
             {guide.checklist.map((item, i) => (
               <li key={i}><span className="guide-check" aria-hidden="true">✓</span>{item}</li>
@@ -44,8 +45,8 @@ export default function GuideArticle({ guide, onBack, onStartAdvisor }) {
         </section>
 
         <section className="guide-picks">
-          <h2>{t('guide.picks')}</h2>
-          <p className="guide-picks-intro">{t('guide.picksIntro')}</p>
+          <h2>{isGift ? t('guide.giftPicks') : t('guide.picks')}</h2>
+          <p className="guide-picks-intro">{isGift ? t('guide.giftPicksIntro') : t('guide.picksIntro')}</p>
           <div className="guide-picks-grid">
             {guide.picks.map((p, i) => (
               <a
