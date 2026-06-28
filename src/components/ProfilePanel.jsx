@@ -52,6 +52,76 @@ const splitHobbies = (s) =>
     .map((x) => x.trim())
     .filter(Boolean);
 
+const pad2 = (n) => String(n).padStart(2, '0');
+
+// Explicit Day / Month / Year selector for the birthday. The native
+// <input type="date"> follows the BROWSER locale (so it showed MM/DD in English
+// even with the app in French, which made day/month ambiguous). This stores the
+// same canonical 'YYYY-MM-DD' but with month names localized to the APP language
+// and clearly labelled fields, so there's no inversion. An incomplete date
+// clears the value.
+function BirthdayPicker({ value, lang, t, onChange }) {
+  const [y = '', m = '', d = ''] = String(value || '').split('-');
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const name = new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'fr-FR', {
+      month: 'long',
+    }).format(new Date(2000, i, 1));
+    return name.charAt(0).toUpperCase() + name.slice(1); // "janvier" → "Janvier"
+  });
+  const now = new Date().getFullYear();
+  const years = Array.from({ length: now - 1920 + 1 }, (_, i) => now - i);
+  const daysInMonth = y && m ? new Date(Number(y), Number(m), 0).getDate() : 31;
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  const emit = (ny, nm, nd) => {
+    onChange(ny && nm && nd ? `${ny}-${nm}-${nd}` : '');
+  };
+
+  return (
+    <div className="birthday-picker">
+      <select
+        className="profile-input"
+        aria-label={t('profile.birthdayDay')}
+        value={d}
+        onChange={(e) => emit(y, m, e.target.value)}
+      >
+        <option value="">{t('profile.birthdayDay')}</option>
+        {days.map((n) => (
+          <option key={n} value={pad2(n)}>{n}</option>
+        ))}
+      </select>
+      <select
+        className="profile-input"
+        aria-label={t('profile.birthdayMonth')}
+        value={m}
+        onChange={(e) => {
+          const nm = e.target.value;
+          // Clamp the day if the new month is shorter (e.g. 31 → Feb).
+          const max = y && nm ? new Date(Number(y), Number(nm), 0).getDate() : 31;
+          const nd = d && Number(d) > max ? pad2(max) : d;
+          emit(y, nm, nd);
+        }}
+      >
+        <option value="">{t('profile.birthdayMonth')}</option>
+        {months.map((name, i) => (
+          <option key={name} value={pad2(i + 1)}>{name}</option>
+        ))}
+      </select>
+      <select
+        className="profile-input"
+        aria-label={t('profile.birthdayYear')}
+        value={y}
+        onChange={(e) => emit(e.target.value, m, d)}
+      >
+        <option value="">{t('profile.birthdayYear')}</option>
+        {years.map((yr) => (
+          <option key={yr} value={String(yr)}>{yr}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 // "Mon profil": structured fields (gender, age, profession, nationality,
 // address) plus a free-form self-description, stored per user and injected into
 // the AI prompts so questions/recommendations match the user. Mirrors the modal
@@ -221,15 +291,17 @@ export default function ProfilePanel({ open, onClose }) {
             </div>
 
             <div className="profile-field">
-              <label className="profile-label" htmlFor="profile-birthday">
+              <label className="profile-label" id="profile-birthday-label">
                 {t('profile.birthday')}
               </label>
-              <input
-                id="profile-birthday"
-                className="profile-input"
-                type="date"
-                value={form.birthday || ''}
-                onChange={set('birthday')}
+              <BirthdayPicker
+                value={form.birthday}
+                lang={lang}
+                t={t}
+                onChange={(v) => {
+                  setForm((f) => ({ ...f, birthday: v }));
+                  setSaved(false);
+                }}
               />
             </div>
 

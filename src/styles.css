@@ -4410,6 +4410,16 @@ select.profile-input {
   line-height: 1.45;
 }
 
+/* Birthday: explicit day / month / year selects (locale-proof). */
+.birthday-picker {
+  display: grid;
+  grid-template-columns: 0.8fr 1.4fr 1fr;
+  gap: 8px;
+}
+.birthday-picker .profile-input {
+  min-width: 0;
+}
+
 /* ── Passions / hobbies (multi-select) ─────────────────────────────────── */
 .hobby-section {
   margin: 4px 0 2px;
