@@ -4410,14 +4410,179 @@ select.profile-input {
   line-height: 1.45;
 }
 
-/* Birthday: explicit day / month / year selects (locale-proof). */
-.birthday-picker {
-  display: grid;
-  grid-template-columns: 0.8fr 1.4fr 1fr;
-  gap: 8px;
+/* Birthday: custom calendar picker (locale-proof, on-brand). */
+.birthday-field {
+  position: relative;
 }
-.birthday-picker .profile-input {
-  min-width: 0;
+.birthday-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+}
+.birthday-trigger.is-empty {
+  color: var(--text-faint);
+}
+.birthday-trigger svg {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+.birthday-pop {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 280px;
+  max-width: 100%;
+  padding: 12px;
+  background: var(--bg-elev);
+  border: 0.5px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  animation: bb-rise 0.16s ease-out;
+}
+.bp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.bp-nav {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elev);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.bp-nav:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.bp-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.bp-title {
+  flex: 1;
+  appearance: none;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+.bp-title:hover {
+  background: var(--bg-soft);
+}
+.bp-weekdays,
+.bp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.bp-weekday {
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-faint);
+  padding: 4px 0;
+  text-transform: capitalize;
+}
+.bp-day {
+  appearance: none;
+  border: 0;
+  background: none;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.bp-day:hover:not(.is-blank) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.bp-day.is-blank {
+  cursor: default;
+}
+.bp-day.is-today {
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.bp-day.is-selected,
+.bp-day.is-selected:hover {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.bp-years {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.bp-year {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 8px 0;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.bp-year:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.bp-year.is-selected {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.bp-clear {
+  width: 100%;
+  margin-top: 10px;
+  appearance: none;
+  border: 0.5px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.bp-clear:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 /* ── Passions / hobbies (multi-select) ─────────────────────────────────── */

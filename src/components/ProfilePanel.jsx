@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
 import { getProfile, saveProfile } from '../lib/profile.js';
@@ -53,71 +53,150 @@ const splitHobbies = (s) =>
     .filter(Boolean);
 
 const pad2 = (n) => String(n).padStart(2, '0');
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-// Explicit Day / Month / Year selector for the birthday. The native
-// <input type="date"> follows the BROWSER locale (so it showed MM/DD in English
-// even with the app in French, which made day/month ambiguous). This stores the
-// same canonical 'YYYY-MM-DD' but with month names localized to the APP language
-// and clearly labelled fields, so there's no inversion. An incomplete date
-// clears the value.
+// Calendar date picker for the birthday, styled to match the site (no native
+// <input type="date">, which followed the BROWSER locale and showed MM/DD in
+// English — ambiguous, easy to invert). Month/weekday names are localized to the
+// APP language via Intl; the value stays canonical 'YYYY-MM-DD'. Tapping the
+// "Month Year" title opens a year grid so jumping back decades is quick.
 function BirthdayPicker({ value, lang, t, onChange }) {
-  const [y = '', m = '', d = ''] = String(value || '').split('-');
-  const months = Array.from({ length: 12 }, (_, i) => {
-    const name = new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'fr-FR', {
-      month: 'long',
-    }).format(new Date(2000, i, 1));
-    return name.charAt(0).toUpperCase() + name.slice(1); // "janvier" → "Janvier"
-  });
-  const now = new Date().getFullYear();
-  const years = Array.from({ length: now - 1920 + 1 }, (_, i) => now - i);
-  const daysInMonth = y && m ? new Date(Number(y), Number(m), 0).getDate() : 31;
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
+  const selected = /^\d{4}-\d{2}-\d{2}$/.test(value || '')
+    ? { y: +value.slice(0, 4), m: +value.slice(5, 7) - 1, d: +value.slice(8, 10) }
+    : null;
 
-  const emit = (ny, nm, nd) => {
-    onChange(ny && nm && nd ? `${ny}-${nm}-${nd}` : '');
+  const [open, setOpen] = useState(false);
+  const [yearGrid, setYearGrid] = useState(false);
+  // Month currently shown in the calendar.
+  const initial = selected || { y: new Date().getFullYear() - 25, m: 0, d: 1 };
+  const [view, setView] = useState({ y: initial.y, m: initial.m });
+  const rootRef = useRef(null);
+
+  // Re-centre on the selected date each time the popover opens.
+  useEffect(() => {
+    if (open) {
+      setYearGrid(false);
+      setView({ y: (selected || initial).y, m: (selected || initial).m });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // Close on outside click / Escape.
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
+  }, [open]);
+
+  const triggerLabel = selected
+    ? cap(new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' })
+        .format(new Date(selected.y, selected.m, selected.d)))
+    : t('profile.birthdayPlaceholder');
+
+  // Monday-first weekday headers (Jan 1 2024 is a Monday).
+  const weekdays = Array.from({ length: 7 }, (_, i) =>
+    cap(new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2024, 0, 1 + i))).replace('.', ''),
+  );
+  const monthName = cap(new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' })
+    .format(new Date(view.y, view.m, 1)));
+
+  const firstOffset = (new Date(view.y, view.m, 1).getDay() + 6) % 7; // Monday=0
+  const daysInMonth = new Date(view.y, view.m + 1, 0).getDate();
+  const cells = [
+    ...Array.from({ length: firstOffset }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+
+  const today = new Date();
+  const isToday = (d) => today.getFullYear() === view.y && today.getMonth() === view.m && today.getDate() === d;
+  const isSelected = (d) => selected && selected.y === view.y && selected.m === view.m && selected.d === d;
+
+  const shift = (delta) => {
+    const dt = new Date(view.y, view.m + delta, 1);
+    setView({ y: dt.getFullYear(), m: dt.getMonth() });
+  };
+  const pick = (d) => {
+    onChange(`${view.y}-${pad2(view.m + 1)}-${pad2(d)}`);
+    setOpen(false);
   };
 
+  const nowY = new Date().getFullYear();
+  const years = Array.from({ length: nowY - 1920 + 1 }, (_, i) => nowY - i);
+
   return (
-    <div className="birthday-picker">
-      <select
-        className="profile-input"
-        aria-label={t('profile.birthdayDay')}
-        value={d}
-        onChange={(e) => emit(y, m, e.target.value)}
+    <div className="birthday-field" ref={rootRef}>
+      <button
+        type="button"
+        className={'profile-input birthday-trigger' + (selected ? '' : ' is-empty')}
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
       >
-        <option value="">{t('profile.birthdayDay')}</option>
-        {days.map((n) => (
-          <option key={n} value={pad2(n)}>{n}</option>
-        ))}
-      </select>
-      <select
-        className="profile-input"
-        aria-label={t('profile.birthdayMonth')}
-        value={m}
-        onChange={(e) => {
-          const nm = e.target.value;
-          // Clamp the day if the new month is shorter (e.g. 31 → Feb).
-          const max = y && nm ? new Date(Number(y), Number(nm), 0).getDate() : 31;
-          const nd = d && Number(d) > max ? pad2(max) : d;
-          emit(y, nm, nd);
-        }}
-      >
-        <option value="">{t('profile.birthdayMonth')}</option>
-        {months.map((name, i) => (
-          <option key={name} value={pad2(i + 1)}>{name}</option>
-        ))}
-      </select>
-      <select
-        className="profile-input"
-        aria-label={t('profile.birthdayYear')}
-        value={y}
-        onChange={(e) => emit(e.target.value, m, d)}
-      >
-        <option value="">{t('profile.birthdayYear')}</option>
-        {years.map((yr) => (
-          <option key={yr} value={String(yr)}>{yr}</option>
-        ))}
-      </select>
+        <span>{triggerLabel}</span>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="2.5" y="3.5" width="11" height="10" rx="1.6" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M2.5 6.5h11M5.5 2v2.5M10.5 2v2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="birthday-pop" role="dialog" aria-label={t('profile.birthday')}>
+          <div className="bp-head">
+            <button type="button" className="bp-nav" onClick={() => shift(-1)} aria-label="−" disabled={yearGrid}>‹</button>
+            <button type="button" className="bp-title" onClick={() => setYearGrid((v) => !v)}>
+              {yearGrid ? t('profile.birthdayYear') : monthName}
+            </button>
+            <button type="button" className="bp-nav" onClick={() => shift(1)} aria-label="+" disabled={yearGrid}>›</button>
+          </div>
+
+          {yearGrid ? (
+            <div className="bp-years">
+              {years.map((yr) => (
+                <button
+                  type="button"
+                  key={yr}
+                  className={'bp-year' + (yr === view.y ? ' is-selected' : '')}
+                  onClick={() => { setView((v) => ({ ...v, y: yr })); setYearGrid(false); }}
+                >
+                  {yr}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="bp-weekdays">
+                {weekdays.map((w) => <span key={w} className="bp-weekday">{w}</span>)}
+              </div>
+              <div className="bp-grid">
+                {cells.map((d, i) =>
+                  d == null ? (
+                    <span key={`b${i}`} className="bp-day is-blank" />
+                  ) : (
+                    <button
+                      type="button"
+                      key={d}
+                      className={'bp-day' + (isSelected(d) ? ' is-selected' : '') + (isToday(d) ? ' is-today' : '')}
+                      onClick={() => pick(d)}
+                    >
+                      {d}
+                    </button>
+                  ),
+                )}
+              </div>
+            </>
+          )}
+
+          {selected && (
+            <button type="button" className="bp-clear" onClick={() => { onChange(''); setOpen(false); }}>
+              {t('profile.clear')}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
