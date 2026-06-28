@@ -394,6 +394,66 @@ export async function respondFriendRequest(requestId, accept) {
   return { ok: !error, error };
 }
 
+// ─── Superuser ("god mode" / SU) ───────────────────────────────────────────
+// The single hard-wired admin account. This constant is used ONLY to decide
+// whether to SHOW the Admin entry in the UI — it grants no real privilege. Every
+// admin_* RPC below re-checks is_superuser() server-side (resolved from
+// auth.uid()), so a tampered client flag returns an empty set. Keep this in sync
+// with the email inside is_superuser() in supabase/schema.sql.
+export const SUPERUSER_EMAIL = 'thebestbuyersclub@gmail.com';
+
+export function isSuperuserEmail(email) {
+  return String(email || '').trim().toLowerCase() === SUPERUSER_EMAIL;
+}
+
+// Every registered user (server returns [] unless the caller is the superuser).
+export async function adminListUsers() {
+  if (!hasCloudSession()) return [];
+  const { data, error } = await supabase.rpc('admin_list_users');
+  if (error) return [];
+  return data || [];
+}
+
+// All of a user's lists (private included), with item counts.
+export async function adminUserLists(targetId) {
+  if (!hasCloudSession() || !targetId) return [];
+  const { data, error } = await supabase.rpc('admin_user_lists', { target: targetId });
+  if (error) return [];
+  return data || [];
+}
+
+// Product snapshots of one of a user's lists.
+export async function adminListItems(listId) {
+  if (!hasCloudSession() || !listId) return [];
+  const { data, error } = await supabase.rpc('admin_list_items', { list: listId });
+  if (error) return [];
+  return (data || []).map((r) => r.data).filter(Boolean);
+}
+
+// A user's full wishlist (every selection).
+export async function adminUserSelections(targetId) {
+  if (!hasCloudSession() || !targetId) return [];
+  const { data, error } = await supabase.rpc('admin_user_selections', { target: targetId });
+  if (error) return [];
+  return (data || []).map((r) => r.data).filter(Boolean);
+}
+
+// A user's "Déjà acheté" (owned) products.
+export async function adminUserOwned(targetId) {
+  if (!hasCloudSession() || !targetId) return [];
+  const { data, error } = await supabase.rpc('admin_user_owned', { target: targetId });
+  if (error) return [];
+  return (data || []).map((r) => r.data).filter(Boolean);
+}
+
+// A user's conversation history (the saved convo objects).
+export async function adminUserConversations(targetId) {
+  if (!hasCloudSession() || !targetId) return [];
+  const { data, error } = await supabase.rpc('admin_user_conversations', { target: targetId });
+  if (error) return [];
+  return (data || []).map((r) => r.data).filter(Boolean);
+}
+
 // ─── Conversations ───────────────────────────────────────────────────────
 export async function cloudUpsertConversation(convo) {
   if (!hasCloudSession() || !convo?.id) return;

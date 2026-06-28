@@ -4113,6 +4113,48 @@ button.chat-bubble.chat-editable {
   color: var(--text);
 }
 
+/* Admin (superuser "god mode") panel */
+.admin-user-email {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.admin-tabs {
+  margin: 4px 0 12px;
+  width: 100%;
+}
+.admin-convo {
+  padding: 4px 2px 8px;
+}
+.admin-convo-msgs {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.admin-msg {
+  font-size: 13px;
+  line-height: 1.35;
+  padding: 6px 10px;
+  border-radius: 10px;
+  max-width: 85%;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.admin-msg-user {
+  align-self: flex-end;
+  background: var(--accent-soft, rgba(255, 138, 0, 0.12));
+  color: var(--text);
+}
+.admin-msg-bot,
+.admin-msg-assistant {
+  align-self: flex-start;
+  background: var(--surface-2, rgba(127, 127, 127, 0.1));
+  color: var(--text);
+}
+
 /* Appearance (theme) switch inside the account dropdown */
 .auth-appearance {
   padding: 8px 12px 10px;

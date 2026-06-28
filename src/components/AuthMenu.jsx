@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
 import { listSelections } from '../lib/selections.js';
+import { isSuperuserEmail } from '../lib/cloud.js';
 import { getMode, setMode as setThemeMode } from '../lib/theme.js';
 
 const APPEARANCE_MODES = ['system', 'light', 'dark'];
@@ -132,7 +133,7 @@ function LoginModal({ onClose }) {
   );
 }
 
-function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk, onOpenNotifications, onOpenTrending, onOpenOwned }) {
+function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk, onOpenNotifications, onOpenTrending, onOpenOwned, onOpenAdmin }) {
   const { t } = useI18n();
   const wrapRef = useRef(null);
   const count = listSelections(user?.sub).length;
@@ -191,6 +192,12 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
       {item(t('auth.myFriends'), onOpenFriends)}
       {item(t('poll.ask'), onOpenAsk)}
       {item(t('auth.myTrends'), onOpenTrending)}
+      {isSuperuserEmail(user.email) && (
+        <>
+          <div className="auth-dropdown-sep" />
+          {item(t('auth.admin'), onOpenAdmin)}
+        </>
+      )}
       <div className="auth-dropdown-sep" />
       <AppearanceToggle />
       <div className="auth-dropdown-sep" />
@@ -208,7 +215,7 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
   );
 }
 
-export default function AuthMenu({ variant = 'home', onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk, onOpenNotifications, onOpenTrending, onOpenOwned }) {
+export default function AuthMenu({ variant = 'home', onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk, onOpenNotifications, onOpenTrending, onOpenOwned, onOpenAdmin }) {
   const { user, signOut } = useAuth();
   const { t } = useI18n();
   const [openLogin, setOpenLogin] = useState(false);
@@ -275,6 +282,7 @@ export default function AuthMenu({ variant = 'home', onOpenSelections, onOpenPro
           onOpenNotifications={onOpenNotifications}
           onOpenTrending={onOpenTrending}
           onOpenOwned={onOpenOwned}
+          onOpenAdmin={onOpenAdmin}
         />
       )}
     </div>

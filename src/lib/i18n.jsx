@@ -178,6 +178,25 @@ const TRANSLATIONS = {
     "friends.noPublicLists": "Aucune liste publique.",
     "friends.back": "← Retour",
 
+    // Admin (superuser / "god mode")
+    "auth.admin": "⚡ Admin",
+    "admin.title": "Admin",
+    "admin.sub": "Accès superutilisateur : toutes les données de tous les comptes.",
+    "admin.searchPlaceholder": "Filtrer par nom ou e-mail…",
+    "admin.noUsers": "Aucun utilisateur.",
+    "admin.users": "Utilisateurs",
+    "admin.back": "← Tous les utilisateurs",
+    "admin.tab.lists": "Listes",
+    "admin.tab.favs": "Favoris",
+    "admin.tab.owned": "Déjà acheté",
+    "admin.tab.history": "Historique",
+    "admin.empty.lists": "Aucune liste.",
+    "admin.empty.favs": "Aucun favori.",
+    "admin.empty.owned": "Rien d'acheté.",
+    "admin.empty.history": "Aucune conversation.",
+    "admin.convoMessages": "{n} message(s)",
+    "admin.convoRecs": "Recommandations",
+
     // Notifications / occasions
     "notif.title": "Notifications",
     "notif.requests": "Demandes d'amis",
@@ -588,6 +607,25 @@ const TRANSLATIONS = {
     "friends.theirLists": "{name}'s lists",
     "friends.noPublicLists": "No public list.",
     "friends.back": "← Back",
+
+    // Admin (superuser / "god mode")
+    "auth.admin": "⚡ Admin",
+    "admin.title": "Admin",
+    "admin.sub": "Superuser access: every account's data.",
+    "admin.searchPlaceholder": "Filter by name or e-mail…",
+    "admin.noUsers": "No users.",
+    "admin.users": "Users",
+    "admin.back": "← All users",
+    "admin.tab.lists": "Lists",
+    "admin.tab.favs": "Favorites",
+    "admin.tab.owned": "Bought",
+    "admin.tab.history": "History",
+    "admin.empty.lists": "No list.",
+    "admin.empty.favs": "No favorite.",
+    "admin.empty.owned": "Nothing bought.",
+    "admin.empty.history": "No conversation.",
+    "admin.convoMessages": "{n} message(s)",
+    "admin.convoRecs": "Recommendations",
 
     // Notifications / occasions
     "notif.title": "Notifications",

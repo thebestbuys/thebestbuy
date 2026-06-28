@@ -512,3 +512,93 @@ create index if not exists conversations_updated_idx
   on public.conversations (user_id, updated_at desc);
 create index if not exists recipients_added_idx
   on public.recipients (user_id, added_at desc);
+
+-- ── Superuser ("god mode" / SU) ─────────────────────────────────────────────
+-- One hard-wired account gets READ access to every user's lists, wishlist,
+-- "déjà acheté" and conversation history — WITHOUT being anyone's friend. We
+-- never insert friend_requests rows for it, so the superuser never appears in
+-- another user's friends list, search results or circle_trending. Identity is
+-- resolved from auth.uid() inside SECURITY DEFINER functions (the signed JWT),
+-- never from a client-supplied flag, so the UI "SU mode" toggle is purely
+-- cosmetic: every admin_* call below re-checks is_superuser() server-side and
+-- returns an empty set for anyone else. To change the admin, edit the email in
+-- BOTH this function and SUPERUSER_EMAIL in src/lib/cloud.js.
+create or replace function public.is_superuser()
+returns boolean
+language sql stable security definer set search_path = public, auth as $$
+  select exists (
+    select 1 from auth.users u
+    where u.id = auth.uid()
+      and lower(u.email) = 'thebestbuyersclub@gmail.com'
+  );
+$$;
+grant execute on function public.is_superuser() to authenticated;
+
+-- Every registered user (superuser only). Mirrors list_friends' shape (+ email)
+-- so the Admin panel can reuse the friend-row UI. Empty for non-superusers.
+create or replace function public.admin_list_users()
+returns table (user_id uuid, display_name text, avatar_url text, email text, wishlist_count integer)
+language sql security definer set search_path = public as $$
+  select p.user_id, p.display_name, p.avatar_url, p.email,
+    (select count(*)::int from public.selections s where s.user_id = p.user_id) as wishlist_count
+  from public.profiles p
+  where public.is_superuser()
+    and p.user_id <> auth.uid()
+  order by coalesce(nullif(btrim(p.display_name), ''), p.email);
+$$;
+grant execute on function public.admin_list_users() to authenticated;
+
+-- All of a user's lists, PRIVATE INCLUDED, with item counts (superuser only).
+create or replace function public.admin_user_lists(target uuid)
+returns table (id text, name text, visibility text, item_count integer)
+language sql security definer set search_path = public as $$
+  select l.id, l.name, l.visibility,
+    (select count(*)::int from public.selections s
+       where s.user_id = l.user_id and s.data->'listIds' ? l.id) as item_count
+  from public.lists l
+  where public.is_superuser() and l.user_id = target
+  order by l.name;
+$$;
+grant execute on function public.admin_user_lists(uuid) to authenticated;
+
+-- Items of a specific list owned by any user (superuser only).
+create or replace function public.admin_list_items(list text)
+returns table (data jsonb)
+language sql security definer set search_path = public as $$
+  select s.data
+  from public.lists l
+  join public.selections s on s.user_id = l.user_id and s.data->'listIds' ? l.id
+  where public.is_superuser() and l.id = list
+  order by (s.data->>'addedAt') desc;
+$$;
+grant execute on function public.admin_list_items(text) to authenticated;
+
+-- A user's FULL wishlist (every selection, including those in no list).
+create or replace function public.admin_user_selections(target uuid)
+returns table (data jsonb)
+language sql security definer set search_path = public as $$
+  select s.data from public.selections s
+  where public.is_superuser() and s.user_id = target
+  order by s.added_at desc;
+$$;
+grant execute on function public.admin_user_selections(uuid) to authenticated;
+
+-- A user's "Déjà acheté" (owned) products (superuser only).
+create or replace function public.admin_user_owned(target uuid)
+returns table (data jsonb)
+language sql security definer set search_path = public as $$
+  select o.data from public.owned o
+  where public.is_superuser() and o.user_id = target
+  order by o.added_at desc;
+$$;
+grant execute on function public.admin_user_owned(uuid) to authenticated;
+
+-- A user's conversation history (superuser only).
+create or replace function public.admin_user_conversations(target uuid)
+returns table (id text, data jsonb, updated_at timestamptz)
+language sql security definer set search_path = public as $$
+  select c.id, c.data, c.updated_at from public.conversations c
+  where public.is_superuser() and c.user_id = target
+  order by c.updated_at desc;
+$$;
+grant execute on function public.admin_user_conversations(uuid) to authenticated;

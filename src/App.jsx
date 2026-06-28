@@ -16,6 +16,7 @@ const ProfilePanel = lazy(() => import('./components/ProfilePanel.jsx'));
 const GiftPanel = lazy(() => import('./components/GiftPanel.jsx'));
 const SharedGiftList = lazy(() => import('./components/SharedGiftList.jsx'));
 const FriendsPanel = lazy(() => import('./components/FriendsPanel.jsx'));
+const AdminPanel = lazy(() => import('./components/AdminPanel.jsx'));
 const AskOpinionPanel = lazy(() => import('./components/AskOpinionPanel.jsx'));
 const LegalNotices = lazy(() => import('./components/LegalNotices.jsx'));
 const GuideArticle = lazy(() => import('./components/GuideArticle.jsx'));
@@ -366,7 +367,7 @@ function TrendingPanel({ onClose, onOpen }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifOpen, onToggleNotif, onCloseNotif, onGiftReminder, onOpenGift, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTrending, onOpenOwned, onLoadConvo, onOpenProduct }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifOpen, onToggleNotif, onCloseNotif, onGiftReminder, onOpenGift, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTrending, onOpenOwned, onOpenAdmin, onLoadConvo, onOpenProduct }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -481,6 +482,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           onOpenNotifications={onOpenNotifications}
           onOpenTrending={onOpenTrending}
           onOpenOwned={onOpenOwned}
+          onOpenAdmin={onOpenAdmin}
         />
       </div>
 
@@ -691,6 +693,7 @@ export default function App() {
   const [selectionsOpen, setSelectionsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [friendsOpen, setFriendsOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
@@ -1048,6 +1051,7 @@ export default function App() {
   const navOpenSelections = () => { pushHistory(); setSelectionsOpen(true); };
   const navOpenProfile = () => { pushHistory(); setProfileOpen(true); };
   const navOpenFriends = () => { pushHistory(); setFriendsOpen(true); };
+  const navOpenAdmin = () => { pushHistory(); setAdminOpen(true); };
   const navOpenNotifications = () => { setNotifOpen(true); };
   const navOpenAsk = () => { pushHistory(); setAskOpen(true); };
   const navOpenGift = () => { setGiftPrefill(null); pushHistory(); setGiftOpen(true); };
@@ -1109,6 +1113,7 @@ export default function App() {
       if (giftOpen) { setGiftOpen(false); return; }
       if (askOpen) { setAskOpen(false); return; }
       if (friendsOpen) { setFriendsOpen(false); return; }
+      if (adminOpen) { setAdminOpen(false); return; }
       if (profileOpen) { setProfileOpen(false); return; }
       if (selectionsOpen) { setSelectionsOpen(false); return; }
       if (historyOpen) { setHistoryOpen(false); return; }
@@ -1121,7 +1126,7 @@ export default function App() {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, giftOpen, askOpen, friendsOpen, profileOpen, selectionsOpen, guidesOpen, trendingOpen, ownedOpen, historyOpen, activeGuide, category]);
+  }, [selected, legalOpen, giftOpen, askOpen, friendsOpen, adminOpen, profileOpen, selectionsOpen, guidesOpen, trendingOpen, ownedOpen, historyOpen, activeGuide, category]);
 
   // Keep the tab title in sync with the open guide (matches the prerendered
   // per-guide <title>); reset to the brand title elsewhere.
@@ -1232,6 +1237,7 @@ export default function App() {
           onOpenSelections={navOpenSelections}
           onOpenProfile={navOpenProfile}
           onOpenFriends={navOpenFriends}
+          onOpenAdmin={navOpenAdmin}
           onOpenAsk={navOpenAsk}
           onOpenNotifications={navOpenNotifications}
           notifOpen={notifOpen}
@@ -1259,6 +1265,7 @@ export default function App() {
           )}
           {profileOpen && <ProfilePanel open onClose={navBack} />}
           {friendsOpen && <FriendsPanel open onClose={navBack} />}
+          {adminOpen && <AdminPanel open onClose={navBack} />}
           
           {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
           {giftOpen && <GiftPanel open onClose={navBack} onSubmit={startGift} initial={giftPrefill} />}
@@ -1314,7 +1321,7 @@ export default function App() {
             )}
             <FriendRequestsBell open={notifOpen} onToggle={() => setNotifOpen((v) => !v)} onClose={() => setNotifOpen(false)} onGift={giftFromReminder} pingKey={notifOpen} />
             <LangToggle />
-            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} onOpenOwned={navOpenOwned} />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} onOpenOwned={navOpenOwned} onOpenAdmin={navOpenAdmin} />
           </>
         ) : null}
       />
@@ -1340,7 +1347,7 @@ export default function App() {
             )}
             <FriendRequestsBell open={notifOpen} onToggle={() => setNotifOpen((v) => !v)} onClose={() => setNotifOpen(false)} onGift={giftFromReminder} pingKey={notifOpen} />
             <LangToggle />
-            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} onOpenOwned={navOpenOwned} />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} onOpenOwned={navOpenOwned} onOpenAdmin={navOpenAdmin} />
           </div>
         </header>
 
