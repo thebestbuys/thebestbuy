@@ -384,6 +384,8 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
   // pop in one by one. The static list is a fallback if the AI call fails/empties.
   const [suggestions, setSuggestions] = useState(null);
   const [skelOut, setSkelOut] = useState(false); // skeletons playing their exit
+  // Bumped by the "other ideas" button to re-roll the chips on demand.
+  const [refreshTick, setRefreshTick] = useState(0);
   useEffect(() => {
     let alive = true;
     let swapTimer;
@@ -407,7 +409,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
       .then((s) => resolve(Array.isArray(s) && s.length ? s : fallback))
       .catch(() => resolve(fallback));
     return () => { alive = false; clearTimeout(swapTimer); };
-  }, [lang, user?.sub]);
+  }, [lang, user?.sub, refreshTick]);
 
   const submit = (e) => {
     e.preventDefault();
@@ -576,6 +578,20 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
                       className={'suggestion-chip-skel' + (skelOut ? ' is-leaving' : '')}
                       style={{ width: w }} aria-hidden="true" />
                   ))}
+              {suggestions && (
+                <button
+                  type="button"
+                  className="suggestion-refresh"
+                  onClick={() => setRefreshTick((t) => t + 1)}
+                  title={t('suggestion.refresh')}
+                  aria-label={t('suggestion.refresh')}
+                >
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path d="M12 7a5 5 0 1 1-1.5-3.5M12 1.5V4H9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  {t('suggestion.refresh')}
+                </button>
+              )}
             </div>
           </div>
 

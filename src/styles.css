@@ -345,6 +345,29 @@ ul {
 .suggestion-chip:hover {
   filter: brightness(0.94);
 }
+/* "Other ideas" — re-rolls the suggestion chips. Ghost pill so it reads as an
+   action, distinct from the category chips. */
+.suggestion-refresh {
+  appearance: none;
+  background: transparent;
+  border: 0.5px solid var(--border-soft);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 13px 7px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.suggestion-refresh svg { flex-shrink: 0; }
+.suggestion-refresh:hover {
+  color: var(--accent-light-ink);
+  border-color: var(--accent-light-ink);
+}
 /* Chips pop in one by one once the AI suggestions resolve. `both` fill keeps
    each chip invisible until its staggered animation-delay (set inline) fires. */
 @keyframes chip-pop {
