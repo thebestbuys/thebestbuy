@@ -127,12 +127,6 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
             </p>
           </div>
           <div className="selections-head-actions">
-            {shown.length > 0 && (
-              <button type="button" className="selections-share-btn" onClick={shareList}>
-                <span aria-hidden="true">🔗</span>
-                {shared ? t('selections.shareCopied') : t('selections.share')}
-              </button>
-            )}
             <button className="sheet-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
           </div>
         </header>
@@ -181,6 +175,9 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
                 : t('lists.visibilityPrivateNote')}
             </span>
             <span className="sel-manage-spacer" />
+            <button type="button" className="sel-manage-btn" onClick={shareList}>
+              <span aria-hidden="true">🔗</span> {shared ? t('selections.shareCopied') : t('selections.share')}
+            </button>
             <button type="button" className="sel-manage-btn" onClick={onRenameList}>
               {t('lists.rename')}
             </button>
