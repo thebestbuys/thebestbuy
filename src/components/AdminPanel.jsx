@@ -298,7 +298,6 @@ export default function AdminPanel({ open, onClose }) {
                     value={q}
                     placeholder={t('admin.searchPlaceholder')}
                     onChange={(e) => setQ(e.target.value)}
-                    autoFocus
                   />
                 </div>
                 <div className="friends-section">

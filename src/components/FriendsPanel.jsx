@@ -212,7 +212,6 @@ export default function FriendsPanel({ open, onClose }) {
                 value={q}
                 placeholder={t('friends.searchPlaceholder')}
                 onChange={(e) => setQ(e.target.value)}
-                autoFocus
               />
             </div>
 

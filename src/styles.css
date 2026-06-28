@@ -49,6 +49,14 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  /* Kill the translucent blue flash mobile browsers paint on tap. */
+  -webkit-tap-highlight-color: transparent;
+}
+/* Don't show a focus ring for mouse/touch interactions (the "weird blue
+   highlight" when clicking a button); keep it for keyboard users via
+   :focus-visible so the app stays accessible. */
+:focus:not(:focus-visible) {
+  outline: none;
 }
 html,
 body {
