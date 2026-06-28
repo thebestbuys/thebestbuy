@@ -64,6 +64,27 @@ function buildSeries(totalUsers = 2847) {
   return { labels, newU, cum, convos, clicks, sels, dau };
 }
 
+// Build the chart series from the REAL daily rows returned by admin_daily_series
+// ({ d, new_users, active_users, conversations, link_clicks, selections }).
+// Returns null when there's no data, so the caller can fall back to the mock.
+function fromDaily(rows, totalUsers) {
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  const labels = rows.map((r) =>
+    new Date(r.d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+  );
+  const newU = rows.map((r) => Number(r.new_users) || 0);
+  const convos = rows.map((r) => Number(r.conversations) || 0);
+  const clicks = rows.map((r) => Number(r.link_clicks) || 0);
+  const sels = rows.map((r) => Number(r.selections) || 0);
+  const dau = rows.map((r) => Number(r.active_users) || 0);
+  // Cumulative users, ending at the real total: signups before the window are
+  // folded into the starting baseline.
+  const totalNew = newU.reduce((a, b) => a + b, 0);
+  let run = Math.max(0, (totalUsers || totalNew) - totalNew);
+  const cum = newU.map((n) => (run += n));
+  return { labels, newU, cum, convos, clicks, sels, dau };
+}
+
 function normalizeProducts(topProducts) {
   if (Array.isArray(topProducts) && topProducts.length) {
     return topProducts.map((p) => {
@@ -112,14 +133,18 @@ const Tile = ({ value, label }) => (
   </div>
 );
 
-export default function MetricsDashboard({ metrics, topProducts }) {
+export default function MetricsDashboard({ metrics, topProducts, dailySeries }) {
   const [range, setRange] = useState('30j');
   const [sortKey, setSortKey] = useState('total');
   const [sortDir, setSortDir] = useState('desc');
   const [query, setQuery] = useState('');
 
   const m = metrics || {};
-  const series = useMemo(() => buildSeries(m.users), [m.users]);
+  // Real daily series when available (admin_daily_series); mock as a fallback.
+  const series = useMemo(
+    () => fromDaily(dailySeries, m.users) || buildSeries(m.users),
+    [dailySeries, m.users],
+  );
   const products = useMemo(() => normalizeProducts(topProducts), [topProducts]);
   const sumTotal = useMemo(() => products.reduce((a, p) => a + p.total, 0) || 1, [products]);
   const maxPart = useMemo(() => (products[0] ? products[0].total / sumTotal * 100 : 1), [products, sumTotal]);
@@ -216,6 +241,18 @@ export default function MetricsDashboard({ metrics, topProducts }) {
   // KPI deltas / subs — réels quand dispo, sinon dérivés de la série.
   const usersDelta = m.new_users_7d != null && m.users ? (m.new_users_7d / Math.max(1, m.users - m.new_users_7d)) * 100 : delta(series.newU);
 
+  // Real conversion funnel from the aggregate totals (no fabricated ratios).
+  // clicks/selections aren't strict subsets of conversations, so percentages are
+  // clamped to 100 % for the bars.
+  const fConvs = m.conversations || 0;
+  const fClicks = m.link_clicks || 0;
+  const fSaves = m.selections || 0;
+  const clampPct = (a, b) => (b ? Math.min(100, (a / b) * 100) : 0);
+  const pctClick = clampPct(fClicks, fConvs);
+  const pctSave = clampPct(fSaves, fConvs);
+  const convGlobal = fConvs ? (fSaves / fConvs) * 100 : 0;
+  const clickToSave = fClicks ? (fSaves / fClicks) * 100 : 0;
+
   return (
     <div style={{ fontFamily: 'Inter,sans-serif', color: C.ink }}>
       {/* header */}
@@ -264,14 +301,13 @@ export default function MetricsDashboard({ metrics, topProducts }) {
           <h3 style={{ font: '600 14px Inter,sans-serif', margin: '0 0 2px' }}>Parcours de conversion</h3>
           <p style={{ fontSize: 11.5, color: C.faint, margin: '0 0 18px' }}>Du premier message au produit sauvegardé</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <FunnelRow label="Conversations lancées" value={m.conversations || 5617} pct={100} color={C.accent} />
-            <FunnelRow label="Avec recommandation" value={Math.round((m.conversations || 5617) * 0.887)} pct={88.7} color="#cb7350" />
-            <FunnelRow label="Clic Amazon" value={Math.round((m.conversations || 5617) * 0.399)} pct={39.9} color="#d68a68" />
-            <FunnelRow label="Produit sauvegardé" value={Math.round((m.conversations || 5617) * 0.247)} pct={24.7} color="#e0a283" />
+            <FunnelRow label="Conversations lancées" value={fConvs} pct={100} color={C.accent} />
+            <FunnelRow label="Clic Amazon" value={fClicks} pct={pctClick} color="#d68a68" />
+            <FunnelRow label="Produit sauvegardé" value={fSaves} pct={pctSave} color="#e0a283" />
           </div>
           <div style={{ display: 'flex', gap: 18, marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
-            <div><div style={{ font: '700 18px Inter,sans-serif' }}>24,7 %</div><div style={{ fontSize: 11, color: C.faint }}>Conv. globale</div></div>
-            <div><div style={{ font: '700 18px Inter,sans-serif' }}>45,0 %</div><div style={{ fontSize: 11, color: C.faint }}>Clic → sauvegarde</div></div>
+            <div><div style={{ font: '700 18px Inter,sans-serif' }}>{dec(convGlobal)} %</div><div style={{ fontSize: 11, color: C.faint }}>Conv. globale</div></div>
+            <div><div style={{ font: '700 18px Inter,sans-serif' }}>{dec(clickToSave)} %</div><div style={{ fontSize: 11, color: C.faint }}>Clic → sauvegarde</div></div>
             <div><div style={{ font: '700 18px Inter,sans-serif' }}>{fmt(m.owned)}</div><div style={{ fontSize: 11, color: C.faint }}>Déjà acheté</div></div>
           </div>
         </div>

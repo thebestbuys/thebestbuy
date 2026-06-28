@@ -650,3 +650,30 @@ language sql security definer set search_path = public as $$
   limit greatest(1, least(max_items, 50));
 $$;
 grant execute on function public.admin_top_products(int) to authenticated;
+
+-- Daily activity series for the admin dashboard charts (superuser only). One row
+-- per calendar day over the last `days` days (server tz / UTC), with the day's
+-- new signups, distinct active users (a link click that day), conversations
+-- touched, Amazon clicks and selections. Empty for non-superusers.
+drop function if exists public.admin_daily_series(int);
+create or replace function public.admin_daily_series(days int default 90)
+returns table (d date, new_users int, active_users int, conversations int, link_clicks int, selections int)
+language sql stable security definer set search_path = public, auth as $$
+  with span as (
+    select generate_series(
+      (now() - ((greatest(1, least(days, 365)) - 1) || ' days')::interval)::date,
+      now()::date,
+      '1 day'
+    ) as d
+  )
+  select s.d,
+    (select count(*) from auth.users u where u.created_at::date = s.d)::int,
+    (select count(distinct lc.user_id) from public.link_clicks lc where lc.clicked_at::date = s.d)::int,
+    (select count(*) from public.conversations c where c.updated_at::date = s.d)::int,
+    (select count(*) from public.link_clicks lc where lc.clicked_at::date = s.d)::int,
+    (select count(*) from public.selections se where se.added_at::date = s.d)::int
+  from span s
+  where public.is_superuser()
+  order by s.d;
+$$;
+grant execute on function public.admin_daily_series(int) to authenticated;

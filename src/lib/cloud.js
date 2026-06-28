@@ -462,6 +462,16 @@ export async function adminMetrics() {
   return data || {};
 }
 
+// Daily activity series for the dashboard charts (superuser only). Returns one
+// row per day ({ d, new_users, active_users, conversations, link_clicks,
+// selections }); [] for non-superusers / on error.
+export async function adminDailySeries(days = 90) {
+  if (!hasCloudSession()) return [];
+  const { data, error } = await supabase.rpc('admin_daily_series', { days });
+  if (error) return [];
+  return data || [];
+}
+
 // Most popular products across all users (saves + clicks), each with a snapshot.
 export async function adminTopProducts(max = 12) {
   if (!hasCloudSession()) return [];

@@ -11,6 +11,7 @@ import {
   adminUserConversations,
   adminMetrics,
   adminTopProducts,
+  adminDailySeries,
 } from '../lib/cloud.js';
 import { AmazonPrice, ProductImage } from './ProductCard.jsx';
 import MetricsDashboard from './MetricsDashboard.jsx';
@@ -85,6 +86,7 @@ export default function AdminPanel({ open, onClose }) {
   const [users, setUsers] = useState(null);   // null = loading
   const [metrics, setMetrics] = useState(null);
   const [topProducts, setTopProducts] = useState(null);
+  const [dailySeries, setDailySeries] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [tab, setTab] = useState('lists');
 
@@ -118,6 +120,7 @@ export default function AdminPanel({ open, onClose }) {
     if (next === 'metrics') {
       if (metrics === null) adminMetrics().then(setMetrics);
       if (topProducts === null) adminTopProducts(12).then(setTopProducts);
+      if (dailySeries === null) adminDailySeries(90).then(setDailySeries);
     }
   };
 
@@ -257,7 +260,7 @@ export default function AdminPanel({ open, onClose }) {
                 )}
               </>
             ) : (
-              <MetricsDashboard metrics={metrics} topProducts={topProducts} />
+              <MetricsDashboard metrics={metrics} topProducts={topProducts} dailySeries={dailySeries} />
             )}
           </div>
         ) : (
