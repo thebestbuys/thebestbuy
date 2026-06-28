@@ -1661,6 +1661,12 @@ button.chat-bubble.chat-editable {
   filter: drop-shadow(0 4px 12px rgba(0,0,0,0.10));
   transition: opacity 0.3s ease;
 }
+/* Amazon product photos ship on a pure-white background that glares against the
+   dark cards. In dark mode, dim them so the white reads as a soft light-grey and
+   the contrast is comfortable (covers hero / small / modal / owned / trending). */
+:root[data-theme="dark"] .prod-img-amazon {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35)) brightness(0.8);
+}
 
 /* ───────────────────── Product image mocks ─────────────── */
 .prod-img-wrap {
@@ -2033,7 +2039,7 @@ button.chat-bubble.chat-editable {
   text-align: center;
   max-width: 300px;
   padding: 36px 32px;
-  background: rgba(250, 248, 244, 0.9);
+  background: color-mix(in srgb, var(--bg-elev) 92%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 0.5px solid var(--border);
@@ -4633,7 +4639,7 @@ select.profile-input {
 .lang-toggle-btn:hover { color: var(--text); }
 .lang-toggle-btn.active {
   background: var(--text);
-  color: #f4f1ea;
+  color: var(--bg);
 }
 .guide-topbar-right {
   display: flex;
