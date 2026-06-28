@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
 import { PriceTag, ProductImage, ScoreRing, VerifiedBadge, VerifiedRating } from './ProductCard.jsx';
 import { listClicked } from '../lib/clicked.js';
+import { logLinkClick } from '../lib/cloud.js';
 import { listOwned, ownedIdSet, toggleOwned } from '../lib/owned.js';
 
 // "Déjà acheté" — full-page, master/detail. Left: the products the user clicked
@@ -217,6 +218,7 @@ function OwnedDetail({ product, owned, onToggle, locale, t }) {
             href={amazonUrl}
             target="_blank"
             rel="noopener noreferrer sponsored"
+            onClick={() => logLinkClick(product).catch(() => {})}
           >
             {t('product.viewAmazon')}
           </a>
