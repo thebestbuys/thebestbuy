@@ -13,6 +13,7 @@ import {
   adminTopProducts,
 } from '../lib/cloud.js';
 import { AmazonPrice, ProductImage } from './ProductCard.jsx';
+import MetricsDashboard from './MetricsDashboard.jsx';
 
 function initials(name = '') {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
@@ -67,83 +68,6 @@ function ProductRows({ items }) {
         );
       })}
     </ul>
-  );
-}
-
-// BestBuys dashboard: aggregate database metrics + most popular products.
-function MetricsView({ metrics, topProducts, t }) {
-  if (metrics === null) return <div className="friends-hint">…</div>;
-
-  // Ordered groups of stat cards: [i18n label key, metric key].
-  const GROUPS = [
-    [t('metrics.group.users'), [
-      ['metrics.users', 'users'],
-      ['metrics.activeUsers7d', 'active_users_7d'],
-      ['metrics.newUsers7d', 'new_users_7d'],
-      ['metrics.newUsers30d', 'new_users_30d'],
-    ]],
-    [t('metrics.group.activity'), [
-      ['metrics.selections', 'selections'],
-      ['metrics.owned', 'owned'],
-      ['metrics.conversations', 'conversations'],
-      ['metrics.convos7d', 'convos_7d'],
-      ['metrics.clicks', 'link_clicks'],
-      ['metrics.clicks7d', 'clicks_7d'],
-    ]],
-    [t('metrics.group.social'), [
-      ['metrics.friendships', 'friendships'],
-      ['metrics.pending', 'pending_requests'],
-      ['metrics.lists', 'lists'],
-      ['metrics.publicLists', 'public_lists'],
-      ['metrics.polls', 'polls'],
-      ['metrics.occasions', 'occasions'],
-    ]],
-  ];
-
-  const fmt = (n) => (n == null ? '—' : Number(n).toLocaleString('fr-FR'));
-
-  return (
-    <div className="admin-metrics">
-      {GROUPS.map(([heading, cards]) => (
-        <div key={heading}>
-          <div className="friends-section">{heading}</div>
-          <div className="metric-grid">
-            {cards.map(([label, k]) => (
-              <div key={k} className="metric-card">
-                <div className="metric-num">{fmt(metrics[k])}</div>
-                <div className="metric-label">{t(label)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      <div className="friends-section">{t('metrics.topProducts')}</div>
-      {topProducts === null ? (
-        <div className="friends-hint">…</div>
-      ) : topProducts.length === 0 ? (
-        <div className="friends-hint">{t('admin.empty.favs')}</div>
-      ) : (
-        <ul className="pub-items">
-          {topProducts.map((p, i) => {
-            const url = amazonUrl(p);
-            return (
-              <li key={i} className="pub-item">
-                <a className="pub-item-img" href={url} target="_blank" rel="noopener noreferrer sponsored">
-                  <ProductImage product={p} size="small" />
-                </a>
-                <a className="pub-item-main" href={url} target="_blank" rel="noopener noreferrer sponsored">
-                  <span className="pub-item-title">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
-                  <span className="metric-prod-stats">
-                    ❤️ {fmt(p.saves)} · 🔗 {fmt(p.clicks)}
-                  </span>
-                </a>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
   );
 }
 
@@ -333,7 +257,7 @@ export default function AdminPanel({ open, onClose }) {
                 )}
               </>
             ) : (
-              <MetricsView metrics={metrics} topProducts={topProducts} t={t} />
+              <MetricsDashboard metrics={metrics} topProducts={topProducts} />
             )}
           </div>
         ) : (
