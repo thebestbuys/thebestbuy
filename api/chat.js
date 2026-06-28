@@ -1,13 +1,15 @@
 import { searchItems, creatorsConfigured } from './_creators.js';
 
 // Primary + backup models are env-overridable. On the free tier each model has
-// its OWN quota bucket, so a backup from a different line (default 2.5 Flash)
+// its OWN quota bucket, so a backup from a different line (default 2.5 Flash-Lite)
 // roughly doubles daily headroom and adds resilience if the primary 429s/5xxs.
+// Both default to the lite variants — cheapest, fastest, no "thinking" overhead,
+// which is the right fit for our JSON-formatting use case.
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
 const GEMINI_MODEL_FALLBACK =
   process.env.GEMINI_MODEL_FALLBACK !== undefined
     ? process.env.GEMINI_MODEL_FALLBACK
-    : 'gemini-2.5-flash';
+    : 'gemini-2.5-flash-lite';
 const geminiUrl = (model) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 const AFFILIATE_TAG = 'oraklia123-21';
