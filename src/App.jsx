@@ -412,11 +412,17 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
   // While true, the real chips play the same pop-out exit as the skeletons,
   // before we swap back to the loading state and re-fetch.
   const [chipsLeaving, setChipsLeaving] = useState(false);
+  // Chips pop in/out one by one. Entry is a slow cascade; exit is snappier.
+  const CHIP_IN_STAGGER = 160;
+  const CHIP_OUT_STAGGER = 55;
+  const CHIP_OUT_ANIM = 230; // keep in sync with .suggestion-chip.is-leaving
   useEffect(() => {
     let alive = true;
     let swapTimer;
     setSuggestions(null); // reset on lang/user change so the chips re-pop
     setSkelOut(false);
+    setChipsLeaving(false); // chips are replaced by skeletons now — clear the exit flag
+
     const profile = profileToPrompt(getProfile(user?.sub), lang);
     const fallback = [
       { key: 'suggestion.ac', icon: 'ac' },
@@ -437,15 +443,16 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
     return () => { alive = false; clearTimeout(swapTimer); };
   }, [lang, user?.sub, refreshTick]);
 
-  // "Other ideas": play the chips' pop-out exit, then re-roll (the effect above
-  // resets to skeletons and fetches a fresh set).
+  // "Other ideas": play the chips' staggered pop-out exit, then — once the LAST
+  // chip has finished leaving — re-roll (the effect above resets to skeletons and
+  // fetches a fresh set, which also clears chipsLeaving). The wait spans the last
+  // chip's start delay + the animation itself, so none get cut off mid-exit.
   const reroll = () => {
-    if (chipsLeaving) return;
+    if (chipsLeaving || !suggestions) return;
     setChipsLeaving(true);
-    setTimeout(() => {
-      setChipsLeaving(false);
-      setRefreshTick((n) => n + 1);
-    }, 230);
+    const count = suggestions.length + 1; // + the "other ideas" chip
+    const total = (count - 1) * CHIP_OUT_STAGGER + CHIP_OUT_ANIM + 20;
+    setTimeout(() => setRefreshTick((n) => n + 1), total);
   };
 
   const submit = (e) => {
@@ -613,7 +620,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
                       return (
                         <button key={`${label}-${i}`} type="button"
                           className={'suggestion-chip suggestion-chip--pop' + (chipsLeaving ? ' is-leaving' : '')}
-                          style={{ animationDelay: `${i * 160}ms` }}
+                          style={{ animationDelay: `${i * (chipsLeaving ? CHIP_OUT_STAGGER : CHIP_IN_STAGGER)}ms` }}
                           onClick={() => onPick(detectCategory(label) || label, label)}>
                           <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
                           {label}
@@ -624,7 +631,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
                     // (and pop-out) effect; re-rolls the whole set on click.
                     <button key="__more" type="button"
                       className={'suggestion-chip suggestion-chip--more suggestion-chip--pop' + (chipsLeaving ? ' is-leaving' : '')}
-                      style={{ animationDelay: `${suggestions.length * 160}ms` }}
+                      style={{ animationDelay: `${suggestions.length * (chipsLeaving ? CHIP_OUT_STAGGER : CHIP_IN_STAGGER)}ms` }}
                       onClick={reroll}
                       title={t('suggestion.refresh')}>
                       <span className="suggestion-chip-icon">
