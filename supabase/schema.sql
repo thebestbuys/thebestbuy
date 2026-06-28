@@ -591,6 +591,16 @@ language sql security definer set search_path = public as $$
 $$;
 grant execute on function public.admin_user_conversations(uuid) to authenticated;
 
+-- A user's profile: public identity + the private profile data (superuser only).
+create or replace function public.admin_user_profile(target uuid)
+returns table (display_name text, email text, avatar_url text, data jsonb)
+language sql security definer set search_path = public as $$
+  select p.display_name, p.email, p.avatar_url, p.data
+  from public.profiles p
+  where public.is_superuser() and p.user_id = target;
+$$;
+grant execute on function public.admin_user_profile(uuid) to authenticated;
+
 -- ── Admin metrics (BestBuys dashboard, superuser only) ──────────────────────
 -- One round-trip of aggregate database stats. Returns {} for non-superusers.
 -- Reads auth.users for true signup counts (profiles has no created_at).

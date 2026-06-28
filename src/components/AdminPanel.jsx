@@ -12,6 +12,7 @@ import {
   adminMetrics,
   adminTopProducts,
   adminDailySeries,
+  adminUserProfile,
 } from '../lib/cloud.js';
 import { AmazonPrice, ProductImage } from './ProductCard.jsx';
 import MetricsDashboard from './MetricsDashboard.jsx';
@@ -72,6 +73,48 @@ function ProductRows({ items }) {
   );
 }
 
+// Read-only view of a user's profile fields (superuser). `profile` is null while
+// loading, then {} (no row) or { display_name, email, avatar_url, data }.
+function ProfileCard({ profile, t }) {
+  if (profile === null) return <div className="friends-hint">…</div>;
+  const d = (profile && profile.data) || {};
+  const rows = [
+    ['profile.gender', d.gender],
+    ['profile.age', d.age],
+    ['profile.profession', d.profession],
+    ['profile.nationality', d.nationality],
+    ['profile.address', d.address],
+    ['profile.birthday', d.birthday],
+    ['profile.hobbies', d.hobbies],
+  ].filter(([, v]) => v != null && String(v).trim());
+  const bio = String(d.bio || '').trim();
+  if (rows.length === 0 && !bio && !(profile && profile.email)) {
+    return <div className="friends-hint">{t('admin.noProfile')}</div>;
+  }
+  return (
+    <div className="admin-profile">
+      {profile.email && (
+        <div className="admin-profile-row">
+          <span className="admin-profile-k">Email</span>
+          <span className="admin-profile-v">{profile.email}</span>
+        </div>
+      )}
+      {rows.map(([k, v]) => (
+        <div key={k} className="admin-profile-row">
+          <span className="admin-profile-k">{t(k)}</span>
+          <span className="admin-profile-v">{String(v)}</span>
+        </div>
+      ))}
+      {bio && (
+        <div className="admin-profile-bio">
+          <span className="admin-profile-k">{t('profile.label')}</span>
+          <p>{bio}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Superuser "god mode": browse every account's lists, favourites, owned items
 // and conversation history. The Admin entry is only shown to the superuser, and
 // every fetch goes through a SECURITY DEFINER RPC that re-checks the identity
@@ -87,7 +130,9 @@ export default function AdminPanel({ open, onClose }) {
   const [metrics, setMetrics] = useState(null);
   const [topProducts, setTopProducts] = useState(null);
   const [dailySeries, setDailySeries] = useState(null);
-  const [viewing, setViewing] = useState(null);
+  // Which user's row is expanded inline (accordion), and that user's profile.
+  const [expandedId, setExpandedId] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [tab, setTab] = useState('lists');
 
   // Per-user data (loaded lazily when a tab is first opened).
@@ -103,7 +148,7 @@ export default function AdminPanel({ open, onClose }) {
     if (!open) return;
     setQ('');
     setMainTab('users');
-    setViewing(null);
+    setExpandedId(null);
     setUsers(null);
     adminListUsers().then(setUsers);
     const onKey = (e) => {
@@ -124,9 +169,16 @@ export default function AdminPanel({ open, onClose }) {
     }
   };
 
-  const openUser = (u) => {
-    setViewing(u);
-    setTab('lists');
+  // Toggle a user's inline detail (accordion). Opening one resets the per-user
+  // data and loads their profile + first tab; clicking the open one collapses it.
+  const toggleUser = (u) => {
+    if (expandedId === u.user_id) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(u.user_id);
+    setTab('profile');
+    setProfile(null);
     setLists(null);
     setOpenListId(null);
     setListItems([]);
@@ -134,15 +186,15 @@ export default function AdminPanel({ open, onClose }) {
     setOwned(null);
     setConvos(null);
     setOpenConvoId(null);
-    adminUserLists(u.user_id).then(setLists);
+    adminUserProfile(u.user_id).then(setProfile);
   };
 
   const selectTab = (next) => {
     setTab(next);
-    if (next === 'favs' && favs === null) adminUserSelections(viewing.user_id).then(setFavs);
-    if (next === 'owned' && owned === null) adminUserOwned(viewing.user_id).then(setOwned);
-    if (next === 'history' && convos === null) adminUserConversations(viewing.user_id).then(setConvos);
-    if (next === 'lists' && lists === null) adminUserLists(viewing.user_id).then(setLists);
+    if (next === 'favs' && favs === null) adminUserSelections(expandedId).then(setFavs);
+    if (next === 'owned' && owned === null) adminUserOwned(expandedId).then(setOwned);
+    if (next === 'history' && convos === null) adminUserConversations(expandedId).then(setConvos);
+    if (next === 'lists' && lists === null) adminUserLists(expandedId).then(setLists);
   };
 
   const openList = (l) => {
@@ -165,37 +217,131 @@ export default function AdminPanel({ open, onClose }) {
   });
 
   const TABS = [
+    ['profile', t('admin.tab.profile')],
     ['lists', t('admin.tab.lists')],
     ['favs', t('admin.tab.favs')],
     ['owned', t('admin.tab.owned')],
     ['history', t('admin.tab.history')],
   ];
 
+  // The detail shown inline under an expanded user row (accordion).
+  const userDetail = () => (
+    <div className="admin-user-detail">
+      <div className="auth-seg admin-tabs" role="tablist">
+        {TABS.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            className={'auth-seg-btn' + (tab === id ? ' is-active' : '')}
+            onClick={() => selectTab(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'profile' && <ProfileCard profile={profile} t={t} />}
+
+      {tab === 'lists' && (
+        lists === null ? (
+          <div className="friends-hint">…</div>
+        ) : lists.length === 0 ? (
+          <div className="friends-hint">{t('admin.empty.lists')}</div>
+        ) : (
+          lists.map((l) => (
+            <div key={l.id} className="pub-list">
+              <button type="button" className="pub-list-head" onClick={() => openList(l)}>
+                <span className="pub-list-name">{l.visibility === 'public' ? '🌐' : '🔒'} {l.name}</span>
+                <span className="sel-list-n">{t('lists.count', { n: l.item_count })}</span>
+                <span className="pub-list-caret">{openListId === l.id ? '▾' : '▸'}</span>
+              </button>
+              {openListId === l.id && <ProductRows items={listItems} />}
+            </div>
+          ))
+        )
+      )}
+
+      {tab === 'favs' && (
+        favs === null ? (
+          <div className="friends-hint">…</div>
+        ) : favs.length === 0 ? (
+          <div className="friends-hint">{t('admin.empty.favs')}</div>
+        ) : (
+          <ProductRows items={favs} />
+        )
+      )}
+
+      {tab === 'owned' && (
+        owned === null ? (
+          <div className="friends-hint">…</div>
+        ) : owned.length === 0 ? (
+          <div className="friends-hint">{t('admin.empty.owned')}</div>
+        ) : (
+          <ProductRows items={owned} />
+        )
+      )}
+
+      {tab === 'history' && (
+        convos === null ? (
+          <div className="friends-hint">…</div>
+        ) : convos.length === 0 ? (
+          <div className="friends-hint">{t('admin.empty.history')}</div>
+        ) : (
+          convos.map((c) => {
+            const msgCount = Array.isArray(c.messages) ? c.messages.length : 0;
+            const recs = Array.isArray(c.recommendedProducts) ? c.recommendedProducts : [];
+            const isOpen = openConvoId === c.id;
+            return (
+              <div key={c.id} className="pub-list">
+                <button
+                  type="button"
+                  className="pub-list-head"
+                  onClick={() => setOpenConvoId(isOpen ? null : c.id)}
+                >
+                  <span className="pub-list-name">💬 {c.title || c.objet || 'Conversation'}</span>
+                  <span className="sel-list-n">{t('admin.convoMessages', { n: msgCount })}</span>
+                  <span className="pub-list-caret">{isOpen ? '▾' : '▸'}</span>
+                </button>
+                {isOpen && (
+                  <div className="admin-convo">
+                    <ul className="admin-convo-msgs">
+                      {(c.messages || [])
+                        .filter((m) => m && m.text)
+                        .map((m, i) => (
+                          <li key={i} className={'admin-msg admin-msg-' + (m.role || 'bot')}>
+                            {m.text}
+                          </li>
+                        ))}
+                    </ul>
+                    {recs.length > 0 && (
+                      <>
+                        <div className="friends-section">{t('admin.convoRecs')}</div>
+                        <ProductRows items={recs} />
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )
+      )}
+    </div>
+  );
+
   return (
     <div className={'sheet-page friends-panel admin-panel' + (closing ? ' is-closing' : '')} role="dialog" aria-modal="true" aria-labelledby="admin-title">
       <header className="sheet-head">
         <div>
-          {viewing ? (
-            <>
-              <button type="button" className="friends-back" onClick={() => setViewing(null)}>
-                {t('admin.back')}
-              </button>
-              <h2 className="history-title">{viewing.display_name || viewing.email}</h2>
-              {viewing.email && viewing.display_name && (
-                <p className="history-sub">{viewing.email}</p>
-              )}
-            </>
-          ) : (
-            <>
-              <h2 id="admin-title" className="history-title">{t('admin.title')}</h2>
-              <p className="history-sub">{t('admin.sub')}</p>
-            </>
-          )}
+          <h2 id="admin-title" className="history-title">{t('admin.title')}</h2>
+          <p className="history-sub">{t('admin.sub')}</p>
         </div>
         <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
       </header>
       <div className="sheet-body">
-        {!viewing ? (
+        {(
           <div className="friends-body">
             <div className="auth-seg admin-tabs" role="tablist">
               <button
@@ -239,130 +385,34 @@ export default function AdminPanel({ open, onClose }) {
                   <div className="friends-hint">{t('admin.noUsers')}</div>
                 ) : (
                   <ul className="friends-list">
-                    {filtered.map((u) => (
-                      <li key={u.user_id} className="friend-row">
-                        <Avatar name={u.display_name || u.email} url={u.avatar_url} />
-                        <span className="friend-name">
-                          {u.display_name || u.email}
-                          {u.display_name && u.email && (
-                            <span className="admin-user-email"> · {u.email}</span>
-                          )}
-                        </span>
-                        {u.wishlist_count > 0 && (
-                          <span className="sel-list-n">{t('friends.wishCount', { n: u.wishlist_count })}</span>
-                        )}
-                        <button type="button" className="friend-btn" onClick={() => openUser(u)}>
-                          {t('friends.viewLists')}
-                        </button>
-                      </li>
-                    ))}
+                    {filtered.map((u) => {
+                      const isOpen = expandedId === u.user_id;
+                      return (
+                        <li key={u.user_id} className={'admin-user' + (isOpen ? ' is-open' : '')}>
+                          <div className="friend-row">
+                            <Avatar name={u.display_name || u.email} url={u.avatar_url} />
+                            <span className="friend-name">
+                              {u.display_name || u.email}
+                              {u.display_name && u.email && (
+                                <span className="admin-user-email"> · {u.email}</span>
+                              )}
+                            </span>
+                            {u.wishlist_count > 0 && (
+                              <span className="sel-list-n">{t('friends.wishCount', { n: u.wishlist_count })}</span>
+                            )}
+                            <button type="button" className="friend-btn" onClick={() => toggleUser(u)}>
+                              {isOpen ? t('admin.hideProfile') : t('admin.viewProfile')}
+                            </button>
+                          </div>
+                          {isOpen && userDetail()}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </>
             ) : (
               <MetricsDashboard metrics={metrics} topProducts={topProducts} dailySeries={dailySeries} />
-            )}
-          </div>
-        ) : (
-          <div className="friends-body">
-            <div className="auth-seg admin-tabs" role="tablist">
-              {TABS.map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === id}
-                  className={'auth-seg-btn' + (tab === id ? ' is-active' : '')}
-                  onClick={() => selectTab(id)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {tab === 'lists' && (
-              lists === null ? (
-                <div className="friends-hint">…</div>
-              ) : lists.length === 0 ? (
-                <div className="friends-hint">{t('admin.empty.lists')}</div>
-              ) : (
-                lists.map((l) => (
-                  <div key={l.id} className="pub-list">
-                    <button type="button" className="pub-list-head" onClick={() => openList(l)}>
-                      <span className="pub-list-name">{l.visibility === 'public' ? '🌐' : '🔒'} {l.name}</span>
-                      <span className="sel-list-n">{t('lists.count', { n: l.item_count })}</span>
-                      <span className="pub-list-caret">{openListId === l.id ? '▾' : '▸'}</span>
-                    </button>
-                    {openListId === l.id && <ProductRows items={listItems} />}
-                  </div>
-                ))
-              )
-            )}
-
-            {tab === 'favs' && (
-              favs === null ? (
-                <div className="friends-hint">…</div>
-              ) : favs.length === 0 ? (
-                <div className="friends-hint">{t('admin.empty.favs')}</div>
-              ) : (
-                <ProductRows items={favs} />
-              )
-            )}
-
-            {tab === 'owned' && (
-              owned === null ? (
-                <div className="friends-hint">…</div>
-              ) : owned.length === 0 ? (
-                <div className="friends-hint">{t('admin.empty.owned')}</div>
-              ) : (
-                <ProductRows items={owned} />
-              )
-            )}
-
-            {tab === 'history' && (
-              convos === null ? (
-                <div className="friends-hint">…</div>
-              ) : convos.length === 0 ? (
-                <div className="friends-hint">{t('admin.empty.history')}</div>
-              ) : (
-                convos.map((c) => {
-                  const msgCount = Array.isArray(c.messages) ? c.messages.length : 0;
-                  const recs = Array.isArray(c.recommendedProducts) ? c.recommendedProducts : [];
-                  const isOpen = openConvoId === c.id;
-                  return (
-                    <div key={c.id} className="pub-list">
-                      <button
-                        type="button"
-                        className="pub-list-head"
-                        onClick={() => setOpenConvoId(isOpen ? null : c.id)}
-                      >
-                        <span className="pub-list-name">💬 {c.title || c.objet || 'Conversation'}</span>
-                        <span className="sel-list-n">{t('admin.convoMessages', { n: msgCount })}</span>
-                        <span className="pub-list-caret">{isOpen ? '▾' : '▸'}</span>
-                      </button>
-                      {isOpen && (
-                        <div className="admin-convo">
-                          <ul className="admin-convo-msgs">
-                            {(c.messages || [])
-                              .filter((m) => m && m.text)
-                              .map((m, i) => (
-                                <li key={i} className={'admin-msg admin-msg-' + (m.role || 'bot')}>
-                                  {m.text}
-                                </li>
-                              ))}
-                          </ul>
-                          {recs.length > 0 && (
-                            <>
-                              <div className="friends-section">{t('admin.convoRecs')}</div>
-                              <ProductRows items={recs} />
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )
             )}
           </div>
         )}

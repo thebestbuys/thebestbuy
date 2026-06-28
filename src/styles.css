@@ -4233,6 +4233,63 @@ button.chat-bubble.chat-editable {
   color: var(--text-muted);
   font-size: 12px;
 }
+/* Inline accordion: a user row + its expandable detail. */
+.admin-user {
+  display: flex;
+  flex-direction: column;
+}
+.admin-user.is-open > .friend-row {
+  border-color: var(--accent);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.admin-user-detail {
+  border: 0.5px solid var(--accent);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  background: var(--bg-soft);
+  padding: 12px 14px 14px;
+  margin-bottom: 2px;
+}
+.admin-user-detail .admin-tabs {
+  margin: 0 0 12px;
+}
+/* Read-only profile card inside the expanded detail. */
+.admin-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.admin-profile-row {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.admin-profile-k {
+  flex: 0 0 120px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.admin-profile-v {
+  color: var(--text);
+  min-width: 0;
+  word-break: break-word;
+}
+.admin-profile-bio {
+  margin-top: 4px;
+}
+.admin-profile-bio .admin-profile-k {
+  display: block;
+  margin-bottom: 4px;
+}
+.admin-profile-bio p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+}
 .admin-tabs {
   margin: 4px 0 12px;
   width: 100%;

@@ -446,6 +446,15 @@ export async function adminUserOwned(targetId) {
   return (data || []).map((r) => r.data).filter(Boolean);
 }
 
+// A user's profile (public identity + private profile data). {} when none.
+export async function adminUserProfile(targetId) {
+  if (!hasCloudSession() || !targetId) return {};
+  const { data, error } = await supabase.rpc('admin_user_profile', { target: targetId });
+  if (error) return {};
+  const row = Array.isArray(data) ? data[0] : data;
+  return row || {};
+}
+
 // A user's conversation history (the saved convo objects).
 export async function adminUserConversations(targetId) {
   if (!hasCloudSession() || !targetId) return [];
