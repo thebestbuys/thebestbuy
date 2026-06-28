@@ -1307,7 +1307,7 @@ export default function App() {
         onFreeText={handleFreeText}
         onRestart={handleRestart}
         onHome={navBack}
-        onOpenHistory={navOpenHistory}
+        onOpenHistory={user ? null : navOpenHistory}
         onStartEdit={startEditAnswer}
         onCancelEdit={cancelEditAnswer}
         onApplyEdit={(qId, choice) => applyEditAnswer(editIndex, choice.label, choice)}

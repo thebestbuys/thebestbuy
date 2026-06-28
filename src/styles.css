@@ -2264,8 +2264,11 @@ button.chat-bubble.chat-editable {
     display: none;
   }
   /* Account menu: anchor it to the actions row's right edge (≈ screen edge) so
-     it can't spill off the left of the screen on mobile. */
-  .app-narrow .chat-header-actions { position: relative; }
+     it can't spill off the left of the screen on mobile. The row spans the full
+     width (its own line) so the spacer can push the bell/lang/profile cluster
+     to the right while home/refresh stay on the left. */
+  .app-narrow .chat-header-actions { position: relative; flex: 1 1 100%; }
+  .chat-header-spacer { flex: 1 1 auto; }
   .app-narrow .chat-header-actions .auth-userwrap { position: static; }
   .app-narrow .chat-header-actions .auth-dropdown {
     top: calc(100% + 8px);
