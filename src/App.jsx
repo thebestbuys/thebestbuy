@@ -30,6 +30,7 @@ import { getProfile, profileToPrompt } from './lib/profile.js';
 import { giftToPrompt, giftTitle, buildShareUrl, loadSharedPayload } from './lib/gift.js';
 import { getAccessToken, circleTrending, logLinkClick } from './lib/cloud.js';
 import { getOwnedNames, ownedIdSet } from './lib/owned.js';
+import { listSelections } from './lib/selections.js';
 import { recordClick } from './lib/clicked.js';
 import { toast } from './lib/toast.js';
 import {
@@ -160,80 +161,71 @@ function ResultsPlaceholder({ category }) {
   );
 }
 
-// Overlapping avatar pile of the friends behind a trending product. Uses the
-// friend's avatar when present, otherwise a coloured initial (deterministic
-// tone from the name/id) — never an invented identity. `count` is the true
-// distinct-friend count; if it exceeds the shown faces we add a "+N" chip.
-function FriendFaces({ friends = [], count, size = 32, max = 4 }) {
-  const list = (friends || []).slice(0, max);
-  const total = count ?? (friends || []).length;
-  const extra = total - list.length;
-  const tone = (seed) => {
-    let h = 0;
-    for (const ch of String(seed || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-    return `hsl(${h % 360} 38% 52%)`;
-  };
-  const initial = (f) => (String(f.name || '').trim().charAt(0) || '?').toUpperCase();
-  return (
-    <div className="tc-faces" aria-hidden="true">
-      {list.map((f, i) =>
-        f.avatar ? (
-          <img
-            key={f.id || i}
-            className="tc-face"
-            src={f.avatar}
-            alt=""
-            style={{ width: size, height: size }}
-          />
-        ) : (
-          <span
-            key={f.id || i}
-            className="tc-face tc-face-init"
-            style={{ width: size, height: size, background: tone(f.name || f.id || i) }}
-          >
-            {initial(f)}
-          </span>
-        ),
-      )}
-      {extra > 0 && (
-        <span className="tc-face tc-face-more" style={{ width: size, height: size }}>
-          +{extra}
-        </span>
-      )}
-    </div>
-  );
+// Anonymized social-proof line for a trending product: never names or avatars,
+// only aggregate counts. "6 amis l'ont sauvegardé · 14 vues". `friend_count` is
+// the distinct friends behind it (saves ∪ views); save_count / view_count are
+// the per-signal breakdown when the RPC provides them (older snapshots fall
+// back to friend_count alone).
+function socialLine(p, t) {
+  const saves = p.save_count ?? p.friend_count ?? 0;
+  const views = p.view_count ?? 0;
+  const savedTxt = saves <= 1 ? t('trending.savedCountOne', { n: saves }) : t('trending.savedCount', { n: saves });
+  return views > 0 ? `${savedTxt} · ${t('trending.viewsCount', { n: views })}` : savedTxt;
 }
 
-// Human sentence for who saved a product, from the (possibly empty) friend
-// identities + the authoritative distinct count. Falls back to a count-only
-// phrase when names aren't available (older snapshots / no profile name).
-function savedByText(friends, count, t) {
-  const names = (friends || []).map((f) => String(f.name || '').trim()).filter(Boolean);
-  const total = count ?? names.length;
-  if (names.length === 0) return t('trending.friendsSaved', { n: total });
-  if (names.length === 1 && total <= 1) return `${names[0]} ${t('trending.savedVerbOne')}`;
-  const shown = names.slice(0, 3);
-  const rest = total - shown.length;
-  let who;
-  if (rest > 0) {
-    who = `${shown.join(', ')} ${t('trending.andOthers', { n: rest })}`;
-  } else if (shown.length === 1) {
-    who = shown[0];
-  } else {
-    who = `${shown.slice(0, -1).join(', ')} & ${shown[shown.length - 1]}`;
+// "Pour moi" affinity: re-rank the circle's trending products by how close each
+// is to the signed-in user's OWN activity — the categories they save and their
+// usual price band — never the profile's age/gender/etc (no stereotyping). All
+// inputs are the user's own data; the friends stay anonymous. Returns the items
+// re-sorted, each tagged with a `reason` key for the chip. When the user has no
+// saved products yet there's no signal, so we keep popularity order and flag it.
+function rankForYou(items, userId) {
+  const mine = listSelections(userId);
+  const cats = new Set(mine.map((s) => s.category).filter(Boolean));
+  const prices = mine.map((s) => s.price).filter((n) => typeof n === 'number' && n > 0);
+  const hasSignal = cats.size > 0 || prices.length > 0;
+  // User's typical band: median ±55%, so "in budget" means a familiar price.
+  let lo = 0, hi = Infinity;
+  if (prices.length) {
+    const sorted = [...prices].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    lo = median * 0.45;
+    hi = median * 1.55;
   }
-  return `${who} ${t('trending.savedVerb')}`;
+  const maxFriends = Math.max(1, ...items.map((p) => p.friend_count || 0));
+  const scored = items.map((p, i) => {
+    const catMatch = p.category && cats.has(p.category);
+    const inBudget = typeof p.price === 'number' && p.price >= lo && p.price <= hi;
+    const popular = (p.friend_count || 0) >= Math.max(3, maxFriends * 0.6);
+    let reason = 'match';
+    if (catMatch) reason = 'category';
+    else if (inBudget) reason = 'budget';
+    else if (popular) reason = 'popular';
+    // Affinity score, with the original popularity rank as a gentle tiebreaker.
+    const score =
+      (catMatch ? 3 : 0) +
+      (inBudget ? 1.5 : 0) +
+      (p.friend_count || 0) / maxFriends -
+      i * 0.01;
+    return { ...p, reason, _score: score };
+  });
+  scored.sort((a, b) => b._score - a._score);
+  return { list: scored, hasSignal };
 }
 
-// "Tendances dans mon cercle" — products most saved/clicked by the signed-in
-// user's consenting friends (aggregated server-side by circle_trending). Hidden
-// for guests and when the circle has nothing to show yet.
+// "Tendances" — a two-tab ranking on the home page / dedicated tab:
+//   • "Dans mon cercle" — products ranked by how many friends are behind them
+//     (favourites saved ∪ Amazon views), fully anonymized (counts only).
+//   • "Pour moi" — the same pool re-ranked by the user's OWN activity
+//     (categories they save + usual budget), each row tagged with why it fits.
+// Hidden for guests and when the circle has nothing to show yet.
 function TrendingCircle({ onOpen, hideHeader }) {
   const { t, lang } = useI18n();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   const { user, cloudReady } = useAuth();
   const [items, setItems] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const [tab, setTab] = useState('circle'); // 'circle' | 'foryou'
 
   // Wait for the Supabase session (cloudReady), not just `user`: `user` is
   // restored synchronously from localStorage but the cloud session is set a tick
@@ -257,10 +249,17 @@ function TrendingCircle({ onOpen, hideHeader }) {
     };
   }, [user?.sub, cloudReady]);
 
+  const forYou = useMemo(
+    () => rankForYou(items, user?.sub),
+    [items, user?.sub],
+  );
+
   // Hidden for guests, and until the first fetch resolves (no empty flash).
   if (!user || !cloudReady || !loaded) return null;
 
-  const [leader, ...rest] = items;
+  const circleList = items;
+  const ranked = tab === 'circle' ? circleList : forYou.list;
+  const [leader, ...rest] = ranked;
 
   return (
     <section className="home-trending">
@@ -270,73 +269,93 @@ function TrendingCircle({ onOpen, hideHeader }) {
           <p className="home-guides-sub">{t('trending.sub')}</p>
         </div>
       )}
-      {items.length > 0 ? (
-        <div className="tc-wrap">
-          {/* Spotlight — the single most-saved product across the circle. */}
-          <article
-            className="tc-spotlight"
-            role="button"
-            tabIndex={0}
-            onClick={() => onOpen(leader)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(leader); } }}
-          >
-            <div className="tc-spot-label">
-              <span className="tc-spot-fire" aria-hidden="true">🔥</span>
-              {t('trending.spotlight')}
-            </div>
-            <div className="tc-spot-main">
-              <div className="tc-spot-thumb">
-                <ProductImage product={leader} size="large" />
-              </div>
-              <div className="tc-spot-info">
-                <div className="tc-spot-brandrow">
-                  <span className="tc-spot-brand">{leader.brand}</span>
-                  <VerifiedBadge product={leader} compact />
-                </div>
-                <h3 className="tc-spot-model">{leader.model}</h3>
-                <div className="tc-spot-price">
-                  <PriceTag product={leader} locale={locale} t={t} variant="small" />
-                </div>
-                <div className="tc-spot-social">
-                  <FriendFaces friends={leader.friends} count={leader.friend_count} />
-                  <span className="tc-spot-socialtxt">
-                    {savedByText(leader.friends, leader.friend_count, t)}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <button
-              type="button"
-              className="tc-spot-cta"
-              onClick={(e) => { e.stopPropagation(); onOpen(leader); }}
-            >
-              {t('trending.view')} <span aria-hidden="true">→</span>
-            </button>
-          </article>
 
-          {/* Runners-up — the next most-popular picks, compact. */}
-          {rest.length > 0 && (
-            <div className="tc-grid">
-              {rest.slice(0, 4).map((p) => (
-                <button key={p.id} type="button" className="tc-mini" onClick={() => onOpen(p)}>
-                  <span className="tc-mini-thumb">
-                    <ProductImage product={p} size="small" />
-                  </span>
-                  <span className="tc-mini-info">
-                    <span className="tc-mini-model">{p.model}</span>
-                    <span className="tc-mini-meta">
-                      <PriceTag product={p} locale={locale} t={t} variant="small" />
-                      <span className="tc-mini-dot" aria-hidden="true">·</span>
-                      <span className="tc-mini-friends">👥 {p.friend_count}</span>
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
+      <div className="tc-tabs" role="tablist" aria-label={t('trending.title')}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'circle'}
+          className={'tc-tab' + (tab === 'circle' ? ' is-active' : '')}
+          onClick={() => setTab('circle')}
+        >
+          {t('trending.tabCircle')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'foryou'}
+          className={'tc-tab' + (tab === 'foryou' ? ' is-active' : '')}
+          onClick={() => setTab('foryou')}
+        >
+          {t('trending.tabForYou')}
+        </button>
+      </div>
+
+      {items.length === 0 ? (
+        <p className="trending-empty">{t('trending.empty')}</p>
+      ) : tab === 'circle' ? (
+        <div className="tc-rank">
+          {/* Leader — the single most-popular pick, highlighted. */}
+          <button type="button" className="tc-lead" onClick={() => onOpen(leader)}>
+            <span className="tc-lead-thumb">
+              <ProductImage product={leader} size="large" />
+              <span className="tc-lead-rank">1</span>
+            </span>
+            <span className="tc-lead-info">
+              <span className="tc-row-brand">{leader.brand}</span>
+              <span className="tc-lead-model">{leader.model}</span>
+              <span className="tc-lead-pricerow">
+                <PriceTag product={leader} locale={locale} t={t} variant="small" />
+                <VerifiedBadge product={leader} compact />
+              </span>
+              <span className="tc-social tc-social--lead">{socialLine(leader, t)}</span>
+            </span>
+          </button>
+
+          {rest.map((p, i) => (
+            <button key={p.id} type="button" className="tc-row" onClick={() => onOpen(p)}>
+              <span className="tc-row-rank">{i + 2}</span>
+              <span className="tc-row-thumb">
+                <ProductImage product={p} size="small" />
+              </span>
+              <span className="tc-row-info">
+                <span className="tc-row-brand">{p.brand}</span>
+                <span className="tc-row-model">{p.model}</span>
+                <span className="tc-social">{socialLine(p, t)}</span>
+              </span>
+              <span className="tc-row-price">
+                <PriceTag product={p} locale={locale} t={t} variant="small" />
+              </span>
+            </button>
+          ))}
         </div>
       ) : (
-        <p className="trending-empty">{t('trending.empty')}</p>
+        <div className="tc-rank">
+          <p className="tc-foryou-hint">
+            <span aria-hidden="true">✨</span>
+            {forYou.hasSignal ? t('trending.forYouHint') : t('trending.forYouEmpty')}
+          </p>
+          {ranked.map((p) => (
+            <button key={p.id} type="button" className="tc-row" onClick={() => onOpen(p)}>
+              <span className="tc-row-thumb">
+                <ProductImage product={p} size="small" />
+              </span>
+              <span className="tc-row-info">
+                <span className="tc-row-brand">{p.brand}</span>
+                <span className="tc-row-model">{p.model}</span>
+                <span className="tc-row-tags">
+                  <span className={'tc-reason tc-reason--' + p.reason}>
+                    {t('trending.reason.' + p.reason)}
+                  </span>
+                  <span className="tc-social">{socialLine(p, t)}</span>
+                </span>
+              </span>
+              <span className="tc-row-price">
+                <PriceTag product={p} locale={locale} t={t} variant="small" />
+              </span>
+            </button>
+          ))}
+        </div>
       )}
     </section>
   );
@@ -384,8 +403,11 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
   // pop in one by one. The static list is a fallback if the AI call fails/empties.
   const [suggestions, setSuggestions] = useState(null);
   const [skelOut, setSkelOut] = useState(false); // skeletons playing their exit
-  // Bumped by the "other ideas" button to re-roll the chips on demand.
+  // Bumped by the "other ideas" chip to re-roll the suggestions on demand.
   const [refreshTick, setRefreshTick] = useState(0);
+  // While true, the real chips play the same pop-out exit as the skeletons,
+  // before we swap back to the loading state and re-fetch.
+  const [chipsLeaving, setChipsLeaving] = useState(false);
   useEffect(() => {
     let alive = true;
     let swapTimer;
@@ -410,6 +432,17 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
       .catch(() => resolve(fallback));
     return () => { alive = false; clearTimeout(swapTimer); };
   }, [lang, user?.sub, refreshTick]);
+
+  // "Other ideas": play the chips' pop-out exit, then re-roll (the effect above
+  // resets to skeletons and fetches a fresh set).
+  const reroll = () => {
+    if (chipsLeaving) return;
+    setChipsLeaving(true);
+    setTimeout(() => {
+      setChipsLeaving(false);
+      setRefreshTick((n) => n + 1);
+    }, 230);
+  };
 
   const submit = (e) => {
     e.preventDefault();
@@ -562,17 +595,34 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           <div className="home-suggestions-slot">
             <div className="home-suggestions">
               {suggestions
-                ? suggestions.map((s, i) => {
-                    const label = s.label;
-                    return (
-                      <button key={`${label}-${i}`} type="button" className="suggestion-chip suggestion-chip--pop"
-                        style={{ animationDelay: `${i * 160}ms` }}
-                        onClick={() => onPick(detectCategory(label) || label, label)}>
-                        <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
-                        {label}
-                      </button>
-                    );
-                  })
+                ? [
+                    ...suggestions.map((s, i) => {
+                      const label = s.label;
+                      return (
+                        <button key={`${label}-${i}`} type="button"
+                          className={'suggestion-chip suggestion-chip--pop' + (chipsLeaving ? ' is-leaving' : '')}
+                          style={{ animationDelay: `${i * 160}ms` }}
+                          onClick={() => onPick(detectCategory(label) || label, label)}>
+                          <span className="suggestion-chip-icon"><SuggestionIcon icon={s.icon} /></span>
+                          {label}
+                        </button>
+                      );
+                    }),
+                    // "Other ideas" — sits at the end of the chip row, same pop-in
+                    // (and pop-out) effect; re-rolls the whole set on click.
+                    <button key="__more" type="button"
+                      className={'suggestion-chip suggestion-chip--more suggestion-chip--pop' + (chipsLeaving ? ' is-leaving' : '')}
+                      style={{ animationDelay: `${suggestions.length * 160}ms` }}
+                      onClick={reroll}
+                      title={t('suggestion.refresh')}>
+                      <span className="suggestion-chip-icon">
+                        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                          <path d="M12 7a5 5 0 1 1-1.5-3.5M12 1.5V4H9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </span>
+                      {t('suggestion.refresh')}
+                    </button>,
+                  ]
                 : [170, 150, 190, 160, 140].map((w, i) => (
                     <span key={i}
                       className={'suggestion-chip-skel' + (skelOut ? ' is-leaving' : '')}

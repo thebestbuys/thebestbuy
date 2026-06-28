@@ -89,33 +89,40 @@ export async function pullOnly(userId) {
 export async function linkAndSync(userId) {
   if (!hasCloudSession()) return;
 
-  // 1. Merge local + anonymous data up to the server (best-effort, idempotent).
-  const localSel = dedupeById([...listSelections(userId), ...listSelections(null)]);
+  // 1. Merge up ONLY the anonymous bucket — data created while logged out, which
+  //    the server doesn't have yet. We deliberately do NOT push the per-user
+  //    bucket: it's just a local cache of the server, and re-uploading it would
+  //    RESURRECT items deleted on another device (the per-user cache here may be
+  //    stale because this device's session lapsed and pullOnly never refreshed
+  //    it). The server is authoritative for account data; step 2 pulls it down.
+  //    On a first-ever sign-in the per-user bucket is empty anyway, so nothing
+  //    legitimate is lost.
+  const localSel = dedupeById(listSelections(null));
   for (const item of localSel) {
     await cloudUpsertSelection(item).catch(() => {});
   }
-  const localConv = dedupeById([...listConversations(userId), ...listConversations(null)]);
+  const localConv = dedupeById(listConversations(null));
   for (const convo of localConv) {
     await cloudUpsertConversation(convo).catch(() => {});
   }
-  const localRec = dedupeById([...listRecipients(userId), ...listRecipients(null)]);
+  const localRec = dedupeById(listRecipients(null));
   for (const rec of localRec) {
     await cloudUpsertRecipient(rec).catch(() => {});
   }
-  // Push the local profile up only if the account doesn't override it on pull.
-  if (hasProfile(userId) || hasProfile(null)) {
-    const localProfile = hasProfile(userId) ? getProfile(userId) : getProfile(null);
-    await cloudUpsertProfileData(localProfile).catch(() => {});
+  // Push the anonymous profile up only (a profile edited while logged out). The
+  // per-user profile is a cache and gets overwritten by the pull below.
+  if (hasProfile(null)) {
+    await cloudUpsertProfileData(getProfile(null)).catch(() => {});
   }
-  const localLists = [...listLists(userId), ...listLists(null)];
+  const localLists = listLists(null);
   for (const l of localLists) {
     await cloudUpsertList(l).catch(() => {});
   }
-  const localOccasions = [...listOccasions(userId), ...listOccasions(null)];
+  const localOccasions = listOccasions(null);
   for (const o of localOccasions) {
     await cloudUpsertOccasion(o).catch(() => {});
   }
-  const localOwned = dedupeById([...listOwned(userId), ...listOwned(null)]);
+  const localOwned = dedupeById(listOwned(null));
   for (const item of localOwned) {
     await cloudUpsertOwned(item).catch(() => {});
   }

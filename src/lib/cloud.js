@@ -541,12 +541,23 @@ export async function logLinkClick(product) {
 }
 
 // Top products across consenting friends (selections ∪ clicks). Each item is a
-// product snapshot with an extra `friend_count` (how many friends are behind it).
+// product snapshot with anonymized aggregate signals: `friend_count` (distinct
+// friends behind it), `save_count` (distinct friends who favourited it) and
+// `view_count` (Amazon views). No friend identities are returned.
 export async function circleTrending(max = 12) {
   if (!hasCloudSession()) return [];
   const { data, error } = await supabase.rpc('circle_trending', { max_items: max });
   if (error) return [];
   return (data || [])
-    .map((r) => (r?.data ? { ...r.data, friend_count: r.friend_count, friends: Array.isArray(r.friends) ? r.friends : [] } : null))
+    .map((r) =>
+      r?.data
+        ? {
+            ...r.data,
+            friend_count: r.friend_count,
+            save_count: r.save_count ?? r.friend_count,
+            view_count: r.view_count ?? 0,
+          }
+        : null,
+    )
     .filter(Boolean);
 }

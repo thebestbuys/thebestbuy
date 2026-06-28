@@ -303,17 +303,22 @@ const TRANSLATIONS = {
       "Vos produits sauvegardés et cliqués alimentent (de façon anonyme et agrégée) les « Tendances dans mon cercle » de vos amis. Décochez pour ne pas y contribuer.",
 
     // Trends in my circle (home)
-    "trending.title": "Tendances dans mon cercle",
-    "trending.sub": "Ce que vos amis sauvegardent et regardent en ce moment.",
+    "trending.title": "Tendances",
+    "trending.sub": "Le top de votre cercle, et ce qui pourrait vous plaire.",
+    "trending.tabCircle": "Dans mon cercle",
+    "trending.tabForYou": "Pour moi",
     "trending.friendsCount": "{n} ami(s) dans votre cercle",
     "trending.empty":
       "Rien pour l'instant. Dès que vos amis sauvegardent ou consultent des produits (partage activé), ils apparaîtront ici.",
-    "trending.spotlight": "Le plus sauvegardé cette semaine",
-    "trending.view": "Voir sur amazon.fr",
-    "trending.savedVerb": "l'ont sauvegardé",
-    "trending.savedVerbOne": "l'a sauvegardé",
-    "trending.andOthers": "et {n} autre(s)",
-    "trending.friendsSaved": "{n} ami(s) l'ont sauvegardé",
+    "trending.savedCount": "{n} amis l'ont sauvegardé",
+    "trending.savedCountOne": "{n} ami l'a sauvegardé",
+    "trending.viewsCount": "{n} vues",
+    "trending.forYouHint": "Classé d'après les catégories que vous explorez et votre budget habituel. Anonyme.",
+    "trending.forYouEmpty": "Sauvegardez quelques produits pour personnaliser — pour l'instant, classé par popularité.",
+    "trending.reason.category": "Catégorie que vous suivez",
+    "trending.reason.budget": "Dans votre budget",
+    "trending.reason.popular": "Très populaire",
+    "trending.reason.match": "Pourrait vous plaire",
 
     // History
     "history.title": "Historique",
@@ -762,17 +767,22 @@ const TRANSLATIONS = {
       "Your saved and clicked products feed (anonymously and aggregated) your friends' “Trends in my circle”. Uncheck to opt out of contributing.",
 
     // Trends in my circle (home)
-    "trending.title": "Trends in my circle",
-    "trending.sub": "What your friends are saving and viewing right now.",
+    "trending.title": "Trends",
+    "trending.sub": "Your circle's top picks, and what might suit you.",
+    "trending.tabCircle": "In my circle",
+    "trending.tabForYou": "For me",
     "trending.friendsCount": "{n} friend(s) in your circle",
     "trending.empty":
       "Nothing yet. As soon as your friends save or view products (sharing on), they'll show up here.",
-    "trending.spotlight": "Most saved this week",
-    "trending.view": "View on amazon.fr",
-    "trending.savedVerb": "saved it",
-    "trending.savedVerbOne": "saved it",
-    "trending.andOthers": "and {n} other(s)",
-    "trending.friendsSaved": "{n} friend(s) saved it",
+    "trending.savedCount": "{n} friends saved it",
+    "trending.savedCountOne": "{n} friend saved it",
+    "trending.viewsCount": "{n} views",
+    "trending.forYouHint": "Ranked from the categories you explore and your usual budget. Anonymous.",
+    "trending.forYouEmpty": "Save a few products to personalize — for now, ranked by popularity.",
+    "trending.reason.category": "A category you follow",
+    "trending.reason.budget": "In your budget",
+    "trending.reason.popular": "Very popular",
+    "trending.reason.match": "Might suit you",
 
     // History
     "history.title": "History",

@@ -165,6 +165,32 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  // Re-pull the account's data whenever the app comes back to the foreground, so
+  // a deletion made on another device propagates here without a full restart.
+  // The server is authoritative; pullOnly only overwrites the local cache (never
+  // pushes), so this can't resurrect anything. Throttled to avoid spamming.
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    let lastPull = 0;
+    const maybePull = () => {
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (now - lastPull < 30000) return;
+      lastPull = now;
+      let sub = null;
+      try {
+        sub = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')?.sub || null;
+      } catch {}
+      pullOnly(sub).catch(() => {});
+    };
+    document.addEventListener('visibilitychange', maybePull);
+    window.addEventListener('focus', maybePull);
+    return () => {
+      document.removeEventListener('visibilitychange', maybePull);
+      window.removeEventListener('focus', maybePull);
+    };
+  }, []);
+
   useEffect(() => {
     let active = true;
     if (!CLIENT_ID) {
