@@ -1661,6 +1661,12 @@ button.chat-bubble.chat-editable {
   filter: drop-shadow(0 4px 12px rgba(0,0,0,0.10));
   transition: opacity 0.3s ease;
 }
+/* Amazon product photos ship on a pure-white background that glares against the
+   dark cards. In dark mode, dim them so the white reads as a soft light-grey and
+   the contrast is comfortable (covers hero / small / modal / owned / trending). */
+:root[data-theme="dark"] .prod-img-amazon {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35)) brightness(0.8);
+}
 
 /* ───────────────────── Product image mocks ─────────────── */
 .prod-img-wrap {
