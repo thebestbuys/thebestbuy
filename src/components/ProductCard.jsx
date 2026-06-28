@@ -7,7 +7,7 @@ import FavoriteButton from './FavoriteButton.jsx';
 export function ProductImage({ product, size = 'normal' }) {
   if (product.amazon_verified && product.image_url) {
     return (
-      <div className="prod-img-wrap" data-size={size}>
+      <div className="prod-img-wrap is-photo" data-size={size}>
         <img
           src={product.image_url}
           alt={`${product.brand} ${product.model}`}
