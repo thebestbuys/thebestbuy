@@ -12,6 +12,12 @@ const GEMINI_MODEL_FALLBACK =
     : 'gemini-2.5-flash-lite';
 const geminiUrl = (model) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+// How many product candidates we ask Gemini to generate per recommend call.
+// We only ever SHOW 3, but need a buffer because some candidates fail Amazon
+// verification. Don't set this to 3: any miss then triggers the retry path,
+// which re-sends the whole prompt (costly) — a small buffer here is cheaper.
+const RECOMMEND_COUNT = 6;
 const AFFILIATE_TAG = 'oraklia123-21';
 
 // Server-side Supabase config for friend-gift profile resolution.
@@ -210,13 +216,13 @@ Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 // Prompt to generate 10 real product candidates from the criteria JSON.
 function buildRecommendPrompt(objet, answers, lang, exclude = [], profile = '') {
   const excludeLine = exclude.length
-    ? `\nNE propose AUCUN de ces produits (déjà testés, introuvables sur Amazon.fr) : ${exclude.join(', ')}. Propose-en 10 AUTRES, différents.`
+    ? `\nNE propose AUCUN de ces produits (déjà testés, introuvables sur Amazon.fr) : ${exclude.join(', ')}. Propose-en ${RECOMMEND_COUNT} AUTRES, différents.`
     : '';
   return `Tu es Oraklia, un conseiller d'achat. ${langLineFor(lang)}
 L'utilisateur cherche à acheter : "${objet || 'un produit'}".${profileLine(profile)}
 Critères recueillis (JSON): ${answersJson(answers)}
 
-Propose EXACTEMENT 10 produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, correspondant au mieux à ces critères. Donne des marques et modèles PRÉCIS. Chaque produit a un score de correspondance 0-99 selon les critères.${excludeLine}
+Propose EXACTEMENT ${RECOMMEND_COUNT} produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, correspondant au mieux à ces critères. Donne des marques et modèles PRÉCIS. Chaque produit a un score de correspondance 0-99 selon les critères.${excludeLine}
 
 Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 {"reply":"<courte phrase d'introduction>","products":[{"id":"p1","brand":"Marque","model":"Modèle exact","price":999,"score":94,"specs":["Spec 1","Spec 2","Spec 3","Spec 4"],"why":"Raison courte"}]}`;
@@ -263,19 +269,19 @@ Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 // 10 real, varied gift product candidates for the recipient + occasion + budget.
 function buildGiftRecommendPrompt(giftStr, answers, lang, exclude = [], surprise = false, wishlist = '') {
   const excludeLine = exclude.length
-    ? `\nNE propose AUCUN de ces produits (déjà testés, introuvables sur Amazon.fr) : ${exclude.join(', ')}. Propose-en 10 AUTRES, différents.`
+    ? `\nNE propose AUCUN de ces produits (déjà testés, introuvables sur Amazon.fr) : ${exclude.join(', ')}. Propose-en ${RECOMMEND_COUNT} AUTRES, différents.`
     : '';
   const surpriseLine = surprise
     ? "\nMODE SURPRISE : ose des idées ORIGINALES, inattendues et créatives (pas seulement les évidences) tout en restant adaptées à la personne et au budget. Privilégie la nouveauté et l'effet \"waouh\"."
     : '';
   const wishlistLine = wishlist
-    ? `\nLISTE DE SOUHAITS de la personne (produits qu'elle a elle-même sauvegardés) : ${wishlist}. Si un ou plusieurs RENTRENT DANS LE BUDGET, propose-les EN PRIORITÉ (inclus-en 1 à 3 parmi les 10) — ce sont des choses qu'elle veut déjà.`
+    ? `\nLISTE DE SOUHAITS de la personne (produits qu'elle a elle-même sauvegardés) : ${wishlist}. Si un ou plusieurs RENTRENT DANS LE BUDGET, propose-les EN PRIORITÉ (inclus-en 1 à 3 parmi les ${RECOMMEND_COUNT}) — ce sont des choses qu'elle veut déjà.`
     : '';
   return `Tu es Oraklia, un conseiller en idées cadeaux. ${langLineFor(lang)}
 On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".${wishlistLine}
 Préférences de raffinement (JSON): ${answersJson(answers)}
 
-Propose EXACTEMENT 10 idées de cadeaux : des produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, qui feraient de bons cadeaux pour CETTE personne, pour cette occasion et DANS le budget indiqué. VARIE les catégories (pas 10 produits du même type). Donne des marques et modèles PRÉCIS. "why" explique en une phrase pourquoi ça correspond à la personne. Score 0-99 = à quel point l'idée lui correspond.${surpriseLine}${excludeLine}
+Propose EXACTEMENT ${RECOMMEND_COUNT} idées de cadeaux : des produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, qui feraient de bons cadeaux pour CETTE personne, pour cette occasion et DANS le budget indiqué. VARIE les catégories (pas ${RECOMMEND_COUNT} produits du même type). Donne des marques et modèles PRÉCIS. "why" explique en une phrase pourquoi ça correspond à la personne. Score 0-99 = à quel point l'idée lui correspond.${surpriseLine}${excludeLine}
 
 Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 {"reply":"<courte phrase d'introduction>","products":[{"id":"p1","brand":"Marque","model":"Modèle exact","price":999,"score":94,"specs":["Spec 1","Spec 2","Spec 3"],"why":"Pourquoi ce cadeau lui correspond"}]}`;
@@ -690,7 +696,7 @@ export default async function handler(req, res) {
             systemInstruction: { parts: [{ text: isGift
               ? buildGiftRecommendPrompt(giftStr, answers, lang, [...triedNames, ...excludeNames], surprise, friendWishlist)
               : buildRecommendPrompt(searchTerm, answers, lang, [...triedNames, ...excludeNames], profile) }] },
-            contents: [{ role: 'user', parts: [{ text: 'Donne 10 autres recommandations.' }] }],
+            contents: [{ role: 'user', parts: [{ text: `Donne ${RECOMMEND_COUNT} autres recommandations.` }] }],
             generationConfig: { temperature: 0.6, responseMimeType: 'application/json' },
           };
       try {
