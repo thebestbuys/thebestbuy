@@ -326,6 +326,10 @@ const TRANSLATIONS = {
     "history.done": "✓ finalisée",
     "history.delete": "Supprimer",
     "history.deleteConvo": "Supprimer cette conversation",
+    "history.searchPlaceholder": "Rechercher une conversation…",
+
+    // Generic search
+    "search.noResults": "Aucun résultat.",
 
     // Selections (saved products)
     "selections.title": "Mes sélections",
@@ -336,6 +340,7 @@ const TRANSLATIONS = {
     "selections.add": "Ajouter à mes sélections",
     "selections.remove": "Retirer de mes sélections",
     "selections.added": "Ajouté {when}",
+    "selections.searchPlaceholder": "Rechercher un produit…",
     "selections.share": "Partager ma liste",
     "selections.shareCopied": "Lien copié !",
     "selections.priceNote":
@@ -779,6 +784,10 @@ const TRANSLATIONS = {
     "history.done": "✓ finalized",
     "history.delete": "Delete",
     "history.deleteConvo": "Delete this conversation",
+    "history.searchPlaceholder": "Search a conversation…",
+
+    // Generic search
+    "search.noResults": "No result.",
 
     // Selections (saved products)
     "selections.title": "My selections",
@@ -789,6 +798,7 @@ const TRANSLATIONS = {
     "selections.add": "Add to my selections",
     "selections.remove": "Remove from my selections",
     "selections.added": "Added {when}",
+    "selections.searchPlaceholder": "Search a product…",
     "selections.share": "Share my list",
     "selections.shareCopied": "Link copied!",
     "selections.priceNote":
