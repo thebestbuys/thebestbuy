@@ -634,10 +634,12 @@ export default async function handler(req, res) {
   }
   const t5_ms = ms(t5);
 
-  const debugTokens = {
-    input_tokens:  json.usageMetadata?.promptTokenCount ?? null,
-    output_tokens: json.usageMetadata?.candidatesTokenCount ?? null,
-  };
+  // Token usage — accumulated across calls so a retry's cost is visible too
+  // (the previous version only reported the first call). gemini_calls = 2 means
+  // the Amazon-retry fired and roughly doubled this request's token spend.
+  let inputTokens = json.usageMetadata?.promptTokenCount ?? null;
+  let outputTokens = json.usageMetadata?.candidatesTokenCount ?? null;
+  let geminiCalls = 1;
   let amazonVerifyMs = 0;
   let amazonBlocked = false;
   let amazonError = null;
@@ -708,6 +710,9 @@ export default async function handler(req, res) {
         const repUpstream = await callGemini(apiKey, retryPayload);
         if (repUpstream.ok) {
           const repJson = await repUpstream.json();
+          geminiCalls += 1;
+          inputTokens = (inputTokens || 0) + (repJson.usageMetadata?.promptTokenCount || 0);
+          outputTokens = (outputTokens || 0) + (repJson.usageMetadata?.candidatesTokenCount || 0);
           const repText = repJson.candidates?.[0]?.content?.parts?.[0]?.text;
           if (repText) {
             const repParsed = JSON.parse(repText);
@@ -768,7 +773,9 @@ export default async function handler(req, res) {
     amazon_error: amazonError,
     direct_links: directCount,
     friend: friendRes.debug,
-    ...debugTokens,
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    gemini_calls: geminiCalls,
   };
 
   return send(res, 200, parsed);
