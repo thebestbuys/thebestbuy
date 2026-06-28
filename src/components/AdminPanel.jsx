@@ -8,6 +8,8 @@ import {
   adminUserSelections,
   adminUserOwned,
   adminUserConversations,
+  adminMetrics,
+  adminTopProducts,
 } from '../lib/cloud.js';
 import { AmazonPrice, ProductImage } from './ProductCard.jsx';
 
@@ -67,6 +69,83 @@ function ProductRows({ items }) {
   );
 }
 
+// BestBuys dashboard: aggregate database metrics + most popular products.
+function MetricsView({ metrics, topProducts, t }) {
+  if (metrics === null) return <div className="friends-hint">…</div>;
+
+  // Ordered groups of stat cards: [i18n label key, metric key].
+  const GROUPS = [
+    [t('metrics.group.users'), [
+      ['metrics.users', 'users'],
+      ['metrics.activeUsers7d', 'active_users_7d'],
+      ['metrics.newUsers7d', 'new_users_7d'],
+      ['metrics.newUsers30d', 'new_users_30d'],
+    ]],
+    [t('metrics.group.activity'), [
+      ['metrics.selections', 'selections'],
+      ['metrics.owned', 'owned'],
+      ['metrics.conversations', 'conversations'],
+      ['metrics.convos7d', 'convos_7d'],
+      ['metrics.clicks', 'link_clicks'],
+      ['metrics.clicks7d', 'clicks_7d'],
+    ]],
+    [t('metrics.group.social'), [
+      ['metrics.friendships', 'friendships'],
+      ['metrics.pending', 'pending_requests'],
+      ['metrics.lists', 'lists'],
+      ['metrics.publicLists', 'public_lists'],
+      ['metrics.polls', 'polls'],
+      ['metrics.occasions', 'occasions'],
+    ]],
+  ];
+
+  const fmt = (n) => (n == null ? '—' : Number(n).toLocaleString('fr-FR'));
+
+  return (
+    <div className="admin-metrics">
+      {GROUPS.map(([heading, cards]) => (
+        <div key={heading}>
+          <div className="friends-section">{heading}</div>
+          <div className="metric-grid">
+            {cards.map(([label, k]) => (
+              <div key={k} className="metric-card">
+                <div className="metric-num">{fmt(metrics[k])}</div>
+                <div className="metric-label">{t(label)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <div className="friends-section">{t('metrics.topProducts')}</div>
+      {topProducts === null ? (
+        <div className="friends-hint">…</div>
+      ) : topProducts.length === 0 ? (
+        <div className="friends-hint">{t('admin.empty.favs')}</div>
+      ) : (
+        <ul className="pub-items">
+          {topProducts.map((p, i) => {
+            const url = amazonUrl(p);
+            return (
+              <li key={i} className="pub-item">
+                <a className="pub-item-img" href={url} target="_blank" rel="noopener noreferrer sponsored">
+                  <ProductImage product={p} size="small" />
+                </a>
+                <a className="pub-item-main" href={url} target="_blank" rel="noopener noreferrer sponsored">
+                  <span className="pub-item-title">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
+                  <span className="metric-prod-stats">
+                    ❤️ {fmt(p.saves)} · 🔗 {fmt(p.clicks)}
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 // Superuser "god mode": browse every account's lists, favourites, owned items
 // and conversation history. The Admin entry is only shown to the superuser, and
 // every fetch goes through a SECURITY DEFINER RPC that re-checks the identity
@@ -76,7 +155,10 @@ export default function AdminPanel({ open, onClose }) {
   const { user } = useAuth();
   const { t } = useI18n();
   const [q, setQ] = useState('');
+  const [mainTab, setMainTab] = useState('users'); // 'users' | 'metrics'
   const [users, setUsers] = useState(null);   // null = loading
+  const [metrics, setMetrics] = useState(null);
+  const [topProducts, setTopProducts] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [tab, setTab] = useState('lists');
 
@@ -92,6 +174,7 @@ export default function AdminPanel({ open, onClose }) {
   useEffect(() => {
     if (!open) return;
     setQ('');
+    setMainTab('users');
     setViewing(null);
     setUsers(null);
     adminListUsers().then(setUsers);
@@ -103,6 +186,14 @@ export default function AdminPanel({ open, onClose }) {
   }, [open, user?.sub]);
 
   if (!open) return null;
+
+  const selectMainTab = (next) => {
+    setMainTab(next);
+    if (next === 'metrics') {
+      if (metrics === null) adminMetrics().then(setMetrics);
+      if (topProducts === null) adminTopProducts(12).then(setTopProducts);
+    }
+  };
 
   const openUser = (u) => {
     setViewing(u);
@@ -177,44 +268,71 @@ export default function AdminPanel({ open, onClose }) {
       <div className="sheet-body">
         {!viewing ? (
           <div className="friends-body">
-            <div className="friends-search">
-              <input
-                type="text"
-                className="profile-input"
-                value={q}
-                placeholder={t('admin.searchPlaceholder')}
-                onChange={(e) => setQ(e.target.value)}
-                autoFocus
-              />
+            <div className="auth-seg admin-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mainTab === 'users'}
+                className={'auth-seg-btn' + (mainTab === 'users' ? ' is-active' : '')}
+                onClick={() => selectMainTab('users')}
+              >
+                {t('admin.users')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mainTab === 'metrics'}
+                className={'auth-seg-btn' + (mainTab === 'metrics' ? ' is-active' : '')}
+                onClick={() => selectMainTab('metrics')}
+              >
+                {t('admin.metrics')}
+              </button>
             </div>
-            <div className="friends-section">
-              {t('admin.users')}
-              {users !== null && <span className="friends-section-n"> — {filtered.length}</span>}
-            </div>
-            {users === null ? (
-              <div className="friends-hint">…</div>
-            ) : filtered.length === 0 ? (
-              <div className="friends-hint">{t('admin.noUsers')}</div>
+
+            {mainTab === 'users' ? (
+              <>
+                <div className="friends-search">
+                  <input
+                    type="text"
+                    className="profile-input"
+                    value={q}
+                    placeholder={t('admin.searchPlaceholder')}
+                    onChange={(e) => setQ(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <div className="friends-section">
+                  {t('admin.users')}
+                  {users !== null && <span className="friends-section-n"> — {filtered.length}</span>}
+                </div>
+                {users === null ? (
+                  <div className="friends-hint">…</div>
+                ) : filtered.length === 0 ? (
+                  <div className="friends-hint">{t('admin.noUsers')}</div>
+                ) : (
+                  <ul className="friends-list">
+                    {filtered.map((u) => (
+                      <li key={u.user_id} className="friend-row">
+                        <Avatar name={u.display_name || u.email} url={u.avatar_url} />
+                        <span className="friend-name">
+                          {u.display_name || u.email}
+                          {u.display_name && u.email && (
+                            <span className="admin-user-email"> · {u.email}</span>
+                          )}
+                        </span>
+                        {u.wishlist_count > 0 && (
+                          <span className="sel-list-n">{t('friends.wishCount', { n: u.wishlist_count })}</span>
+                        )}
+                        <button type="button" className="friend-btn" onClick={() => openUser(u)}>
+                          {t('friends.viewLists')}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
             ) : (
-              <ul className="friends-list">
-                {filtered.map((u) => (
-                  <li key={u.user_id} className="friend-row">
-                    <Avatar name={u.display_name || u.email} url={u.avatar_url} />
-                    <span className="friend-name">
-                      {u.display_name || u.email}
-                      {u.display_name && u.email && (
-                        <span className="admin-user-email"> · {u.email}</span>
-                      )}
-                    </span>
-                    {u.wishlist_count > 0 && (
-                      <span className="sel-list-n">{t('friends.wishCount', { n: u.wishlist_count })}</span>
-                    )}
-                    <button type="button" className="friend-btn" onClick={() => openUser(u)}>
-                      {t('friends.viewLists')}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <MetricsView metrics={metrics} topProducts={topProducts} t={t} />
             )}
           </div>
         ) : (

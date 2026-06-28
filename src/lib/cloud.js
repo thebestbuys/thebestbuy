@@ -454,6 +454,24 @@ export async function adminUserConversations(targetId) {
   return (data || []).map((r) => r.data).filter(Boolean);
 }
 
+// Aggregate database metrics (BestBuys dashboard). {} for non-superusers.
+export async function adminMetrics() {
+  if (!hasCloudSession()) return {};
+  const { data, error } = await supabase.rpc('admin_metrics');
+  if (error) return {};
+  return data || {};
+}
+
+// Most popular products across all users (saves + clicks), each with a snapshot.
+export async function adminTopProducts(max = 12) {
+  if (!hasCloudSession()) return [];
+  const { data, error } = await supabase.rpc('admin_top_products', { max_items: max });
+  if (error) return [];
+  return (data || [])
+    .map((r) => (r?.data ? { ...r.data, saves: r.saves, clicks: r.clicks } : null))
+    .filter(Boolean);
+}
+
 // ─── Conversations ───────────────────────────────────────────────────────
 export async function cloudUpsertConversation(convo) {
   if (!hasCloudSession() || !convo?.id) return;

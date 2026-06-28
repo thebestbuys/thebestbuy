@@ -602,3 +602,63 @@ language sql security definer set search_path = public as $$
   order by c.updated_at desc;
 $$;
 grant execute on function public.admin_user_conversations(uuid) to authenticated;
+
+-- ── Admin metrics (BestBuys dashboard, superuser only) ──────────────────────
+-- One round-trip of aggregate database stats. Returns {} for non-superusers.
+-- Reads auth.users for true signup counts (profiles has no created_at).
+create or replace function public.admin_metrics()
+returns jsonb
+language sql stable security definer set search_path = public, auth as $$
+  select case when not public.is_superuser() then '{}'::jsonb else jsonb_build_object(
+    'users',            (select count(*) from auth.users),
+    'new_users_7d',     (select count(*) from auth.users where created_at > now() - interval '7 days'),
+    'new_users_30d',    (select count(*) from auth.users where created_at > now() - interval '30 days'),
+    'active_users_7d',  (select count(distinct user_id) from public.link_clicks where clicked_at > now() - interval '7 days'),
+    'selections',       (select count(*) from public.selections),
+    'owned',            (select count(*) from public.owned),
+    'conversations',    (select count(*) from public.conversations),
+    'convos_7d',        (select count(*) from public.conversations where updated_at > now() - interval '7 days'),
+    'link_clicks',      (select count(*) from public.link_clicks),
+    'clicks_7d',        (select count(*) from public.link_clicks where clicked_at > now() - interval '7 days'),
+    'friendships',      (select count(*) from public.friend_requests where status = 'accepted'),
+    'pending_requests', (select count(*) from public.friend_requests where status = 'pending'),
+    'lists',            (select count(*) from public.lists),
+    'public_lists',     (select count(*) from public.lists where visibility = 'public'),
+    'polls',            (select count(*) from public.polls),
+    'occasions',        (select count(*) from public.occasions)
+  ) end;
+$$;
+grant execute on function public.admin_metrics() to authenticated;
+
+-- Most popular products across ALL users: saved (selections) + clicked
+-- (link_clicks) counts, with one representative snapshot each (superuser only).
+create or replace function public.admin_top_products(max_items int default 12)
+returns table (product_id text, data jsonb, saves int, clicks int)
+language sql security definer set search_path = public as $$
+  with sav as (
+    select product_id, count(*)::int as saves from public.selections group by product_id
+  ),
+  clk as (
+    select product_id, count(*)::int as clicks from public.link_clicks group by product_id
+  ),
+  ids as (
+    select product_id from sav union select product_id from clk
+  ),
+  rep as (
+    -- one representative snapshot per product: the most recent signal
+    select distinct on (product_id) product_id, data from (
+      select product_id, data, added_at as ts from public.selections
+      union all
+      select product_id, data, clicked_at as ts from public.link_clicks
+    ) s order by product_id, ts desc
+  )
+  select i.product_id, rep.data, coalesce(sav.saves, 0), coalesce(clk.clicks, 0)
+  from ids i
+  left join sav on sav.product_id = i.product_id
+  left join clk on clk.product_id = i.product_id
+  left join rep on rep.product_id = i.product_id
+  where public.is_superuser()
+  order by (coalesce(sav.saves, 0) + coalesce(clk.clicks, 0)) desc, rep.data->>'model'
+  limit greatest(1, least(max_items, 50));
+$$;
+grant execute on function public.admin_top_products(int) to authenticated;
