@@ -426,12 +426,14 @@ create index if not exists link_clicks_product_idx on public.link_clicks (produc
 -- the products they saved (selections) or clicked (link_clicks). Sharing is
 -- OPT-OUT: a friend contributes unless profiles.data.shareTrends = 'false'.
 -- Ranked by the number of distinct friends behind each product; returns one
--- representative snapshot (most recent) per product, that friend count, plus a
--- small array of the friends' public identities (name + avatar) so the UI can
--- show who's behind it. Return signature changed → drop before recreate.
+-- representative snapshot (most recent) per product, plus ANONYMIZED aggregate
+-- signals: friend_count (distinct friends behind it, saves ∪ views), save_count
+-- (distinct friends who favourited it) and view_count (Amazon views across the
+-- circle). No friend identities are returned — the UI only ever shows counts.
+-- Return signature changed → drop before recreate.
 drop function if exists public.circle_trending(int);
 create or replace function public.circle_trending(max_items int default 12)
-returns table (product_id text, data jsonb, friend_count int, friends jsonb)
+returns table (product_id text, data jsonb, friend_count int, save_count int, view_count int)
 language sql security definer set search_path = public as $$
   with friends as (
     select case when fr.requester_id = auth.uid() then fr.addressee_id else fr.requester_id end as fid
@@ -446,34 +448,21 @@ language sql security definer set search_path = public as $$
     where coalesce(p.data->>'shareTrends', 'true') <> 'false'
   ),
   signals as (
-    select s.user_id, s.product_id, s.data, s.added_at as ts
+    select s.user_id, s.product_id, s.data, s.added_at as ts, 'save'::text as kind
     from public.selections s
     join consenting c on c.fid = s.user_id
     union all
-    select lc.user_id, lc.product_id, lc.data, lc.clicked_at as ts
+    select lc.user_id, lc.product_id, lc.data, lc.clicked_at as ts, 'view'::text as kind
     from public.link_clicks lc
     join consenting c on c.fid = lc.user_id
   ),
   agg as (
-    -- distinct-friend count per product (DISTINCT isn't allowed in a window fn)
-    select product_id, count(distinct user_id) as friend_count
+    select
+      product_id,
+      count(distinct user_id) as friend_count,
+      count(distinct user_id) filter (where kind = 'save') as save_count,
+      count(*) filter (where kind = 'view') as view_count
     from signals
-    group by product_id
-  ),
-  people as (
-    -- distinct friend identities per product (one row per friend), most recent first
-    select distinct on (s.product_id, s.user_id)
-      s.product_id, s.user_id, p.display_name, p.avatar_url, s.ts
-    from signals s
-    join public.profiles p on p.user_id = s.user_id
-    order by s.product_id, s.user_id, s.ts desc
-  ),
-  fr_list as (
-    -- up to 6 friends per product as a jsonb array {id,name,avatar}
-    select product_id,
-      jsonb_agg(jsonb_build_object('id', user_id, 'name', display_name, 'avatar', avatar_url)
-                order by ts desc) filter (where rn <= 6) as friends
-    from (select *, row_number() over (partition by product_id order by ts desc) as rn from people) ranked
     group by product_id
   ),
   rep as (
@@ -482,11 +471,10 @@ language sql security definer set search_path = public as $$
     from signals
     order by product_id, ts desc
   )
-  select a.product_id, r.data, a.friend_count::int, coalesce(fl.friends, '[]'::jsonb)
+  select a.product_id, r.data, a.friend_count::int, a.save_count::int, a.view_count::int
   from agg a
   join rep r on r.product_id = a.product_id
-  left join fr_list fl on fl.product_id = a.product_id
-  order by a.friend_count desc, r.ts desc
+  order by a.friend_count desc, a.view_count desc, r.ts desc
   limit greatest(1, least(max_items, 50));
 $$;
 grant execute on function public.circle_trending(int) to authenticated;
