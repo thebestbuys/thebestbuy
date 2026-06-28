@@ -1,7 +1,15 @@
 import { searchItems, creatorsConfigured } from './_creators.js';
 
-const GEMINI_MODEL = 'gemini-3.1-flash-lite';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+// Primary + backup models are env-overridable. On the free tier each model has
+// its OWN quota bucket, so a backup from a different line (default 2.5 Flash)
+// roughly doubles daily headroom and adds resilience if the primary 429s/5xxs.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+const GEMINI_MODEL_FALLBACK =
+  process.env.GEMINI_MODEL_FALLBACK !== undefined
+    ? process.env.GEMINI_MODEL_FALLBACK
+    : 'gemini-2.5-flash';
+const geminiUrl = (model) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 const AFFILIATE_TAG = 'oraklia123-21';
 
 // Server-side Supabase config for friend-gift profile resolution.
@@ -416,12 +424,36 @@ async function checkAmazon(brand, model, searchContext, opts = {}) {
   }
 }
 
-async function callGemini(apiKey, body) {
-  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+function callGeminiModel(apiKey, model, body) {
+  return fetch(`${geminiUrl(model)}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+}
+
+// Calls the primary model; on a quota/availability error (429 rate/daily-cap,
+// or transient 500/503) it retries once with the configured backup model.
+// The returned Response is tagged with `modelUsed` / `fellBack` for _debug so
+// you can see in the response when (and why) the fallback kicked in.
+async function callGemini(apiKey, body) {
+  const res = await callGeminiModel(apiKey, GEMINI_MODEL, body);
+  const canFallback =
+    !res.ok &&
+    GEMINI_MODEL_FALLBACK &&
+    GEMINI_MODEL_FALLBACK !== GEMINI_MODEL &&
+    [429, 500, 503].includes(res.status);
+  if (canFallback) {
+    const primaryStatus = res.status;
+    const fb = await callGeminiModel(apiKey, GEMINI_MODEL_FALLBACK, body);
+    try {
+      fb.modelUsed = GEMINI_MODEL_FALLBACK;
+      fb.fellBack = true;
+      fb.primaryStatus = primaryStatus;
+    } catch { /* Response not extensible — fallback still works */ }
+    return fb;
+  }
+  try { res.modelUsed = GEMINI_MODEL; } catch { /* ignore */ }
   return res;
 }
 
@@ -555,7 +587,8 @@ export default async function handler(req, res) {
       error: 'Upstream error',
       gemini_status: upstream.status,
       gemini_status_text: upstream.statusText,
-      gemini_model: GEMINI_MODEL,
+      gemini_model: upstream.modelUsed || GEMINI_MODEL,
+      gemini_fell_back: !!upstream.fellBack,
       gemini_error: geminiError,
       gemini_raw: text,
     });
@@ -707,7 +740,8 @@ export default async function handler(req, res) {
     // concurrent conversations can't be confused (client logs match server).
     conversation_id: conversationId || null,
     request_id: requestId || null,
-    model: GEMINI_MODEL,
+    model: upstream.modelUsed || GEMINI_MODEL,
+    gemini_fell_back: !!upstream.fellBack,
     timings_ms: {
       parse_body:        t1_ms,
       build_prompt:      t2_ms,
