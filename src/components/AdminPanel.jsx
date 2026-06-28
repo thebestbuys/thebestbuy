@@ -187,7 +187,10 @@ export default function AdminPanel({ open, onClose }) {
                 autoFocus
               />
             </div>
-            <div className="friends-section">{t('admin.users')}</div>
+            <div className="friends-section">
+              {t('admin.users')}
+              {users !== null && <span className="friends-section-n"> — {filtered.length}</span>}
+            </div>
             {users === null ? (
               <div className="friends-hint">…</div>
             ) : filtered.length === 0 ? (

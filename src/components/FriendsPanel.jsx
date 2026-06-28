@@ -240,7 +240,10 @@ export default function FriendsPanel({ open, onClose }) {
 
             {incoming.length > 0 && (
               <>
-                <div className="friends-section">{t('friends.requests')}</div>
+                <div className="friends-section">
+                  {t('friends.requests')}
+                  <span className="friends-section-n"> — {incoming.length}</span>
+                </div>
                 <ul className="friends-list">
                   {incoming.map((r) => (
                     <li key={r.id} className="friend-row">
@@ -258,7 +261,10 @@ export default function FriendsPanel({ open, onClose }) {
               </>
             )}
 
-            <div className="friends-section">{t('friends.myFriends')}</div>
+            <div className="friends-section">
+              {t('friends.myFriends')}
+              <span className="friends-section-n"> — {friends.length}</span>
+            </div>
             {friends.length === 0 ? (
               <div className="friends-hint">{t('friends.empty')}</div>
             ) : (
