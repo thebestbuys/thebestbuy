@@ -314,15 +314,20 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
         {!isTyping && currentQuestion && (
           <ChoiceControl question={currentQuestion} onAnswer={onAnswer} onSkip={skip} />
         )}
-
-        {!isTyping && onRecommendNow && !showInline && (
-          <button type="button" className="recommend-now-btn" onClick={onRecommendNow}>
-            <span aria-hidden="true">✦</span> {t('chat.recommendNow')}
-          </button>
-        )}
       </div>
 
       <form className="chat-input" onSubmit={submit}>
+        {!isTyping && onRecommendNow && !showInline && (
+          <button
+            type="button"
+            className="recommend-now-btn"
+            onClick={onRecommendNow}
+            title={t('chat.recommendNow')}
+            aria-label={t('chat.recommendNow')}
+          >
+            <span aria-hidden="true">✦</span>
+          </button>
+        )}
         <input
           type="text"
           placeholder={currentQuestion ? t('chat.inputAnswer') : t('chat.inputCriteria')}
