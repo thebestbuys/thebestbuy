@@ -120,7 +120,7 @@ export default function AdminPanel({ open, onClose }) {
     if (next === 'metrics') {
       if (metrics === null) adminMetrics().then(setMetrics);
       if (topProducts === null) adminTopProducts(12).then(setTopProducts);
-      if (dailySeries === null) adminDailySeries(90).then(setDailySeries);
+      if (dailySeries === null) adminDailySeries(365).then(setDailySeries);
     }
   };
 

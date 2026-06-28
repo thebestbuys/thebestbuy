@@ -478,7 +478,7 @@ export async function adminTopProducts(max = 12) {
   const { data, error } = await supabase.rpc('admin_top_products', { max_items: max });
   if (error) return [];
   return (data || [])
-    .map((r) => (r?.data ? { ...r.data, saves: r.saves, clicks: r.clicks } : null))
+    .map((r) => (r?.data ? { ...r.data, saves: r.saves, clicks: r.clicks, trend: r.trend } : null))
     .filter(Boolean);
 }
 

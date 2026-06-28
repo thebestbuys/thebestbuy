@@ -92,7 +92,7 @@ function normalizeProducts(topProducts) {
       const brand = d.brand || '', model = d.model || d.title || '';
       const cat = d.category || d.cat || '—';
       const saves = Number(p.saves ?? d.saves ?? 0), clicks = Number(p.clicks ?? d.clicks ?? 0);
-      return { brand, model, cat, saves, clicks, total: saves + clicks, trend: 0 };
+      return { brand, model, cat, saves, clicks, total: saves + clicks, trend: Number(p.trend ?? d.trend ?? 0) };
     });
   }
   return DEMO.map(([brand, model, cat, saves, clicks, trend]) => ({ brand, model, cat, saves, clicks, total: saves + clicks, trend }));
@@ -134,7 +134,7 @@ const Tile = ({ value, label }) => (
 );
 
 export default function MetricsDashboard({ metrics, topProducts, dailySeries }) {
-  const [range, setRange] = useState('30j');
+  const [range, setRange] = useState('1m');
   const [sortKey, setSortKey] = useState('total');
   const [sortDir, setSortDir] = useState('desc');
   const [query, setQuery] = useState('');
@@ -149,7 +149,17 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
   const sumTotal = useMemo(() => products.reduce((a, p) => a + p.total, 0) || 1, [products]);
   const maxPart = useMemo(() => (products[0] ? products[0].total / sumTotal * 100 : 1), [products, sumTotal]);
 
-  const slice = (arr) => { const n = range === '7j' ? 7 : range === '90j' ? 90 : 30; return arr.slice(arr.length - n); };
+  const rangeDays = () => {
+    if (range === '24h') return 1;
+    if (range === '1s') return 7;
+    if (range === '3m') return 90;
+    if (range === 'YTD') {
+      const now = new Date();
+      return Math.max(1, Math.floor((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + 1);
+    }
+    return 30; // '1m'
+  };
+  const slice = (arr) => arr.slice(Math.max(0, arr.length - rangeDays()));
   const sum = (arr, n) => arr.slice(arr.length - n).reduce((a, b) => a + b, 0);
   const delta = (arr) => { const a = sum(arr, 7), b = sum(arr.slice(0, arr.length - 7), 7); return b ? (a - b) / b * 100 : 0; };
 
@@ -181,10 +191,11 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
     spark('sk', spkClicks, series.clicks, C.amber);
 
     const L = slice(series.labels);
+    const pr = L.length <= 3 ? 3 : 0; // show dots when the window is tiny (24h)
     kill('growth');
     if (growth.current) charts.current.growth = new Chart(growth.current, {
       data: { labels: L, datasets: [
-        { type: 'line', label: 'Cumul utilisateurs', data: slice(series.cum), borderColor: C.accent, backgroundColor: C.accent, borderWidth: 2.2, tension: 0.35, pointRadius: 0, yAxisID: 'y1', order: 0 },
+        { type: 'line', label: 'Cumul utilisateurs', data: slice(series.cum), borderColor: C.accent, backgroundColor: C.accent, borderWidth: 2.2, tension: 0.35, pointRadius: pr, yAxisID: 'y1', order: 0 },
         { type: 'bar', label: 'Inscriptions / jour', data: slice(series.newU), backgroundColor: 'rgba(191,94,58,.22)', borderRadius: 3, yAxisID: 'y', order: 1, maxBarThickness: 16 },
       ] },
       options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
@@ -193,7 +204,7 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
     });
 
     kill('activity');
-    const mk = (label, arr, color) => ({ label, data: slice(arr), borderColor: color, backgroundColor: color, borderWidth: 2, tension: 0.35, pointRadius: 0 });
+    const mk = (label, arr, color) => ({ label, data: slice(arr), borderColor: color, backgroundColor: color, borderWidth: 2, tension: 0.35, pointRadius: pr });
     if (activity.current) charts.current.activity = new Chart(activity.current, {
       type: 'line', data: { labels: L, datasets: [mk('Conversations', series.convos, C.accent), mk('Clics Amazon', series.clicks, C.blue), mk('Sélections', series.sels, C.green)] },
       options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
@@ -263,7 +274,7 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ display: 'inline-flex', gap: 3, background: C.softer, borderRadius: 999, padding: 3 }}>
-            {['7j', '30j', '90j'].map((r) => <button key={r} type="button" style={seg(r)} onClick={() => setRange(r)}>{r.replace('j', ' j')}</button>)}
+            {['24h', '1s', '1m', '3m', 'YTD'].map((r) => <button key={r} type="button" style={seg(r)} onClick={() => setRange(r)}>{r}</button>)}
           </div>
           <button type="button" onClick={exportCsv} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, font: '600 13px Inter,sans-serif', color: '#fff', background: C.accent, border: 'none', borderRadius: 10, padding: '10px 16px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(191,94,58,.28)' }}>↓ Export CSV</button>
         </div>
@@ -350,6 +361,8 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
           </div>
         </div>
 
+        <div style={{ overflowX: 'auto', margin: '0 -22px', padding: '0 22px' }}>
+        <div style={{ minWidth: 720 }}>
         <div style={{ display: 'grid', gridTemplateColumns: COLS, alignItems: 'center', padding: '0 12px 9px', borderBottom: '1.5px solid rgba(26,24,20,.1)' }}>
           <div style={head}>#</div>
           <div style={head} onClick={() => sort('brand')}>Produit <span style={{ color: C.accent }}>{arrow('brand')}</span></div>
@@ -386,6 +399,8 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
           );
         })}
         <div style={{ height: 12 }} />
+        </div>
+        </div>
       </div>
     </div>
   );

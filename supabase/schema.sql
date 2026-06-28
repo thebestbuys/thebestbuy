@@ -620,8 +620,10 @@ grant execute on function public.admin_metrics() to authenticated;
 
 -- Most popular products across ALL users: saved (selections) + clicked
 -- (link_clicks) counts, with one representative snapshot each (superuser only).
+-- Return signature changed (added `trend`) → drop before recreate.
+drop function if exists public.admin_top_products(int);
 create or replace function public.admin_top_products(max_items int default 12)
-returns table (product_id text, data jsonb, saves int, clicks int)
+returns table (product_id text, data jsonb, saves int, clicks int, trend numeric)
 language sql security definer set search_path = public as $$
   with sav as (
     select product_id, count(*)::int as saves from public.selections group by product_id
@@ -632,6 +634,21 @@ language sql security definer set search_path = public as $$
   ids as (
     select product_id from sav union select product_id from clk
   ),
+  -- all signals (a save or a click), with their timestamp, for the trend window
+  sig as (
+    select product_id, added_at as ts from public.selections
+    union all
+    select product_id, clicked_at as ts from public.link_clicks
+  ),
+  recent as (
+    select product_id, count(*)::int as c from sig
+    where ts > now() - interval '7 days' group by product_id
+  ),
+  prev as (
+    select product_id, count(*)::int as c from sig
+    where ts <= now() - interval '7 days' and ts > now() - interval '14 days'
+    group by product_id
+  ),
   rep as (
     -- one representative snapshot per product: the most recent signal
     select distinct on (product_id) product_id, data from (
@@ -640,10 +657,18 @@ language sql security definer set search_path = public as $$
       select product_id, data, clicked_at as ts from public.link_clicks
     ) s order by product_id, ts desc
   )
-  select i.product_id, rep.data, coalesce(sav.saves, 0), coalesce(clk.clicks, 0)
+  select i.product_id, rep.data, coalesce(sav.saves, 0), coalesce(clk.clicks, 0),
+    -- 7-day trend: recent vs the previous 7-day window. No prior activity →
+    -- +100 % if it appeared this week, else 0.
+    case
+      when coalesce(prev.c, 0) = 0 then (case when coalesce(recent.c, 0) > 0 then 100 else 0 end)
+      else round((coalesce(recent.c, 0) - prev.c)::numeric / prev.c * 100, 1)
+    end as trend
   from ids i
   left join sav on sav.product_id = i.product_id
   left join clk on clk.product_id = i.product_id
+  left join recent on recent.product_id = i.product_id
+  left join prev on prev.product_id = i.product_id
   left join rep on rep.product_id = i.product_id
   where public.is_superuser()
   order by (coalesce(sav.saves, 0) + coalesce(clk.clicks, 0)) desc, rep.data->>'model'
