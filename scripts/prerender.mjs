@@ -143,7 +143,7 @@ for (const guide of GUIDES) {
     publisher: {
       '@type': 'Organization',
       name: 'Oraklia',
-      logo: { '@type': 'ImageObject', url: `${ORIGIN}/favicon.svg` },
+      logo: { '@type': 'ImageObject', url: `${ORIGIN}/brand/oraklia-logo.png` },
     },
   };
   const html = renderPage({
