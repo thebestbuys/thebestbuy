@@ -842,6 +842,263 @@ export const GUIDES = [
       },
     },
   },
+
+  // ── Idées cadeaux — 2e lot (occasions) ──────────────────────────────────────
+  {
+    slug: 'idees-cadeaux-saint-valentin',
+    category: 'gift',
+    type: 'gift',
+    content: {
+      fr: {
+        title: 'Idées cadeaux Saint-Valentin 2026 : pour lui et pour elle',
+        subtitle: "Du geste romantique au cadeau qui marque, des idées pour surprendre sans tomber dans le cliché.",
+        readTime: '6 min',
+        updated: 'Juin 2026',
+        intro:
+          "La Saint-Valentin, c'est l'art de viser juste : ni trop attendu (le énième bouquet), ni à côté de la plaque. Le bon cadeau dit « je te connais » — il s'appuie sur ce que l'autre aime vraiment. Voici nos idées, des plus romantiques aux plus originales, pour tous les budgets.",
+        sections: [
+          {
+            heading: '1. L\'attention compte plus que le prix',
+            body: [
+              "Le piège de la Saint-Valentin, c'est de croire qu'il faut dépenser beaucoup. En réalité, un cadeau personnalisé ou lié à un souvenir commun touche bien plus qu'un objet cher choisi au hasard. Pensez à ce qui ferait plaisir au quotidien plutôt qu'à ce qui « fait » cadeau de Saint-Valentin.",
+              "Les expériences à deux (un jeu de société pour deux, un coffret dégustation à partager) marquent souvent plus qu'un objet, car elles créent un moment ensemble.",
+            ],
+          },
+          {
+            heading: '2. Les valeurs sûres pour elle et pour lui',
+            body: [
+              "Pour elle : un bijou discret, un coffret de soins, un diffuseur d'ambiance ou une liseuse si elle dévore les livres. Pour lui : une montre, un beau portefeuille, des écouteurs sans fil ou un accessoire pour sa passion.",
+              "Côté tech mixte, les écouteurs sans fil et les enceintes Bluetooth plaisent à tout le monde et servent tous les jours — une valeur sûre quand on hésite.",
+            ],
+          },
+          {
+            heading: '3. Petits budgets et idées originales',
+            body: [
+              "Pour moins de 30 €, misez sur le soin du détail : un coffret de chocolats de qualité, une bougie parfumée, un livre choisi avec attention ou un mug à message. L'emballage et le petit mot font la différence.",
+              "Pour sortir de l'ordinaire : un cadre photo qui revisite un souvenir, un jeu pour couples, ou une plante facile d'entretien qui durera bien après le 14 février.",
+            ],
+          },
+        ],
+        checklist: [
+          'Partez d\'un souvenir commun ou d\'une passion : ça touche plus',
+          'Une expérience à deux marque souvent plus qu\'un objet',
+          'Écouteurs sans fil / enceinte : valeurs sûres mixtes',
+          'Petit budget : soignez l\'emballage et le petit mot',
+          'Pour durer : une plante ou un objet déco plutôt que l\'éphémère',
+        ],
+        picks: [
+          { budget: 'Petit budget · ~20 €', name: 'Coffret de chocolats fins', note: 'Un classique qui plaît, à choisir selon ses goûts.', query: 'coffret chocolats fins' },
+          { budget: 'Cocooning · ~35 €', name: 'Bougie parfumée + diffuseur', note: 'Crée une ambiance chaleureuse pour la soirée et après.', query: 'bougie parfumee coffret' },
+          { budget: 'À deux · ~25 €', name: 'Jeu de société pour deux', note: 'Pour passer un vrai moment ensemble, pas juste offrir un objet.', query: 'jeu de societe pour deux' },
+          { budget: 'Pour marquer le coup · ~90 €', name: 'Écouteurs sans fil', note: 'Le cadeau utile qui sert tous les jours, pour lui comme pour elle.', query: 'ecouteurs sans fil bluetooth' },
+        ],
+      },
+    },
+  },
+  {
+    slug: 'idees-cadeaux-fete-des-meres',
+    category: 'gift',
+    type: 'gift',
+    content: {
+      fr: {
+        title: 'Idées cadeaux pour la fête des mères 2026',
+        subtitle: "Bien-être, maison, créativité, tech utile : des idées qui font vraiment plaisir, à tout budget.",
+        readTime: '6 min',
+        updated: 'Juin 2026',
+        intro:
+          "Pour la fête des mères, on veut un cadeau qui sorte du lot et qui montre qu'on a réfléchi. La clé : partir de ce qu'elle aime et de ce qui lui simplifierait ou embellirait le quotidien. Voici nos idées, triées par envie et par budget.",
+        sections: [
+          {
+            heading: '1. Le bien-être et la détente',
+            body: [
+              "C'est souvent le cadeau qui touche le plus : un appareil de massage, un diffuseur d'huiles essentielles, un plaid moelleux ou un coffret de soins offrent un vrai moment pour soi. L'idée, c'est de lui offrir une parenthèse.",
+              "Pour un budget plus large, un appareil de beauté de qualité (sèche-cheveux performant, lisseur) est utilisé pendant des années.",
+            ],
+          },
+          {
+            heading: '2. Maison, cuisine et créativité',
+            body: [
+              "Si elle aime cuisiner, un bel ustensile, un robot pâtissier ou une machine à café font des cadeaux marquants. Côté maison, une jolie lampe d'ambiance, des plantes ou un cadre photo personnalisé sont des valeurs sûres.",
+              "Pour les mamans créatives, un beau matériel pour sa passion (couture, dessin, jardinage) dit « je sais ce que tu aimes » — souvent plus apprécié qu'un cadeau générique.",
+            ],
+          },
+          {
+            heading: '3. Tech utile et petits budgets',
+            body: [
+              "La tech n'est pas hors sujet : une liseuse pour les grandes lectrices, une enceinte Bluetooth pour la cuisine, ou une montre connectée orientée bien-être sont des cadeaux très utilisés.",
+              "Pour moins de 30 €, misez sur l'attention : un thé d'exception, un livre choisi pour elle, une jolie tasse ou un bouquet qui dure (fleurs séchées). Le geste compte autant que l'objet.",
+            ],
+          },
+        ],
+        checklist: [
+          'Bien-être (massage, diffuseur, plaid) : le cadeau qui touche',
+          'Cuisine / créativité : un accessoire de qualité pour sa passion',
+          'La liseuse est idéale pour les grandes lectrices',
+          'Petit budget : misez sur l\'attention et la présentation',
+          'Préférez ce qui dure (objet déco) à l\'éphémère',
+        ],
+        picks: [
+          { budget: 'Petit budget · ~25 €', name: 'Coffret de thés d\'exception', note: 'Une attention raffinée, à choisir selon ses goûts.', query: 'coffret thes degustation' },
+          { budget: 'Bien-être · ~45 €', name: 'Appareil de massage cervical', note: 'Pour décompresser à la maison, utilisé toute l\'année.', query: 'appareil massage cervical' },
+          { budget: 'Maison · ~40 €', name: 'Lampe d\'ambiance', note: 'Réchauffe l\'atmosphère d\'un salon ou d\'une chambre.', query: 'lampe ambiance led' },
+          { budget: 'Pour les lectrices · ~120 €', name: 'Liseuse', note: 'Des milliers de livres dans un objet léger, lisible partout.', query: 'liseuse' },
+        ],
+      },
+    },
+  },
+  {
+    slug: 'idees-cadeaux-fete-des-peres',
+    category: 'gift',
+    type: 'gift',
+    content: {
+      fr: {
+        title: 'Idées cadeaux pour la fête des pères 2026',
+        subtitle: "Tech, bricolage, cuisine, passions : des idées qui changent de la cravate, pour tous les budgets.",
+        readTime: '6 min',
+        updated: 'Juin 2026',
+        intro:
+          "Cravate, chaussettes, mug « meilleur papa »… La fête des pères mérite mieux. Le bon cadeau part de ce qui l'occupe vraiment : ses loisirs, ses petites manies, ce qui lui faciliterait la vie. Voici nos idées, du gadget malin au cadeau qui dure.",
+        sections: [
+          {
+            heading: '1. Partez de sa passion',
+            body: [
+              "Bricoleur, cuisinier, sportif, amateur de café ou de musique : un cadeau qui prolonge un loisir existant fait toujours mouche. Un set d'outils de qualité, un accessoire de cuisine, une gourde isotherme pour ses sorties… l'idée juste est souvent là.",
+              "Si vous le connaissez peu, l'utile haut de gamme est une valeur sûre : un beau portefeuille, une station de charge élégante ou une lampe de bureau design plaisent presque toujours.",
+            ],
+          },
+          {
+            heading: '2. Les valeurs sûres tech',
+            body: [
+              "Écouteurs sans fil, enceinte Bluetooth, batterie externe ou montre connectée : ce sont des cadeaux utilisés tous les jours. La montre connectée est particulièrement appréciée s'il fait du sport (pensez à vérifier la compatibilité iPhone/Android).",
+              "Pour les amateurs de cinéma ou de musique à la maison, un bon casque ou un rétroéclairage TV transforme l'expérience sans exploser le budget.",
+            ],
+          },
+          {
+            heading: '3. Cuisine, apéro et petits budgets',
+            body: [
+              "Les coffrets thématiques (bière, café de spécialité, épices, soin de la barbe) sont parfaits pour faire découvrir sans se tromper, à condition de choisir un thème qui lui ressemble.",
+              "Pour moins de 30 €, un mug isotherme, un accessoire d'apéro, un livre sur sa passion ou un jeu convivial sont d'excellentes idées. Le bon mot d'accompagnement fait le reste.",
+            ],
+          },
+        ],
+        checklist: [
+          'Partez de son loisir principal plutôt que d\'un cadeau « passe-partout »',
+          'Écouteurs / enceinte / batterie externe : utilisés tous les jours',
+          'Montre connectée pour le sportif (vérifiez la compatibilité)',
+          'Coffret thématique : faites-le découvrir sans risque',
+          'Petit budget : un objet du quotidien en version « premium »',
+        ],
+        picks: [
+          { budget: 'Petit budget · ~25 €', name: 'Mug isotherme inox', note: 'Garde le café chaud des heures, utile partout.', query: 'mug isotherme inox' },
+          { budget: 'Apéro / cuisine · ~35 €', name: 'Coffret apéro ou épices', note: 'Pour les gourmands : une découverte sans risque de se tromper.', query: 'coffret epices degustation' },
+          { budget: 'Audio · ~90 €', name: 'Écouteurs sans fil', note: 'Le cadeau tech qui sert au quotidien, transports comme sport.', query: 'ecouteurs sans fil reduction de bruit' },
+          { budget: 'Pour marquer le coup · ~150 €', name: 'Montre connectée', note: 'Sport, notifications, autonomie : un cadeau qui dure.', query: 'montre connectee homme' },
+        ],
+      },
+    },
+  },
+  {
+    slug: 'idees-cadeaux-anniversaire',
+    category: 'gift',
+    type: 'gift',
+    content: {
+      fr: {
+        title: "Idées cadeaux d'anniversaire : pour tous les âges et tous les budgets",
+        subtitle: "Enfant, ado, adulte : des idées d'anniversaire qui font mouche selon le profil et le budget.",
+        readTime: '7 min',
+        updated: 'Juin 2026',
+        intro:
+          "Un anniversaire, c'est l'occasion de faire vraiment plaisir — encore faut-il viser juste. Le secret : adapter le cadeau à l'âge et aux centres d'intérêt de la personne, plutôt que de chercher « une idée d'anniversaire » au hasard. Voici notre sélection, organisée par profil.",
+        sections: [
+          {
+            heading: '1. Pour les enfants',
+            body: [
+              "Privilégiez ce qui stimule le jeu et l'imagination : jeux de construction, jeux de société adaptés à leur âge, livres illustrés ou jouets créatifs. Les valeurs sûres durent plus longtemps qu'un jouet « tendance » vite oublié.",
+              "Vérifiez toujours l'âge conseillé, et pensez aux jeux qui se partagent en famille : ils prolongent le plaisir bien après le jour J.",
+            ],
+          },
+          {
+            heading: '2. Pour les ados',
+            body: [
+              "Les ados ont des goûts marqués : casque ou écouteurs sans fil, accessoires gaming, déco de chambre (LED), ou matériel pour créer du contenu. Un casque de qualité est presque toujours un bon choix.",
+              "Pour le gaming, vérifiez la console ou la plateforme utilisée avant d'acheter un accessoire. Une carte cadeau pour sa plateforme reste une option sûre quand on hésite.",
+            ],
+          },
+          {
+            heading: '3. Pour les adultes',
+            body: [
+              "Misez sur l'utile qui fait plaisir : écouteurs sans fil, liseuse, enceinte Bluetooth, ou un accessoire de qualité pour sa passion (cuisine, café, sport). Les objets « cocooning » (plaid, diffuseur) plaisent aussi beaucoup.",
+              "Pour un cadeau qui marque sans se ruiner, un beau coffret thématique ou un objet du quotidien en version premium fait toujours son effet.",
+            ],
+          },
+        ],
+        checklist: [
+          'Adaptez le cadeau à l\'âge ET aux centres d\'intérêt',
+          'Enfants : un classique de qualité dure plus qu\'un effet de mode',
+          'Ados : casque/écouteurs ou accessoire gaming (vérifiez la plateforme)',
+          'Adultes : l\'utile qui fait plaisir (écouteurs, liseuse, passion)',
+          'En cas de doute : carte cadeau ou coffret thématique',
+        ],
+        picks: [
+          { budget: 'Enfant · ~25 €', name: 'Jeu de construction', note: 'Stimule la créativité, occupe longtemps. Vérifiez l\'âge conseillé.', query: 'jeu de construction enfant' },
+          { budget: 'Ado · ~50 €', name: 'Casque sans fil', note: 'Musique, gaming, appels : utilisé tous les jours.', query: 'casque sans fil ado' },
+          { budget: 'Adulte · ~90 €', name: 'Écouteurs sans fil', note: 'Le cadeau polyvalent qui plaît à tous les âges.', query: 'ecouteurs sans fil bluetooth' },
+          { budget: 'Cadeau marquant · ~120 €', name: 'Liseuse', note: 'Idéale pour les lecteurs : léger, des milliers de livres à emporter.', query: 'liseuse' },
+        ],
+      },
+    },
+  },
+  {
+    slug: 'idees-cadeaux-derniere-minute',
+    category: 'gift',
+    type: 'gift',
+    content: {
+      fr: {
+        title: 'Idées cadeaux de dernière minute (avec livraison rapide)',
+        subtitle: "Vous avez oublié ? Pas de panique : des idées qui font plaisir et arrivent vite, pour tous les budgets.",
+        readTime: '5 min',
+        updated: 'Juin 2026',
+        intro:
+          "Cadeau oublié, invitation de dernière minute, anniversaire qui tombe demain : ça arrive à tout le monde. La bonne nouvelle, c'est qu'on peut très bien s'en sortir avec un cadeau qui a du sens — à condition de choisir malin et de privilégier la livraison rapide. Voici nos idées qui sauvent la mise.",
+        sections: [
+          {
+            heading: '1. Visez les cadeaux « universels »',
+            body: [
+              "Quand le temps manque, misez sur des valeurs sûres qui plaisent à presque tout le monde : coffret gourmand (chocolats, thé, café), enceinte Bluetooth, écouteurs sans fil, ou un beau livre. Difficile de se tromper, et l'effet reste au rendez-vous.",
+              "Les objets du quotidien en version premium (mug isotherme, gourde design, lampe d'ambiance) sont aussi parfaits : utiles, jolis, et adaptés à tous les profils.",
+            ],
+          },
+          {
+            heading: '2. Privilégiez la livraison rapide',
+            body: [
+              "Vérifiez bien le délai de livraison estimé avant de valider : certains articles arrivent dès le lendemain. Filtrez sur la disponibilité immédiate et évitez les vendeurs aux délais flous quand l'échéance est proche.",
+              "Pour les cas vraiment urgents, la carte cadeau (envoyée par e-mail) reste une solution honnête et immédiate — accompagnez-la d'un petit mot pour la rendre personnelle.",
+            ],
+          },
+          {
+            heading: '3. Le détail qui fait la différence',
+            body: [
+              "Un cadeau de dernière minute ne doit pas avoir l'air bâclé. Un emballage soigné, une carte manuscrite ou un petit mot transforment un cadeau simple en attention sincère. C'est souvent ce dont on se souvient.",
+              "Et si vous séchez, décrivez la personne à notre conseiller : il vous propose des idées adaptées en quelques secondes.",
+            ],
+          },
+        ],
+        checklist: [
+          'Misez sur des cadeaux universels (coffret gourmand, audio, livre)',
+          'Vérifiez le délai de livraison AVANT de valider',
+          'Filtrez sur la disponibilité immédiate / livraison le lendemain',
+          'Cas urgent : la carte cadeau par e-mail dépanne bien',
+          'Soignez l\'emballage et ajoutez un mot : ça change tout',
+        ],
+        picks: [
+          { budget: 'Petit budget · ~20 €', name: 'Coffret gourmand (chocolats/thé)', note: 'Le sauveur universel, plaît à presque tout le monde.', query: 'coffret gourmand chocolats the' },
+          { budget: 'Polyvalent · ~40 €', name: 'Enceinte Bluetooth portable', note: 'Un cadeau sympa et utile, pour tous les âges.', query: 'enceinte bluetooth portable' },
+          { budget: 'Audio · ~90 €', name: 'Écouteurs sans fil', note: 'Valeur sûre qui sert tous les jours.', query: 'ecouteurs sans fil bluetooth' },
+          { budget: 'Vraiment urgent', name: 'Carte cadeau', note: 'Envoyée par e-mail, immédiate : la solution de secours honnête.', query: 'carte cadeau' },
+        ],
+      },
+    },
+  },
 ];
 
 // Renvoie le contenu d'un guide localisé pour la langue donnée.
