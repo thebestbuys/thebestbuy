@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
 import { getProfile, saveProfile } from '../lib/profile.js';
+import { useDismiss } from '../lib/useDismiss.js';
 
 const BIO_MAX = 600;
 
@@ -12,6 +13,7 @@ const BIO_MAX = 600;
 export default function ProfilePanel({ open, onClose }) {
   const { user } = useAuth();
   const { t } = useI18n();
+  const { closing, close } = useDismiss(onClose);
   const [form, setForm] = useState(getProfile());
   const [saved, setSaved] = useState(false);
 
@@ -25,7 +27,7 @@ export default function ProfilePanel({ open, onClose }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') close();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -52,7 +54,7 @@ export default function ProfilePanel({ open, onClose }) {
   const hasAny = Object.values(form).some((v) => String(v || '').trim());
 
   return (
-    <div className="sheet-page profile-panel" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+    <div className={'sheet-page profile-panel' + (closing ? ' is-closing' : '')} role="dialog" aria-modal="true" aria-labelledby="profile-title">
         <header className="sheet-head">
           <div>
             <h2 id="profile-title" className="history-title">
@@ -62,7 +64,7 @@ export default function ProfilePanel({ open, onClose }) {
           </div>
           <button
             className="sheet-close"
-            onClick={onClose}
+            onClick={close}
             aria-label={t('auth.close')}
           >
             ✕

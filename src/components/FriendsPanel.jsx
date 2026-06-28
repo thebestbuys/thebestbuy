@@ -12,6 +12,7 @@ import {
   publicListItems,
   logLinkClick,
 } from '../lib/cloud.js';
+import { useDismiss } from '../lib/useDismiss.js';
 import { AmazonPrice, ProductImage } from './ProductCard.jsx';
 
 function initials(name = '') {
@@ -44,6 +45,7 @@ function Avatar({ name, url, size = 36 }) {
 export default function FriendsPanel({ open, onClose }) {
   const { user } = useAuth();
   const { t } = useI18n();
+  const { closing, close } = useDismiss(onClose);
   const [q, setQ] = useState('');
   const [results, setResults] = useState([]);
   const [searched, setSearched] = useState(false);
@@ -67,7 +69,7 @@ export default function FriendsPanel({ open, onClose }) {
     setViewing(null);
     refresh();
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') close();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -138,7 +140,7 @@ export default function FriendsPanel({ open, onClose }) {
     `https://www.amazon.fr/s?k=${encodeURIComponent(`${p.brand} ${p.model}`)}&tag=oraklia123-21`;
 
   return (
-    <div className="sheet-page friends-panel" role="dialog" aria-modal="true" aria-labelledby="friends-title">
+    <div className={'sheet-page friends-panel' + (closing ? ' is-closing' : '')} role="dialog" aria-modal="true" aria-labelledby="friends-title">
         <header className="sheet-head">
           <div>
             {viewing ? (
@@ -155,7 +157,7 @@ export default function FriendsPanel({ open, onClose }) {
               </>
             )}
           </div>
-          <button className="sheet-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+          <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
         </header>
         <div className="sheet-body">
 

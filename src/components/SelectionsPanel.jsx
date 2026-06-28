@@ -12,11 +12,13 @@ import {
 import { listLists, getListsRevision, updateList, deleteList } from '../lib/lists.js';
 import { buildShareUrl } from '../lib/gift.js';
 import FavoriteButton from './FavoriteButton.jsx';
+import { useDismiss } from '../lib/useDismiss.js';
 
 // Saved products, organized into named lists (private/public).
 export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) {
   const { user } = useAuth();
   const { t, lang } = useI18n();
+  const { closing, close } = useDismiss(onClose);
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   const [items, setItems] = useState([]);
   const [lists, setLists] = useState([]);
@@ -42,7 +44,7 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
   useEffect(() => {
     if (!open) return;
     setQ('');
-    const onKey = (e) => e.key === 'Escape' && onClose();
+    const onKey = (e) => e.key === 'Escape' && close();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
@@ -127,7 +129,7 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
   };
 
   return (
-    <div className="sheet-page selections-panel" role="dialog" aria-modal="true" aria-labelledby="selections-title">
+    <div className={'sheet-page selections-panel' + (closing ? ' is-closing' : '')} role="dialog" aria-modal="true" aria-labelledby="selections-title">
         <header className="sheet-head">
           <div>
             <h2 id="selections-title" className="history-title">{t('selections.title')}</h2>
@@ -136,7 +138,7 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
             </p>
           </div>
           <div className="selections-head-actions">
-            <button className="sheet-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+            <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
           </div>
         </header>
         <div className="sheet-body">

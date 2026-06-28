@@ -2401,6 +2401,29 @@ button.chat-bubble.chat-editable {
     transform: translateY(-3px);
   }
 }
+/* Smooth exit for full-screen sheets/pages — mirror of the bb-rise enter, played
+   via the .is-closing class (see useDismiss) just before they unmount. */
+@keyframes sheet-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.sheet-page.is-closing,
+.owned-page.is-closing {
+  animation: sheet-out 0.2s ease-in both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet-page.is-closing,
+  .owned-page.is-closing {
+    animation: none;
+    opacity: 0;
+  }
+}
 
 /* ───────────────────────── Auth (Web) ─────────────────────────── */
 .home-topbar {

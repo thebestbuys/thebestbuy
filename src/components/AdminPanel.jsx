@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
+import { useDismiss } from '../lib/useDismiss.js';
 import {
   adminListUsers,
   adminUserLists,
@@ -154,6 +155,7 @@ function MetricsView({ metrics, topProducts, t }) {
 export default function AdminPanel({ open, onClose }) {
   const { user } = useAuth();
   const { t } = useI18n();
+  const { closing, close } = useDismiss(onClose);
   const [q, setQ] = useState('');
   const [mainTab, setMainTab] = useState('users'); // 'users' | 'metrics'
   const [users, setUsers] = useState(null);   // null = loading
@@ -179,7 +181,7 @@ export default function AdminPanel({ open, onClose }) {
     setUsers(null);
     adminListUsers().then(setUsers);
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') close();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -243,7 +245,7 @@ export default function AdminPanel({ open, onClose }) {
   ];
 
   return (
-    <div className="sheet-page friends-panel admin-panel" role="dialog" aria-modal="true" aria-labelledby="admin-title">
+    <div className={'sheet-page friends-panel admin-panel' + (closing ? ' is-closing' : '')} role="dialog" aria-modal="true" aria-labelledby="admin-title">
       <header className="sheet-head">
         <div>
           {viewing ? (
@@ -263,7 +265,7 @@ export default function AdminPanel({ open, onClose }) {
             </>
           )}
         </div>
-        <button className="sheet-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+        <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
       </header>
       <div className="sheet-body">
         {!viewing ? (

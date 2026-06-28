@@ -6,10 +6,12 @@ import {
   formatRelative,
   listConversations,
 } from '../lib/history.js';
+import { useDismiss } from '../lib/useDismiss.js';
 
 export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
   const { user } = useAuth();
   const { t } = useI18n();
+  const { closing, close } = useDismiss(onClose);
   const [items, setItems] = useState([]);
   const [q, setQ] = useState('');
 
@@ -23,7 +25,7 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') close();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -50,7 +52,7 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
     : items;
 
   return (
-    <div className="sheet-page history-sheet" role="dialog" aria-modal="true" aria-labelledby="history-title">
+    <div className={'sheet-page history-sheet' + (closing ? ' is-closing' : '')} role="dialog" aria-modal="true" aria-labelledby="history-title">
         <header className="sheet-head">
           <div>
             <h2 id="history-title" className="history-title">
@@ -62,7 +64,7 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
           </div>
           <button
             className="sheet-close"
-            onClick={onClose}
+            onClick={close}
             aria-label={t('auth.close')}
           >
             ✕

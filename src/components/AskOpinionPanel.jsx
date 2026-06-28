@@ -5,6 +5,7 @@ import { AmazonPrice, ProductImage } from './ProductCard.jsx';
 import { listSelections } from '../lib/selections.js';
 import { listLists } from '../lib/lists.js';
 import { listFriends, createPoll } from '../lib/cloud.js';
+import { useDismiss } from '../lib/useDismiss.js';
 
 function initials(name = '') {
   const p = String(name).trim().split(/\s+/).filter(Boolean);
@@ -15,6 +16,7 @@ function initials(name = '') {
 export default function AskOpinionPanel({ open, onClose, getAmazonUrl }) {
   const { user } = useAuth();
   const { t } = useI18n();
+  const { closing, close } = useDismiss(onClose);
   const [items, setItems] = useState([]);
   const [lists, setLists] = useState([]);
   const [friends, setFriends] = useState([]);
@@ -34,7 +36,7 @@ export default function AskOpinionPanel({ open, onClose, getAmazonUrl }) {
     setPickedList('');
     setName('');
     setSent(false);
-    const onKey = (e) => e.key === 'Escape' && onClose();
+    const onKey = (e) => e.key === 'Escape' && close();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, user?.sub]);
@@ -86,12 +88,12 @@ export default function AskOpinionPanel({ open, onClose, getAmazonUrl }) {
   };
 
   return (
-    <div className="sheet-page notif-panel" role="dialog" aria-modal="true" aria-labelledby="poll-title">
+    <div className={'sheet-page notif-panel' + (closing ? ' is-closing' : '')} role="dialog" aria-modal="true" aria-labelledby="poll-title">
         <header className="sheet-head">
           <div>
             <h2 id="poll-title" className="history-title">{t('poll.title')}</h2>
           </div>
-          <button className="sheet-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+          <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
         </header>
         <div className="sheet-body">
 

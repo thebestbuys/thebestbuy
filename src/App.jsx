@@ -32,6 +32,7 @@ import { giftToPrompt, giftTitle, buildShareUrl, loadSharedPayload } from './lib
 import { getAccessToken, circleTrending, logLinkClick } from './lib/cloud.js';
 import { getOwnedNames, ownedIdSet } from './lib/owned.js';
 import { listSelections } from './lib/selections.js';
+import { useDismiss } from './lib/useDismiss.js';
 import { recordClick } from './lib/clicked.js';
 import { toast } from './lib/toast.js';
 import {
@@ -367,19 +368,20 @@ function TrendingCircle({ onOpen, hideHeader }) {
 // feature gets its own dedicated tab instead of crowding the home hero.
 function TrendingPanel({ onClose, onOpen }) {
   const { t } = useI18n();
+  const { closing, close } = useDismiss(onClose);
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [close]);
   return (
-    <div className="sheet-page trending-panel" role="dialog" aria-modal="true" aria-labelledby="trending-panel-title">
+    <div className={'sheet-page trending-panel' + (closing ? ' is-closing' : '')} role="dialog" aria-modal="true" aria-labelledby="trending-panel-title">
       <header className="sheet-head">
         <div>
           <h2 id="trending-panel-title" className="history-title">{t('trending.title')}</h2>
           <p className="history-sub">{t('trending.sub')}</p>
         </div>
-        <button className="sheet-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+        <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
       </header>
       <div className="sheet-body">
         <TrendingCircle onOpen={onOpen} hideHeader />

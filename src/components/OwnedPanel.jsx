@@ -5,6 +5,7 @@ import { PriceTag, ProductImage, ScoreRing, VerifiedBadge, VerifiedRating } from
 import { listClicked } from '../lib/clicked.js';
 import { logLinkClick } from '../lib/cloud.js';
 import { listOwned, ownedIdSet, toggleOwned } from '../lib/owned.js';
+import { useDismiss } from '../lib/useDismiss.js';
 
 // "Déjà acheté" — full-page, master/detail. Left: the products the user clicked
 // on among the advisor's proposals (their detail was opened); right: the
@@ -15,6 +16,7 @@ import { listOwned, ownedIdSet, toggleOwned } from '../lib/owned.js';
 export default function OwnedPanel({ open, onClose }) {
   const { user } = useAuth();
   const { t, lang } = useI18n();
+  const { closing, close } = useDismiss(onClose);
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   const [ownedSet, setOwnedSet] = useState(() => new Set());
   const [clicked, setClicked] = useState([]);
@@ -30,7 +32,7 @@ export default function OwnedPanel({ open, onClose }) {
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => e.key === 'Escape' && onClose();
+    const onKey = (e) => e.key === 'Escape' && close();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
@@ -74,13 +76,13 @@ export default function OwnedPanel({ open, onClose }) {
   };
 
   return (
-    <div className="owned-page" role="dialog" aria-modal="true" aria-labelledby="owned-title">
+    <div className={'owned-page' + (closing ? ' is-closing' : '')} role="dialog" aria-modal="true" aria-labelledby="owned-title">
       <header className="owned-page-head">
         <div>
           <h2 id="owned-title" className="owned-page-title">{t('owned.title')}</h2>
           <p className="owned-page-sub">{t('owned.sub')}</p>
         </div>
-        <button type="button" className="owned-page-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+        <button type="button" className="owned-page-close" onClick={close} aria-label={t('auth.close')}>✕</button>
       </header>
 
       {items.length === 0 ? (
