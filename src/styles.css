@@ -5583,8 +5583,10 @@ select.profile-input {
   border-color: rgba(0, 0, 0, 0.3);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
-/* The panel is white now, so don't dim the photo (it would leave a grey seam
-   against the white). Keep just the soft drop-shadow. */
-:root[data-theme="dark"] .prod-img-wrap.is-photo .prod-img-amazon {
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+/* The panel already provides white background + border + shadow, so drop the
+   per-image filter entirely. On a white panel the image's drop-shadow drew a
+   faint rectangle around the photo (looking "stuck on"), and the dark-mode
+   brightness() left a grey seam — both gone now, so the photo sits flush. */
+.prod-img-wrap.is-photo .prod-img-amazon {
+  filter: none;
 }
