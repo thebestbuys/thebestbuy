@@ -46,7 +46,7 @@ const DEMO = [
 function buildSeries(totalUsers = 2847) {
   let s = 1337;
   const rnd = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-  const N = 90, labels = [], newU = [], convos = [], clicks = [], sels = [], dau = [];
+  const N = 90, labels = [], dates = [], newU = [], convos = [], clicks = [], sels = [], dau = [];
   const today = new Date();
   for (let i = 0; i < N; i++) {
     const t = i / (N - 1), wk = 1 + 0.18 * Math.sin((i % 7) / 7 * Math.PI * 2);
@@ -57,11 +57,12 @@ function buildSeries(totalUsers = 2847) {
     dau.push(Math.round((230 + 130 * t + 30 * Math.sin(i / 2.5) + rnd() * 30) * wk));
     const d = new Date(today); d.setDate(d.getDate() - (N - 1 - i));
     labels.push(d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
+    dates.push(d.toISOString().slice(0, 10));
   }
   const totalNew = newU.reduce((a, b) => a + b, 0);
   let run = (totalUsers || 2847) - totalNew, cum = [];
   for (let i = 0; i < N; i++) { run += newU[i]; cum.push(run); }
-  return { labels, newU, cum, convos, clicks, sels, dau };
+  return { labels, dates, newU, cum, convos, clicks, sels, dau };
 }
 
 // Build the chart series from the REAL daily rows returned by admin_daily_series
@@ -69,6 +70,7 @@ function buildSeries(totalUsers = 2847) {
 // Returns null when there's no data, so the caller can fall back to the mock.
 function fromDaily(rows, totalUsers) {
   if (!Array.isArray(rows) || rows.length === 0) return null;
+  const dates = rows.map((r) => String(r.d).slice(0, 10));
   const labels = rows.map((r) =>
     new Date(r.d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
   );
@@ -82,7 +84,7 @@ function fromDaily(rows, totalUsers) {
   const totalNew = newU.reduce((a, b) => a + b, 0);
   let run = Math.max(0, (totalUsers || totalNew) - totalNew);
   const cum = newU.map((n) => (run += n));
-  return { labels, newU, cum, convos, clicks, sels, dau };
+  return { labels, dates, newU, cum, convos, clicks, sels, dau };
 }
 
 function normalizeProducts(topProducts) {
@@ -135,6 +137,8 @@ const Tile = ({ value, label }) => (
 
 export default function MetricsDashboard({ metrics, topProducts, dailySeries }) {
   const [range, setRange] = useState('1m');
+  const [customFrom, setCustomFrom] = useState(''); // 'YYYY-MM-DD'
+  const [customTo, setCustomTo] = useState('');
   const [sortKey, setSortKey] = useState('total');
   const [sortDir, setSortDir] = useState('desc');
   const [query, setQuery] = useState('');
@@ -159,9 +163,33 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
     }
     return 30; // '1m'
   };
-  const slice = (arr) => arr.slice(Math.max(0, arr.length - rangeDays()));
-  const sum = (arr, n) => arr.slice(arr.length - n).reduce((a, b) => a + b, 0);
-  const delta = (arr) => { const a = sum(arr, 7), b = sum(arr.slice(0, arr.length - 7), 7); return b ? (a - b) / b * 100 : 0; };
+  // Resolve the selected period to an inclusive index window into the series.
+  // Preset ranges = the last N days; 'perso' = the custom from/to dates.
+  const N = series.labels.length;
+  const win = (() => {
+    if (range === 'perso' && customFrom && customTo) {
+      const lo = customFrom <= customTo ? customFrom : customTo;
+      const hi = customFrom <= customTo ? customTo : customFrom;
+      let start = series.dates.findIndex((d) => d >= lo);
+      if (start < 0) return { start: 0, end: -1 };
+      let end = -1;
+      for (let i = N - 1; i >= 0; i--) { if (series.dates[i] <= hi) { end = i; break; } }
+      if (end < start) return { start: 0, end: -1 };
+      return { start, end };
+    }
+    return { start: Math.max(0, N - rangeDays()), end: N - 1 };
+  })();
+  const slice = (arr) => (win.end < win.start ? [] : arr.slice(win.start, win.end + 1));
+  const winSum = (arr) => slice(arr).reduce((x, y) => x + y, 0);
+  // Range-aware delta for a flow metric: this window's total vs the preceding
+  // window of the same length. Moves with the period selector.
+  const winDelta = (arr) => {
+    const len = win.end - win.start + 1;
+    if (len <= 0) return 0;
+    const a = arr.slice(win.start, win.end + 1).reduce((x, y) => x + y, 0);
+    const b = arr.slice(Math.max(0, win.start - len), win.start).reduce((x, y) => x + y, 0);
+    return b ? ((a - b) / b) * 100 : a > 0 ? 100 : 0;
+  };
 
   // ── refs for canvases
   const spkUsers = useRef(), spkActive = useRef(), spkConvos = useRef(), spkClicks = useRef();
@@ -220,7 +248,7 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
     });
 
     return () => Object.keys(charts.current).forEach(kill);
-  }, [series, range, m.friendships, m.pending_requests]);
+  }, [series, range, customFrom, customTo, m.friendships, m.pending_requests]);
 
   // ── table
   const rows = useMemo(() => {
@@ -249,8 +277,15 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
   const head = { font: '600 10.5px Inter,sans-serif', color: C.faint, letterSpacing: '.06em', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none' };
   const COLS = '42px minmax(160px,1.7fr) 116px 86px 86px 92px 96px 78px';
 
-  // KPI deltas / subs — réels quand dispo, sinon dérivés de la série.
-  const usersDelta = m.new_users_7d != null && m.users ? (m.new_users_7d / Math.max(1, m.users - m.new_users_7d)) * 100 : delta(series.newU);
+  // Users delta = growth of the total over the window (end vs the day before the
+  // window started). Range-aware: longer period → larger growth.
+  const usersDelta = (() => {
+    if (win.end < win.start) return 0;
+    const base = win.start > 0
+      ? series.cum[win.start - 1]
+      : Math.max(1, (series.cum[win.start] || 0) - (series.newU[win.start] || 0));
+    return ((series.cum[win.end] - base) / Math.max(1, base)) * 100;
+  })();
 
   // Real conversion funnel from the aggregate totals (no fabricated ratios).
   // clicks/selections aren't strict subsets of conversations, so percentages are
@@ -275,17 +310,36 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ display: 'inline-flex', gap: 3, background: C.softer, borderRadius: 999, padding: 3 }}>
             {['24h', '1s', '1m', '3m', 'YTD'].map((r) => <button key={r} type="button" style={seg(r)} onClick={() => setRange(r)}>{r}</button>)}
+            <button type="button" style={seg('perso')} onClick={() => {
+              if (!customFrom || !customTo) {
+                const ds = series.dates;
+                setCustomTo(ds[ds.length - 1] || '');
+                setCustomFrom(ds[Math.max(0, ds.length - 30)] || '');
+              }
+              setRange('perso');
+            }}>Perso</button>
           </div>
+          {range === 'perso' && (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <input type="date" value={customFrom} max={customTo || undefined}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                style={{ font: '500 12.5px Inter,sans-serif', color: C.ink, background: C.soft, border: `1px solid ${C.border}`, borderRadius: 9, padding: '7px 10px', outline: 'none' }} />
+              <span style={{ color: C.faint, fontSize: 12 }}>→</span>
+              <input type="date" value={customTo} min={customFrom || undefined}
+                onChange={(e) => setCustomTo(e.target.value)}
+                style={{ font: '500 12.5px Inter,sans-serif', color: C.ink, background: C.soft, border: `1px solid ${C.border}`, borderRadius: 9, padding: '7px 10px', outline: 'none' }} />
+            </div>
+          )}
           <button type="button" onClick={exportCsv} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, font: '600 13px Inter,sans-serif', color: '#fff', background: C.accent, border: 'none', borderRadius: 10, padding: '10px 16px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(191,94,58,.28)' }}>↓ Export CSV</button>
         </div>
       </div>
 
       {/* KPI */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 14, marginBottom: 16 }}>
-        <KPI label="Utilisateurs" value={fmt(m.users)} sub={`+${fmt(m.new_users_7d)} sur 7 j · +${fmt(m.new_users_30d)} sur 30 j`} delta={usersDelta} canvasRef={spkUsers} />
-        <KPI label="Actifs · 7 j" value={fmt(m.active_users_7d)} sub={`${m.users ? dec(m.active_users_7d / m.users * 100) : '—'} % de la base`} delta={delta(series.dau)} canvasRef={spkActive} />
-        <KPI label="Conversations · 7 j" value={fmt(m.convos_7d)} sub={`${fmt(m.conversations)} au total`} delta={delta(series.convos)} canvasRef={spkConvos} />
-        <KPI label="Clics Amazon · 7 j" value={fmt(m.clicks_7d)} sub={`${fmt(m.link_clicks)} au total · sortants affiliés`} delta={delta(series.clicks)} canvasRef={spkClicks} />
+        <KPI label="Utilisateurs" value={fmt(m.users)} sub={`+${fmt(winSum(series.newU))} sur la période · ${fmt(m.users)} au total`} delta={usersDelta} canvasRef={spkUsers} />
+        <KPI label="Actifs · 7 j" value={fmt(m.active_users_7d)} sub={`${m.users ? dec(m.active_users_7d / m.users * 100) : '—'} % de la base`} delta={winDelta(series.dau)} canvasRef={spkActive} />
+        <KPI label="Conversations" value={fmt(winSum(series.convos))} sub={`${fmt(m.conversations)} au total`} delta={winDelta(series.convos)} canvasRef={spkConvos} />
+        <KPI label="Clics Amazon" value={fmt(winSum(series.clicks))} sub={`${fmt(m.link_clicks)} au total · sortants affiliés`} delta={winDelta(series.clicks)} canvasRef={spkClicks} />
       </div>
 
       {/* charts */}
