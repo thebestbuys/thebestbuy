@@ -313,9 +313,12 @@ ul {
   justify-content: center;
   align-content: center;
 }
-/* Narrower viewport: chips wrap onto more rows, so reserve more height. */
+/* Narrower viewport: chips become near full-width and wrap to many rows, so
+   the fixed-height absolute box overflows and overlaps the CTA/footer. Let the
+   slot grow with its content (chips back in normal flow) instead. */
 @media (max-width: 639px) {
-  .home-suggestions-slot { height: 116px; } /* ~3 rows */
+  .home-suggestions-slot { height: auto; min-height: 116px; }
+  .home-suggestions { position: static; }
 }
 .suggestion-chip {
   appearance: none;
@@ -440,6 +443,11 @@ ul {
   .home-footer-inner {
     flex-direction: column;
     align-items: flex-start;
+  }
+  /* In a column the affiliate's flex-basis (320px) becomes a HEIGHT, reserving
+     a huge empty block. Reset so it sizes to its text. */
+  .home-footer-affiliate {
+    flex: 0 0 auto;
   }
   .home-footer-meta {
     flex-wrap: wrap;
