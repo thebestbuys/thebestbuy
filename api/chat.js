@@ -506,7 +506,7 @@ export default async function handler(req, res) {
     const payload = {
       systemInstruction: { parts: [{ text: buildSuggestionsPrompt(lang, profile, dateStr) }] },
       contents: [{ role: 'user', parts: [{ text: 'Donne les suggestions.' }] }],
-      generationConfig: { temperature: 0.9, responseMimeType: 'application/json' },
+      generationConfig: { temperature: 0.9, maxOutputTokens: 512, responseMimeType: 'application/json' },
     };
     try {
       const up = await callGemini(apiKey, payload);
@@ -570,10 +570,15 @@ export default async function handler(req, res) {
     contents = [{ role: 'user', parts: [{ text: isRecommend ? 'Donne les recommandations.' : 'Pose la prochaine question.' }] }];
     temperature = isRecommend ? 0.5 : 0.4;
   }
+  // Cap output as a guard against runaway generation. Sized so a valid response
+  // is never truncated (truncation => invalid JSON => 502): recommend returns a
+  // batch of products, ask returns one short question. Legacy may do either, so
+  // it gets the larger cap. The model stops when done — this doesn't pad output.
+  const maxOutputTokens = (legacy || isRecommend) ? 2048 : 1024;
   const geminiPayload = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents,
-    generationConfig: { temperature, responseMimeType: 'application/json' },
+    generationConfig: { temperature, maxOutputTokens, responseMimeType: 'application/json' },
   };
   const t2_ms = ms(t2);
 
@@ -690,14 +695,14 @@ export default async function handler(req, res) {
               { role: 'model', parts: [{ text: content }] },
               { role: 'user', parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${triedList}. Propose 10 autres produits différents qui existent vraiment sur Amazon.fr pour la même recherche.` }] },
             ],
-            generationConfig: { temperature: 0.6, responseMimeType: 'application/json' },
+            generationConfig: { temperature: 0.6, maxOutputTokens: 2048, responseMimeType: 'application/json' },
           }
         : {
             systemInstruction: { parts: [{ text: isGift
               ? buildGiftRecommendPrompt(giftStr, answers, lang, [...triedNames, ...excludeNames], surprise, friendWishlist)
               : buildRecommendPrompt(searchTerm, answers, lang, [...triedNames, ...excludeNames], profile) }] },
             contents: [{ role: 'user', parts: [{ text: `Donne ${RECOMMEND_COUNT} autres recommandations.` }] }],
-            generationConfig: { temperature: 0.6, responseMimeType: 'application/json' },
+            generationConfig: { temperature: 0.6, maxOutputTokens: 2048, responseMimeType: 'application/json' },
           };
       try {
         const repUpstream = await callGemini(apiKey, retryPayload);
