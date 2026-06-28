@@ -6,22 +6,70 @@ import { useDismiss } from '../lib/useDismiss.js';
 
 const BIO_MAX = 600;
 
+// Curated passions/hobbies for the multi-select. Bilingual labels; the picker
+// shows them as quick-add chips and as live search results, and the user can
+// also type any custom one. Stored on the profile as a comma-separated string
+// (field `hobbies`) so it feeds the AI prompt like the other fields.
+const HOBBY_SUGGESTIONS = [
+  { fr: 'Cuisine', en: 'Cooking' },
+  { fr: 'Pâtisserie', en: 'Baking' },
+  { fr: 'Jeux vidéo', en: 'Gaming' },
+  { fr: 'Lecture', en: 'Reading' },
+  { fr: 'Randonnée', en: 'Hiking' },
+  { fr: 'Course à pied', en: 'Running' },
+  { fr: 'Vélo', en: 'Cycling' },
+  { fr: 'Musculation', en: 'Fitness' },
+  { fr: 'Yoga', en: 'Yoga' },
+  { fr: 'Photographie', en: 'Photography' },
+  { fr: 'Jardinage', en: 'Gardening' },
+  { fr: 'Voyages', en: 'Travel' },
+  { fr: 'Musique', en: 'Music' },
+  { fr: 'Guitare', en: 'Guitar' },
+  { fr: 'Peinture', en: 'Painting' },
+  { fr: 'Dessin', en: 'Drawing' },
+  { fr: 'Tricot', en: 'Knitting' },
+  { fr: 'Pêche', en: 'Fishing' },
+  { fr: 'Camping', en: 'Camping' },
+  { fr: 'Football', en: 'Football' },
+  { fr: 'Tennis', en: 'Tennis' },
+  { fr: 'Natation', en: 'Swimming' },
+  { fr: 'Ski', en: 'Skiing' },
+  { fr: 'Jeux de société', en: 'Board games' },
+  { fr: 'Café', en: 'Coffee' },
+  { fr: 'Vin', en: 'Wine' },
+  { fr: 'Bricolage', en: 'DIY' },
+  { fr: 'Astronomie', en: 'Astronomy' },
+  { fr: 'Programmation', en: 'Coding' },
+  { fr: 'Cinéma', en: 'Movies' },
+  { fr: 'Danse', en: 'Dancing' },
+  { fr: 'Mode', en: 'Fashion' },
+];
+
+// "a, b, c" <-> ['a','b','c']
+const splitHobbies = (s) =>
+  String(s || '')
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean);
+
 // "Mon profil": structured fields (gender, age, profession, nationality,
 // address) plus a free-form self-description, stored per user and injected into
 // the AI prompts so questions/recommendations match the user. Mirrors the modal
 // styling of SelectionsPanel / HistoryPanel.
 export default function ProfilePanel({ open, onClose }) {
   const { user } = useAuth();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { closing, close } = useDismiss(onClose);
   const [form, setForm] = useState(getProfile());
   const [saved, setSaved] = useState(false);
+  const [hobbyQuery, setHobbyQuery] = useState('');
 
   // Load fresh whenever the panel opens (or the user changes).
   useEffect(() => {
     if (!open) return;
     setForm(getProfile(user?.sub));
     setSaved(false);
+    setHobbyQuery('');
   }, [open, user?.sub]);
 
   useEffect(() => {
@@ -49,7 +97,42 @@ export default function ProfilePanel({ open, onClose }) {
   const clear = () => {
     setForm(saveProfile(user?.sub, {}));
     setSaved(false);
+    setHobbyQuery('');
   };
+
+  // ── Passions / hobbies (multi-select) ──────────────────────────────────────
+  const hobbies = splitHobbies(form.hobbies);
+  const hasHobby = (label) =>
+    hobbies.some((h) => h.toLowerCase() === label.trim().toLowerCase());
+  const setHobbies = (list) => {
+    // De-dupe (case-insensitive), keep first spelling, cap the total.
+    const seen = new Set();
+    const out = [];
+    for (const h of list) {
+      const v = h.trim();
+      const k = v.toLowerCase();
+      if (!v || seen.has(k)) continue;
+      seen.add(k);
+      out.push(v);
+    }
+    setForm((f) => ({ ...f, hobbies: out.slice(0, 30).join(', ') }));
+    setSaved(false);
+  };
+  const addHobby = (label) => {
+    const v = String(label || '').trim();
+    if (!v) return;
+    setHobbies([...hobbies, v]);
+    setHobbyQuery('');
+  };
+  const removeHobby = (label) =>
+    setHobbies(hobbies.filter((h) => h !== label));
+
+  // Suggestions for the current language, not already picked.
+  const q = hobbyQuery.trim().toLowerCase();
+  const suggestionLabels = HOBBY_SUGGESTIONS.map((h) => h[lang] || h.fr);
+  const filteredSuggestions = suggestionLabels.filter(
+    (label) => !hasHobby(label) && (!q || label.toLowerCase().includes(q)),
+  );
 
   const hasAny = Object.values(form).some((v) => String(v || '').trim());
 
@@ -163,6 +246,61 @@ export default function ProfilePanel({ open, onClose }) {
                 onChange={set('address')}
               />
             </div>
+          </div>
+
+          <div className="hobby-section">
+            <label className="profile-label" htmlFor="profile-hobbies">
+              {t('profile.hobbies')}
+            </label>
+            <p className="profile-hint hobby-sub">{t('profile.hobbiesHint')}</p>
+
+            {hobbies.length > 0 && (
+              <div className="hobby-selected">
+                {hobbies.map((h) => (
+                  <button
+                    type="button"
+                    key={h}
+                    className="hobby-chip is-on"
+                    onClick={() => removeHobby(h)}
+                    title={t('profile.hobbyRemove', { name: h })}
+                  >
+                    {h}
+                    <span className="hobby-chip-x" aria-hidden="true">✕</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <input
+              id="profile-hobbies"
+              className="profile-input"
+              type="text"
+              value={hobbyQuery}
+              placeholder={t('profile.hobbiesPlaceholder')}
+              onChange={(e) => setHobbyQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addHobby(hobbyQuery);
+                }
+              }}
+            />
+
+            {filteredSuggestions.length > 0 && (
+              <div className="hobby-suggestions">
+                {/* When typing, offer a custom add for the exact text first. */}
+                {q && !suggestionLabels.some((l) => l.toLowerCase() === q) && !hasHobby(hobbyQuery) && (
+                  <button type="button" className="hobby-chip hobby-chip-add" onClick={() => addHobby(hobbyQuery)}>
+                    + {hobbyQuery.trim()}
+                  </button>
+                )}
+                {filteredSuggestions.slice(0, 14).map((s) => (
+                  <button type="button" key={s} className="hobby-chip" onClick={() => addHobby(s)}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <label className="profile-label profile-bio-label" htmlFor="profile-bio">

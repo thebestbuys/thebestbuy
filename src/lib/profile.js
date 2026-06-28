@@ -15,6 +15,7 @@ const FIELD_MAX = {
   profession: 80,
   nationality: 60,
   address: 160,
+  hobbies: 300, // comma-separated passions/hobbies (multi-select in the UI)
   bio: 600,
 };
 
@@ -35,6 +36,7 @@ const PROMPT_LABELS = {
   profession: { fr: 'Profession', en: 'Profession' },
   nationality: { fr: 'Nationalité', en: 'Nationality' },
   address: { fr: 'Adresse', en: 'Address' },
+  hobbies: { fr: 'Passions', en: 'Hobbies' },
   bio: { fr: 'À propos', en: 'About' },
 };
 

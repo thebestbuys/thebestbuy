@@ -290,6 +290,10 @@ const TRANSLATIONS = {
     "profile.addressPlaceholder": "Ex : Lyon, France",
     "profile.birthday": "Date de naissance",
     "profile.birthdayHint": "Partagée avec tes amis pour les rappels d'anniversaire.",
+    "profile.hobbies": "Passions & centres d'intérêt",
+    "profile.hobbiesHint": "Ajoute tes passions : Oraklia s'en sert pour mieux cibler ses recommandations.",
+    "profile.hobbiesPlaceholder": "Rechercher ou ajouter une passion…",
+    "profile.hobbyRemove": "Retirer {name}",
     "profile.label": "À propos de vous",
     "profile.placeholder":
       "Ex : famille de 4, deux jeunes enfants. J'aime les marques durables, je privilégie la simplicité et le rapport qualité-prix. Plutôt écosystème Apple. Sensible à l'écologie.",
@@ -770,6 +774,10 @@ const TRANSLATIONS = {
     "profile.addressPlaceholder": "e.g. Lyon, France",
     "profile.birthday": "Birthday",
     "profile.birthdayHint": "Shared with your friends for birthday reminders.",
+    "profile.hobbies": "Passions & interests",
+    "profile.hobbiesHint": "Add your passions: Oraklia uses them to better tailor its recommendations.",
+    "profile.hobbiesPlaceholder": "Search or add an interest…",
+    "profile.hobbyRemove": "Remove {name}",
     "profile.label": "About you",
     "profile.placeholder":
       "E.g. family of 4 with two young kids. I like durable brands, prefer simplicity and value for money. Mostly Apple ecosystem. I care about sustainability.",
