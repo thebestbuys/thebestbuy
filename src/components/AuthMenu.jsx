@@ -4,6 +4,7 @@ import { useI18n } from '../lib/i18n.jsx';
 import { listSelections } from '../lib/selections.js';
 import { isSuperuserEmail } from '../lib/cloud.js';
 import { getMode, setMode as setThemeMode } from '../lib/theme.js';
+import { requestsLeft } from '../lib/usage.js';
 
 const APPEARANCE_MODES = ['system', 'light', 'dark'];
 
@@ -31,6 +32,20 @@ function AppearanceToggle() {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+// Discreet "AI requests left today" line, mirrored from the server's per-account
+// quota (see lib/usage.js). Hidden when no snapshot exists yet (e.g. quota
+// disabled server-side, or no request made today).
+function QuotaLine() {
+  const { t } = useI18n();
+  const left = requestsLeft();
+  if (left == null) return null;
+  return (
+    <div className="auth-appearance auth-quota-line">
+      <span className="auth-appearance-label">{t('auth.aiQuota', { left })}</span>
     </div>
   );
 }
@@ -200,6 +215,7 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
       )}
       <div className="auth-dropdown-sep" />
       <AppearanceToggle />
+      <QuotaLine />
       <div className="auth-dropdown-sep" />
       <button
         type="button"

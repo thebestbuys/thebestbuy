@@ -18,12 +18,24 @@ const geminiUrl = (model) =>
 // verification. Don't set this to 3: any miss then triggers the retry path,
 // which re-sends the whole prompt (costly) — a small buffer here is cheaper.
 const RECOMMEND_COUNT = 6;
+
+// Output-token budget sized to the number of products requested. A small batch
+// (e.g. the Amazon-retry top-up, which only needs to fill 1–2 slots) shouldn't
+// be billed for the full 2048-token cap. ~260 tok/product is generous headroom
+// so a valid JSON response is never truncated. Capped at 2048.
+const recMaxTokens = (n) => Math.min(2048, 480 + n * 260);
 const AFFILIATE_TAG = 'oraklia123-21';
 
 // Server-side Supabase config for friend-gift profile resolution.
 const SUPA_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const SUPA_ANON = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 const SUPA_SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+// Per-account daily Gemini quota (signed-in users). Either cap trips the limit.
+// Env-overridable; metering is skipped entirely if Supabase isn't configured, so
+// the advisor keeps working (graceful degradation, like the Amazon verify path).
+const AI_DAILY_REQUEST_CAP = Number(process.env.AI_DAILY_REQUEST_CAP || 50);
+const AI_DAILY_TOKEN_CAP = Number(process.env.AI_DAILY_TOKEN_CAP || 200000);
 
 const PROFILE_LABELS = {
   gender: { fr: 'Genre', en: 'Gender' },
@@ -126,6 +138,36 @@ async function resolveFriendProfile(req, friendId, lang) {
   }
 }
 
+// Resolve the signed-in user's id from the bearer token, verified via Supabase
+// auth. Returns null when not signed in, no token, or anything is misconfigured
+// (so quota metering simply doesn't apply rather than blocking the request).
+async function getRequesterId(req) {
+  try {
+    const auth = req.headers?.authorization || req.headers?.Authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+    if (!token || !SUPA_URL || !SUPA_ANON) return null;
+    const { createClient } = await import('@supabase/supabase-js');
+    const anon = createClient(SUPA_URL, SUPA_ANON);
+    const { data, error } = await anon.auth.getUser(token);
+    if (error) return null;
+    return data?.user?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+// Today's (UTC) usage row for a user. Missing row → zeroed totals.
+async function readUsageToday(admin, userId) {
+  const day = new Date().toISOString().slice(0, 10);
+  const { data } = await admin
+    .from('ai_usage')
+    .select('requests, input_tokens, output_tokens')
+    .eq('user_id', userId)
+    .eq('day', day)
+    .maybeSingle();
+  return data || { requests: 0, input_tokens: 0, output_tokens: 0 };
+}
+
 // Precise brand+model affiliate search link — used as a last resort when we
 // can't scrape a direct product (ASIN) link. Tight query so Amazon's first
 // result is almost always the exact product.
@@ -214,15 +256,15 @@ Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 }
 
 // Prompt to generate 10 real product candidates from the criteria JSON.
-function buildRecommendPrompt(objet, answers, lang, exclude = [], profile = '') {
+function buildRecommendPrompt(objet, answers, lang, exclude = [], profile = '', count = RECOMMEND_COUNT) {
   const excludeLine = exclude.length
-    ? `\nNE propose AUCUN de ces produits (déjà testés, introuvables sur Amazon.fr) : ${exclude.join(', ')}. Propose-en ${RECOMMEND_COUNT} AUTRES, différents.`
+    ? `\nNE propose AUCUN de ces produits (déjà testés, introuvables sur Amazon.fr) : ${exclude.join(', ')}. Propose-en ${count} AUTRES, différents.`
     : '';
   return `Tu es Oraklia, un conseiller d'achat. ${langLineFor(lang)}
 L'utilisateur cherche à acheter : "${objet || 'un produit'}".${profileLine(profile)}
 Critères recueillis (JSON): ${answersJson(answers)}
 
-Propose EXACTEMENT ${RECOMMEND_COUNT} produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, correspondant au mieux à ces critères. Donne des marques et modèles PRÉCIS. Chaque produit a un score de correspondance 0-99 selon les critères.${excludeLine}
+Propose EXACTEMENT ${count} produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, correspondant au mieux à ces critères. Donne des marques et modèles PRÉCIS. Chaque produit a un score de correspondance 0-99 selon les critères.${excludeLine}
 
 Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 {"reply":"<courte phrase d'introduction>","products":[{"id":"p1","brand":"Marque","model":"Modèle exact","price":999,"score":94,"specs":["Spec 1","Spec 2","Spec 3","Spec 4"],"why":"Raison courte"}]}`;
@@ -267,21 +309,21 @@ Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 }
 
 // 10 real, varied gift product candidates for the recipient + occasion + budget.
-function buildGiftRecommendPrompt(giftStr, answers, lang, exclude = [], surprise = false, wishlist = '') {
+function buildGiftRecommendPrompt(giftStr, answers, lang, exclude = [], surprise = false, wishlist = '', count = RECOMMEND_COUNT) {
   const excludeLine = exclude.length
-    ? `\nNE propose AUCUN de ces produits (déjà testés, introuvables sur Amazon.fr) : ${exclude.join(', ')}. Propose-en ${RECOMMEND_COUNT} AUTRES, différents.`
+    ? `\nNE propose AUCUN de ces produits (déjà testés, introuvables sur Amazon.fr) : ${exclude.join(', ')}. Propose-en ${count} AUTRES, différents.`
     : '';
   const surpriseLine = surprise
     ? "\nMODE SURPRISE : ose des idées ORIGINALES, inattendues et créatives (pas seulement les évidences) tout en restant adaptées à la personne et au budget. Privilégie la nouveauté et l'effet \"waouh\"."
     : '';
   const wishlistLine = wishlist
-    ? `\nLISTE DE SOUHAITS de la personne (produits qu'elle a elle-même sauvegardés) : ${wishlist}. Si un ou plusieurs RENTRENT DANS LE BUDGET, propose-les EN PRIORITÉ (inclus-en 1 à 3 parmi les ${RECOMMEND_COUNT}) — ce sont des choses qu'elle veut déjà.`
+    ? `\nLISTE DE SOUHAITS de la personne (produits qu'elle a elle-même sauvegardés) : ${wishlist}. Si un ou plusieurs RENTRENT DANS LE BUDGET, propose-les EN PRIORITÉ (inclus-en 1 à 3 parmi les ${count}) — ce sont des choses qu'elle veut déjà.`
     : '';
   return `Tu es Oraklia, un conseiller en idées cadeaux. ${langLineFor(lang)}
 On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".${wishlistLine}
 Préférences de raffinement (JSON): ${answersJson(answers)}
 
-Propose EXACTEMENT ${RECOMMEND_COUNT} idées de cadeaux : des produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, qui feraient de bons cadeaux pour CETTE personne, pour cette occasion et DANS le budget indiqué. VARIE les catégories (pas ${RECOMMEND_COUNT} produits du même type). Donne des marques et modèles PRÉCIS. "why" explique en une phrase pourquoi ça correspond à la personne. Score 0-99 = à quel point l'idée lui correspond.${surpriseLine}${excludeLine}
+Propose EXACTEMENT ${count} idées de cadeaux : des produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, qui feraient de bons cadeaux pour CETTE personne, pour cette occasion et DANS le budget indiqué. VARIE les catégories (pas ${count} produits du même type). Donne des marques et modèles PRÉCIS. "why" explique en une phrase pourquoi ça correspond à la personne. Score 0-99 = à quel point l'idée lui correspond.${surpriseLine}${excludeLine}
 
 Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 {"reply":"<courte phrase d'introduction>","products":[{"id":"p1","brand":"Marque","model":"Modèle exact","price":999,"score":94,"specs":["Spec 1","Spec 2","Spec 3"],"why":"Pourquoi ce cadeau lui correspond"}]}`;
@@ -530,6 +572,35 @@ export default async function handler(req, res) {
     }
   }
 
+  // Per-account daily quota (signed-in users only). Verify the token, read
+  // today's usage and reject early with 429 when over the cap. Any misconfig or
+  // error skips metering so the advisor never breaks (graceful degradation).
+  // usageAdmin / usageBefore are reused after the response to bump the counter.
+  const requesterId = await getRequesterId(req);
+  let usageAdmin = null;
+  let usageBefore = null;
+  if (requesterId && SUPA_URL && SUPA_SERVICE) {
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      usageAdmin = createClient(SUPA_URL, SUPA_SERVICE, { auth: { persistSession: false } });
+      usageBefore = await readUsageToday(usageAdmin, requesterId);
+      const usedTokens = (usageBefore.input_tokens || 0) + (usageBefore.output_tokens || 0);
+      if (usageBefore.requests >= AI_DAILY_REQUEST_CAP || usedTokens >= AI_DAILY_TOKEN_CAP) {
+        return send(res, 429, {
+          error: 'Daily AI quota reached',
+          quota: {
+            requests: usageBefore.requests,
+            request_cap: AI_DAILY_REQUEST_CAP,
+            tokens: usedTokens,
+            token_cap: AI_DAILY_TOKEN_CAP,
+          },
+        });
+      }
+    } catch {
+      usageAdmin = null;
+    }
+  }
+
   // Products the client already saw and wants different from ("show me others").
   const excludeNames = (Array.isArray(exclude) ? exclude : []).map((s) => String(s || '').trim()).filter(Boolean).slice(0, 30);
   // Legacy clients (mobile) send a full transcript in "messages" with no "mode".
@@ -689,22 +760,28 @@ export default async function handler(req, res) {
     // If not blocked but < 3 found, ask Gemini for replacements (excluding tried)
     if (!amazonBlocked && verifiedProducts.length < 3) {
       const triedList = [...triedNames].join(', ');
+      // Only ask for what's still missing (+ a small buffer) instead of a full
+      // batch: most retries need 1–2 more products, so a 3–4 batch roughly halves
+      // the 2nd call's output tokens. maxOutputTokens scales with that count too.
+      const needed = 3 - verifiedProducts.length;
+      const retryCount = Math.max(2, Math.min(RECOMMEND_COUNT, needed + 2));
+      const retryMaxTokens = recMaxTokens(retryCount);
       const retryPayload = legacy
         ? {
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents: [
               ...toGeminiContents(messages),
               { role: 'model', parts: [{ text: content }] },
-              { role: 'user', parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${triedList}. Propose 10 autres produits différents qui existent vraiment sur Amazon.fr pour la même recherche.` }] },
+              { role: 'user', parts: [{ text: `Ces produits sont introuvables sur Amazon.fr : ${triedList}. Propose ${retryCount} autres produits différents qui existent vraiment sur Amazon.fr pour la même recherche.` }] },
             ],
-            generationConfig: { temperature: 0.6, maxOutputTokens: 2048, responseMimeType: 'application/json' },
+            generationConfig: { temperature: 0.6, maxOutputTokens: retryMaxTokens, responseMimeType: 'application/json' },
           }
         : {
             systemInstruction: { parts: [{ text: isGift
-              ? buildGiftRecommendPrompt(giftStr, answers, lang, [...triedNames, ...excludeNames], surprise, friendWishlist)
-              : buildRecommendPrompt(searchTerm, answers, lang, [...triedNames, ...excludeNames], profile) }] },
-            contents: [{ role: 'user', parts: [{ text: `Donne ${RECOMMEND_COUNT} autres recommandations.` }] }],
-            generationConfig: { temperature: 0.6, maxOutputTokens: 2048, responseMimeType: 'application/json' },
+              ? buildGiftRecommendPrompt(giftStr, answers, lang, [...triedNames, ...excludeNames], surprise, friendWishlist, retryCount)
+              : buildRecommendPrompt(searchTerm, answers, lang, [...triedNames, ...excludeNames], profile, retryCount) }] },
+            contents: [{ role: 'user', parts: [{ text: `Donne ${retryCount} autres recommandations.` }] }],
+            generationConfig: { temperature: 0.6, maxOutputTokens: retryMaxTokens, responseMimeType: 'application/json' },
           };
       try {
         const repUpstream = await callGemini(apiKey, retryPayload);
@@ -777,6 +854,29 @@ export default async function handler(req, res) {
     output_tokens: outputTokens,
     gemini_calls: geminiCalls,
   };
+
+  // Account this request's spend (retry included) and echo today's running
+  // totals so the client can mirror "N requests left" in localStorage. Awaited
+  // (serverless may reclaim the function right after the response) but wrapped so
+  // a metering failure never breaks the reply.
+  if (usageAdmin && requesterId) {
+    try {
+      await usageAdmin.rpc('increment_ai_usage', {
+        p_user: requesterId,
+        p_in: inputTokens || 0,
+        p_out: outputTokens || 0,
+      });
+    } catch { /* counter is best-effort */ }
+    const beforeTok = usageBefore ? (usageBefore.input_tokens || 0) + (usageBefore.output_tokens || 0) : 0;
+    parsed._debug.usage = {
+      requests: (usageBefore?.requests || 0) + 1,
+      request_cap: AI_DAILY_REQUEST_CAP,
+      tokens: beforeTok + (inputTokens || 0) + (outputTokens || 0),
+      token_cap: AI_DAILY_TOKEN_CAP,
+    };
+  } else {
+    parsed._debug.usage = null;
+  }
 
   return send(res, 200, parsed);
 }

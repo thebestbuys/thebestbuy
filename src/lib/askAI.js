@@ -1,5 +1,7 @@
 // Empty in dev / web builds → relative path resolved by Vite middleware or Vercel.
 // Set VITE_API_BASE_URL=https://your-app.vercel.app for the native APK build.
+import { recordUsage } from './usage.js';
+
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
 // Unique id for a single backend exchange (one /api/chat round-trip). Combined
@@ -55,6 +57,8 @@ async function postChat(payload, token) {
   }
 
   const json = await res.json();
+  // Mirror the server's per-account usage snapshot for the "requests left" UI.
+  recordUsage(json?._debug?.usage);
   if (typeof console !== 'undefined') {
     const d = json?._debug || {};
     console.debug(`[chat ←] conv=${d.conversation_id || conversationId || '?'} req=${d.request_id || requestId}`);

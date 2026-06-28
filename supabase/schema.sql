@@ -649,6 +649,53 @@ language sql security definer set search_path = public as $$
   order by (coalesce(sav.saves, 0) + coalesce(clk.clicks, 0)) desc, rep.data->>'model'
   limit greatest(1, least(max_items, 50));
 $$;
+
+-- ── AI usage metering (per-account daily Gemini quota) ─────────────────────
+-- One row per user per UTC day, accumulating request count + Gemini token spend
+-- (input + output, retry calls included). The server (api/chat.js) reads this
+-- before each ask/recommend call to enforce a daily cap, and increments it
+-- after. Writes go ONLY through the service-role RPC below, so the counter is
+-- tamper-proof: users can read their own row (for the "N requests left" UI) but
+-- never write it directly.
+create table if not exists public.ai_usage (
+  user_id       uuid        not null references auth.users (id) on delete cascade,
+  day           date        not null default (now() at time zone 'utc')::date,
+  requests      integer     not null default 0,
+  input_tokens  bigint      not null default 0,
+  output_tokens bigint      not null default 0,
+  updated_at    timestamptz not null default now(),
+  primary key (user_id, day)
+);
+
+alter table public.ai_usage enable row level security;
+
+-- Read-only for the owner (display). No insert/update/delete policy → the table
+-- is write-locked to everyone except the service role / the RPC below.
+drop policy if exists "own ai_usage" on public.ai_usage;
+create policy "own ai_usage" on public.ai_usage
+  for select
+  using (auth.uid() = user_id);
+
+-- Atomic increment (no read-modify-write race). SECURITY DEFINER + explicit
+-- user_id so the server can call it with the service-role key. Execute is
+-- revoked from anon/authenticated so it can't be invoked from the client to
+-- inflate a counter — only the server (service role) may call it.
+create or replace function public.increment_ai_usage(p_user uuid, p_in bigint, p_out bigint)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  insert into public.ai_usage (user_id, day, requests, input_tokens, output_tokens, updated_at)
+  values (p_user, (now() at time zone 'utc')::date, 1, greatest(p_in, 0), greatest(p_out, 0), now())
+  on conflict (user_id, day) do update
+    set requests      = public.ai_usage.requests + 1,
+        input_tokens  = public.ai_usage.input_tokens + greatest(p_in, 0),
+        output_tokens = public.ai_usage.output_tokens + greatest(p_out, 0),
+        updated_at    = now();
+$$;
+
+revoke all on function public.increment_ai_usage(uuid, bigint, bigint) from public, anon, authenticated;
 grant execute on function public.admin_top_products(int) to authenticated;
 
 -- Daily activity series for the admin dashboard charts (superuser only). One row

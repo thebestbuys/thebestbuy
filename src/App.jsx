@@ -926,7 +926,9 @@ export default function App() {
     const giftStr = gift ? giftToPrompt(gift, lang) : '';
     const surprise = !!gift?.surprise;
     const friendId = gift?.friendId || '';
-    const token = friendId ? getAccessToken() : '';
+    // Always send the access token when signed in: the server uses it for the
+    // friend-profile lookup (friendId) AND to meter this account's daily AI quota.
+    const token = getAccessToken() || '';
     const willRecommend = shouldRecommendAt(currentAnswers.length);
     if (willRecommend) setLoadingProducts(true);
     try {
@@ -1011,7 +1013,9 @@ export default function App() {
     const giftStr = gift ? giftToPrompt(gift, lang) : '';
     const surprise = !!gift?.surprise;
     const friendId = gift?.friendId || '';
-    const token = friendId ? getAccessToken() : '';
+    // Always send the access token when signed in: the server uses it for the
+    // friend-profile lookup (friendId) AND to meter this account's daily AI quota.
+    const token = getAccessToken() || '';
     try {
       const rec = await recommend({ objet, answers: answersForApi, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId, exclude: [...ownedExclude(), ...exclude] });
       if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
