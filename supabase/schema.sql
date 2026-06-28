@@ -630,16 +630,25 @@ grant execute on function public.admin_metrics() to authenticated;
 
 -- Most popular products across ALL users: saved (selections) + clicked
 -- (link_clicks) counts, with one representative snapshot each (superuser only).
--- Return signature changed (added `trend`) → drop before recreate.
+-- Signature changed (added `trend`, then a date window) → drop before recreate.
+-- saves/clicks are counted within [p_from, p_to] when given (else all-time); the
+-- `trend` column stays a rolling last-7-vs-previous-7 days regardless.
 drop function if exists public.admin_top_products(int);
-create or replace function public.admin_top_products(max_items int default 12)
+drop function if exists public.admin_top_products(int, date, date);
+create or replace function public.admin_top_products(max_items int default 12, p_from date default null, p_to date default null)
 returns table (product_id text, data jsonb, saves int, clicks int, trend numeric)
 language sql security definer set search_path = public as $$
   with sav as (
-    select product_id, count(*)::int as saves from public.selections group by product_id
+    select product_id, count(*)::int as saves from public.selections
+    where (p_from is null or added_at::date >= p_from)
+      and (p_to   is null or added_at::date <= p_to)
+    group by product_id
   ),
   clk as (
-    select product_id, count(*)::int as clicks from public.link_clicks group by product_id
+    select product_id, count(*)::int as clicks from public.link_clicks
+    where (p_from is null or clicked_at::date >= p_from)
+      and (p_to   is null or clicked_at::date <= p_to)
+    group by product_id
   ),
   ids as (
     select product_id from sav union select product_id from clk
@@ -739,7 +748,7 @@ grant execute on function public.admin_top_products(int) to authenticated;
 -- touched, Amazon clicks and selections. Empty for non-superusers.
 drop function if exists public.admin_daily_series(int);
 create or replace function public.admin_daily_series(days int default 90)
-returns table (d date, new_users int, active_users int, conversations int, link_clicks int, selections int)
+returns table (d date, new_users int, active_users int, conversations int, link_clicks int, selections int, owned int)
 language sql stable security definer set search_path = public, auth as $$
   with span as (
     select generate_series(
@@ -753,7 +762,8 @@ language sql stable security definer set search_path = public, auth as $$
     (select count(distinct lc.user_id) from public.link_clicks lc where lc.clicked_at::date = s.d)::int,
     (select count(*) from public.conversations c where c.updated_at::date = s.d)::int,
     (select count(*) from public.link_clicks lc where lc.clicked_at::date = s.d)::int,
-    (select count(*) from public.selections se where se.added_at::date = s.d)::int
+    (select count(*) from public.selections se where se.added_at::date = s.d)::int,
+    (select count(*) from public.owned o where o.added_at::date = s.d)::int
   from span s
   where public.is_superuser()
   order by s.d;

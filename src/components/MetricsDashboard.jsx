@@ -19,6 +19,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Chart from 'chart.js/auto';
+import { adminTopProducts } from '../lib/cloud.js';
 
 const C = {
   accent: '#bf5e3a', blue: '#4a73c4', green: '#3f9e6e', amber: '#d9962b', purple: '#7a6bb0',
@@ -46,7 +47,7 @@ const DEMO = [
 function buildSeries(totalUsers = 2847) {
   let s = 1337;
   const rnd = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-  const N = 90, labels = [], dates = [], newU = [], convos = [], clicks = [], sels = [], dau = [];
+  const N = 90, labels = [], dates = [], newU = [], convos = [], clicks = [], sels = [], owned = [], dau = [];
   const today = new Date();
   for (let i = 0; i < N; i++) {
     const t = i / (N - 1), wk = 1 + 0.18 * Math.sin((i % 7) / 7 * Math.PI * 2);
@@ -54,6 +55,7 @@ function buildSeries(totalUsers = 2847) {
     convos.push(Math.round((110 + 90 * t + 28 * Math.sin(i / 3) + rnd() * 26) * wk));
     clicks.push(Math.round((320 + 250 * t + 80 * Math.sin(i / 3.5) + rnd() * 70) * wk));
     sels.push(Math.round((180 + 150 * t + 40 * Math.sin(i / 4) + rnd() * 38) * wk));
+    owned.push(Math.round((40 + 50 * t + 12 * Math.sin(i / 4.5) + rnd() * 14) * wk));
     dau.push(Math.round((230 + 130 * t + 30 * Math.sin(i / 2.5) + rnd() * 30) * wk));
     const d = new Date(today); d.setDate(d.getDate() - (N - 1 - i));
     labels.push(d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
@@ -78,13 +80,14 @@ function fromDaily(rows, totalUsers) {
   const convos = rows.map((r) => Number(r.conversations) || 0);
   const clicks = rows.map((r) => Number(r.link_clicks) || 0);
   const sels = rows.map((r) => Number(r.selections) || 0);
+  const owned = rows.map((r) => Number(r.owned) || 0);
   const dau = rows.map((r) => Number(r.active_users) || 0);
   // Cumulative users, ending at the real total: signups before the window are
   // folded into the starting baseline.
   const totalNew = newU.reduce((a, b) => a + b, 0);
   let run = Math.max(0, (totalUsers || totalNew) - totalNew);
   const cum = newU.map((n) => (run += n));
-  return { labels, dates, newU, cum, convos, clicks, sels, dau };
+  return { labels, dates, newU, cum, convos, clicks, sels, owned, dau };
 }
 
 function normalizeProducts(topProducts) {
@@ -139,6 +142,7 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
   const [range, setRange] = useState('1m');
   const [customFrom, setCustomFrom] = useState(''); // 'YYYY-MM-DD'
   const [customTo, setCustomTo] = useState('');
+  const [localTop, setLocalTop] = useState(null); // products counted over the period
   const [sortKey, setSortKey] = useState('total');
   const [sortDir, setSortDir] = useState('desc');
   const [query, setQuery] = useState('');
@@ -149,7 +153,7 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
     () => fromDaily(dailySeries, m.users) || buildSeries(m.users),
     [dailySeries, m.users],
   );
-  const products = useMemo(() => normalizeProducts(topProducts), [topProducts]);
+  const products = useMemo(() => normalizeProducts(localTop ?? topProducts), [localTop, topProducts]);
   const sumTotal = useMemo(() => products.reduce((a, p) => a + p.total, 0) || 1, [products]);
   const maxPart = useMemo(() => (products[0] ? products[0].total / sumTotal * 100 : 1), [products, sumTotal]);
 
@@ -287,12 +291,25 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
     return ((series.cum[win.end] - base) / Math.max(1, base)) * 100;
   })();
 
-  // Real conversion funnel from the aggregate totals (no fabricated ratios).
-  // clicks/selections aren't strict subsets of conversations, so percentages are
-  // clamped to 100 % for the bars.
-  const fConvs = m.conversations || 0;
-  const fClicks = m.link_clicks || 0;
-  const fSaves = m.selections || 0;
+  // Top products counted over the selected window (refetched on range change).
+  const fromISO = series.dates[win.start];
+  const toISO = series.dates[win.end];
+  useEffect(() => {
+    if (win.end < win.start || !fromISO || !toISO) return;
+    let alive = true;
+    adminTopProducts(50, fromISO, toISO).then((r) => {
+      if (alive && Array.isArray(r)) setLocalTop(r);
+    });
+    return () => { alive = false; };
+  }, [fromISO, toISO]);
+
+  // Real conversion funnel over the SELECTED period (sums of the daily series),
+  // no fabricated ratios. clicks/selections aren't strict subsets of
+  // conversations, so percentages are clamped to 100 % for the bars.
+  const fConvs = winSum(series.convos);
+  const fClicks = winSum(series.clicks);
+  const fSaves = winSum(series.sels);
+  const fOwned = winSum(series.owned);
   const clampPct = (a, b) => (b ? Math.min(100, (a / b) * 100) : 0);
   const pctClick = clampPct(fClicks, fConvs);
   const pctSave = clampPct(fSaves, fConvs);
@@ -373,7 +390,7 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
           <div style={{ display: 'flex', gap: 18, marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
             <div><div style={{ font: '700 18px Inter,sans-serif' }}>{dec(convGlobal)} %</div><div style={{ fontSize: 11, color: C.faint }}>Conv. globale</div></div>
             <div><div style={{ font: '700 18px Inter,sans-serif' }}>{dec(clickToSave)} %</div><div style={{ fontSize: 11, color: C.faint }}>Clic → sauvegarde</div></div>
-            <div><div style={{ font: '700 18px Inter,sans-serif' }}>{fmt(m.owned)}</div><div style={{ fontSize: 11, color: C.faint }}>Déjà acheté</div></div>
+            <div><div style={{ font: '700 18px Inter,sans-serif' }}>{fmt(fOwned)}</div><div style={{ fontSize: 11, color: C.faint }}>Déjà acheté</div></div>
           </div>
         </div>
 

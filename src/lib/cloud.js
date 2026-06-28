@@ -481,10 +481,15 @@ export async function adminDailySeries(days = 90) {
   return data || [];
 }
 
-// Most popular products across all users (saves + clicks), each with a snapshot.
-export async function adminTopProducts(max = 12) {
+// Most popular products (saves + clicks), each with a snapshot. saves/clicks are
+// counted within [from, to] (ISO 'YYYY-MM-DD') when given, else all-time.
+export async function adminTopProducts(max = 12, from = null, to = null) {
   if (!hasCloudSession()) return [];
-  const { data, error } = await supabase.rpc('admin_top_products', { max_items: max });
+  const { data, error } = await supabase.rpc('admin_top_products', {
+    max_items: max,
+    p_from: from,
+    p_to: to,
+  });
   if (error) return [];
   return (data || [])
     .map((r) => (r?.data ? { ...r.data, saves: r.saves, clicks: r.clicks, trend: r.trend } : null))
