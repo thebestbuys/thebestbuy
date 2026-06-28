@@ -98,7 +98,9 @@ export function loadTheme() {
     if (raw) saved = JSON.parse(raw) || {};
   } catch {}
   return {
-    mode: MODES.includes(saved.mode) ? saved.mode : 'system',
+    // Default to light when no preference is saved — the site should not follow
+    // the OS into dark mode unless the user explicitly picks 'system' or 'dark'.
+    mode: MODES.includes(saved.mode) ? saved.mode : 'light',
     light: saved.light && typeof saved.light === 'object' ? saved.light : {},
     dark: saved.dark && typeof saved.dark === 'object' ? saved.dark : {},
     shared: saved.shared && typeof saved.shared === 'object' ? saved.shared : {},
