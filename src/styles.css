@@ -3766,6 +3766,10 @@ button.chat-bubble.chat-editable {
   color: var(--text-faint);
   margin: 16px 2px 8px;
 }
+.friends-section-n {
+  font-weight: 700;
+  color: var(--text-muted);
+}
 .friends-list {
   display: flex;
   flex-direction: column;
