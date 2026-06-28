@@ -311,6 +311,7 @@ const TRANSLATIONS = {
     "trending.friendsCount": "{n} ami(s) dans votre cercle",
     "trending.empty":
       "Rien pour l'instant. Dès que vos amis sauvegardent ou consultent des produits (partage activé), ils apparaîtront ici.",
+    "trending.loading": "Chargement des tendances…",
     "trending.savedCount": "{n} amis l'ont sauvegardé",
     "trending.savedCountOne": "{n} ami l'a sauvegardé",
     "trending.viewsCount": "{n} vues",
@@ -790,6 +791,7 @@ const TRANSLATIONS = {
     "trending.friendsCount": "{n} friend(s) in your circle",
     "trending.empty":
       "Nothing yet. As soon as your friends save or view products (sharing on), they'll show up here.",
+    "trending.loading": "Loading trends…",
     "trending.savedCount": "{n} friends saved it",
     "trending.savedCountOne": "{n} friend saved it",
     "trending.viewsCount": "{n} views",

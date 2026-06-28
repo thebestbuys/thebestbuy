@@ -257,9 +257,12 @@ function TrendingCircle({ onOpen, hideHeader }) {
     [items, user?.sub],
   );
 
-  // Hidden for guests, and until the first fetch resolves (no empty flash).
-  if (!user || !cloudReady || !loaded) return null;
+  // Guests never see this. For signed-in users we always render the tabs + a
+  // contextual state (loading / empty / ranking) so the dedicated panel is never
+  // just blank while the cloud session or the fetch is still settling.
+  if (!user) return null;
 
+  const loading = !cloudReady || !loaded;
   const circleList = items;
   const ranked = tab === 'circle' ? circleList : forYou.list;
   const [leader, ...rest] = ranked;
@@ -294,7 +297,9 @@ function TrendingCircle({ onOpen, hideHeader }) {
         </button>
       </div>
 
-      {items.length === 0 ? (
+      {loading ? (
+        <p className="trending-empty">{t('trending.loading')}</p>
+      ) : items.length === 0 ? (
         <p className="trending-empty">{t('trending.empty')}</p>
       ) : tab === 'circle' ? (
         <div className="tc-rank">
