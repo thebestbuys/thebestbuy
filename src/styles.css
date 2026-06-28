@@ -1286,6 +1286,12 @@ button.chat-bubble.chat-editable {
   letter-spacing: -0.02em;
   margin: 0;
   line-height: 1.05;
+  /* Verified Amazon titles can be very long — cap at 2 lines with an ellipsis. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .hero-rating {
   display: flex;
@@ -1560,6 +1566,8 @@ button.chat-bubble.chat-editable {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  gap: 4px 8px;
+  flex-wrap: wrap;
   margin-top: auto;
   padding-top: 8px;
 }
@@ -1578,6 +1586,7 @@ button.chat-bubble.chat-editable {
   border-radius: 999px;
   font-weight: 600;
   font-size: 12px;
+  flex-shrink: 0;
 }
 .small-score-pct {
   font-size: 10px;
