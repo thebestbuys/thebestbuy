@@ -17,8 +17,11 @@ import {
   listOccasions,
   addOccasion,
   removeOccasion,
-  daysUntil,
+  daysToOccurrence,
+  withinReminderWindow,
   turningAge,
+  REMIND_AHEAD,
+  REMIND_PAST,
 } from '../lib/occasions.js';
 import { upcomingHolidays } from '../lib/holidays.js';
 
@@ -108,12 +111,13 @@ export default function NotificationsPanel({ open = true, onClose, onGift }) {
   const occurrenceKey = (base, days) =>
     `${base}:${new Date(Date.now() + days * 86400000).getFullYear()}`;
 
-  // Build the sorted upcoming list (next 365 days).
+  // Build the sorted list within the reminder window (2 weeks ahead → 2 days
+  // after it passed); anything further out stays hidden.
   const upcoming = [];
   for (const f of friends) {
     if (!f.birthday) continue;
-    const d = daysUntil(f.birthday, true);
-    if (d == null) continue;
+    const d = daysToOccurrence(f.birthday, true);
+    if (!withinReminderWindow(d)) continue;
     upcoming.push({
       key: 'f_' + f.user_id,
       kind: 'bday',
@@ -126,11 +130,11 @@ export default function NotificationsPanel({ open = true, onClose, onGift }) {
     });
   }
   for (const o of occasions) {
-    const d = daysUntil(o.date, o.recurring);
-    if (d == null || d < 0) continue;
+    const d = daysToOccurrence(o.date, o.recurring);
+    if (!withinReminderWindow(d)) continue;
     upcoming.push({ key: o.id, kind: 'occ', name: o.label, days: d, occId: o.id });
   }
-  for (const h of upcomingHolidays()) {
+  for (const h of upcomingHolidays(REMIND_AHEAD, new Date(), REMIND_PAST)) {
     upcoming.push({
       key: 'h_' + h.key,
       kind: 'holiday',
@@ -144,7 +148,11 @@ export default function NotificationsPanel({ open = true, onClose, onGift }) {
   visibleUpcoming.sort((a, b) => a.days - b.days);
 
   const whenLabel = (d) =>
-    d === 0 ? t('occ.today') : d === 1 ? t('occ.tomorrow') : t('occ.inDays', { n: d });
+    d === 0 ? t('occ.today')
+      : d === 1 ? t('occ.tomorrow')
+      : d === -1 ? t('occ.yesterday')
+      : d < 0 ? t('occ.daysAgo', { n: -d })
+      : t('occ.inDays', { n: d });
 
   const giftFor = (e) => {
     if (e.kind === 'bday') {

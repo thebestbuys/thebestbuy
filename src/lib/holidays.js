@@ -53,16 +53,17 @@ function defsForYear(year) {
   ];
 }
 
-// Upcoming holidays within `within` days, each with { key, emoji, days }.
-export function upcomingHolidays(within = 92, now = new Date()) {
+// Holidays inside the reminder window: between `past` days ago (already passed)
+// and `within` days ahead, each with { key, emoji, days } (days < 0 = passed).
+export function upcomingHolidays(within = 92, now = new Date(), past = 0) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const all = [...defsForYear(now.getFullYear()), ...defsForYear(now.getFullYear() + 1)];
   const seen = new Set();
   const out = [];
   for (const h of all.sort((a, b) => a.date - b.date)) {
     const days = Math.round((h.date - today) / 86400000);
-    if (days < 0 || days > within) continue;
-    if (seen.has(h.key)) continue; // soonest occurrence only
+    if (days < -past || days > within) continue;
+    if (seen.has(h.key)) continue; // closest occurrence only
     seen.add(h.key);
     out.push({ key: h.key, emoji: h.emoji, days });
   }

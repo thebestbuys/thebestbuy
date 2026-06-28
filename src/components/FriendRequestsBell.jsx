@@ -2,11 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
 import { listIncomingRequests, listFriends, incomingPolls } from '../lib/cloud.js';
-import { listOccasions, daysUntil } from '../lib/occasions.js';
+import {
+  listOccasions,
+  daysToOccurrence,
+  withinReminderWindow,
+  REMIND_AHEAD,
+  REMIND_PAST,
+} from '../lib/occasions.js';
 import { upcomingHolidays } from '../lib/holidays.js';
 import NotificationsPanel from './NotificationsPanel.jsx';
-
-const SOON_DAYS = 14;
 
 // Bell with a badge counting pending incoming friend requests + upcoming
 // occasions. Clicking toggles an anchored notifications popover (Facebook-style)
@@ -37,16 +41,12 @@ export default function FriendRequestsBell({ open = false, onToggle, onClose, on
         let n = Array.isArray(reqs) ? reqs.length : 0;
         n += (polls || []).filter((p) => p.my_vote == null).length;
         for (const f of friends || []) {
-          if (f.birthday) {
-            const d = daysUntil(f.birthday, true);
-            if (d != null && d <= SOON_DAYS) n += 1;
-          }
+          if (f.birthday && withinReminderWindow(daysToOccurrence(f.birthday, true))) n += 1;
         }
         for (const o of listOccasions(user?.sub)) {
-          const d = daysUntil(o.date, o.recurring);
-          if (d != null && d >= 0 && d <= SOON_DAYS) n += 1;
+          if (withinReminderWindow(daysToOccurrence(o.date, o.recurring))) n += 1;
         }
-        n += upcomingHolidays(SOON_DAYS).length;
+        n += upcomingHolidays(REMIND_AHEAD, new Date(), REMIND_PAST).length;
         setCount(n);
       } catch {
         /* ignore */
