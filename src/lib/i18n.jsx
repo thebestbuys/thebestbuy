@@ -13,6 +13,7 @@ const TRANSLATIONS = {
     "home.selections": "Sélections",
     "home.selectionsTitle": "Mes sélections",
     "home.gift": "Trouver un cadeau",
+    "home.giftHubLink": "ou parcourir nos idées cadeaux →",
     "home.helpTooltip": "Comment utiliser Oraklia ?",
     "rail.search": "Recherche",
     "rail.history": "Historique",
@@ -435,14 +436,28 @@ const TRANSLATIONS = {
     "guide.back": "Retour",
     "guide.meta": "Guide d'achat · {updated} · {time} de lecture",
     "guide.checklist": "La checklist à retenir",
+    "guide.giftChecklist": "Nos idées en bref",
     "guide.picks": "Notre sélection par budget",
+    "guide.giftPicks": "Notre sélection de cadeaux",
     "guide.picksIntro":
       "Des pistes pour démarrer vos recherches sur Amazon.fr selon votre budget. Les prix et la disponibilité évoluent ; seule la page Amazon fait foi.",
+    "guide.giftPicksIntro":
+      "Quelques idées concrètes pour démarrer vos recherches sur Amazon.fr selon le budget. Les prix et la disponibilité évoluent ; seule la page Amazon fait foi.",
     "guide.pickCta": "Voir sur Amazon →",
     "guide.advisorTitle": "Besoin d'un conseil personnalisé ?",
     "guide.advisorText":
       "Répondez à quelques questions et notre conseiller intelligent sélectionne les produits les plus adaptés à vos besoins.",
     "guide.advisorCta": "Lancer le conseiller",
+
+    // Gift-ideas hub (/idees-cadeaux)
+    "giftHub.eyebrow": "Idées cadeaux",
+    "giftHub.title": "Idées cadeaux : nos sélections par profil et par occasion",
+    "giftHub.subtitle":
+      "Plus d'inspiration, moins de doute. Des idées cadeaux triées par personne à gâter, par centre d'intérêt et par budget.",
+    "giftHub.intro":
+      "Trouver le bon cadeau peut vite tourner au casse-tête. On a réuni ici nos idées cadeaux classées par profil (homme, femme, ado…) et par occasion (Noël, anniversaire) pour vous aider à trouver l'idée juste, quel que soit votre budget. Et si vous hésitez encore, notre conseiller d'achat IA peut affiner la sélection en quelques questions.",
+    "giftHub.advisorCta": "Trouver une idée avec le conseiller",
+    "giftHub.cardEyebrow": "Idées cadeaux · {time}",
 
     // Mobile
     "m.suggestions": "Suggestions",
@@ -473,6 +488,7 @@ const TRANSLATIONS = {
     "home.selections": "Selections",
     "home.selectionsTitle": "My selections",
     "home.gift": "Find a gift",
+    "home.giftHubLink": "or browse our gift ideas →",
     "home.helpTooltip": "How to use Oraklia?",
     "rail.search": "Search",
     "rail.history": "History",
@@ -894,14 +910,28 @@ const TRANSLATIONS = {
     "guide.back": "Back",
     "guide.meta": "Buying guide · {updated} · {time} read",
     "guide.checklist": "Key takeaways",
+    "guide.giftChecklist": "Gift ideas at a glance",
     "guide.picks": "Our picks by budget",
+    "guide.giftPicks": "Our gift picks",
     "guide.picksIntro":
       "Starting points for your search on Amazon by budget. Prices and availability change; only the Amazon page is authoritative.",
+    "guide.giftPicksIntro":
+      "A few concrete ideas to start your search on Amazon by budget. Prices and availability change; only the Amazon page is authoritative.",
     "guide.pickCta": "View on Amazon →",
     "guide.advisorTitle": "Need personalized advice?",
     "guide.advisorText":
       "Answer a few questions and our smart advisor selects the products best suited to your needs.",
     "guide.advisorCta": "Launch the advisor",
+
+    // Gift-ideas hub (/idees-cadeaux)
+    "giftHub.eyebrow": "Gift ideas",
+    "giftHub.title": "Gift ideas: our picks by person and occasion",
+    "giftHub.subtitle":
+      "More inspiration, less doubt. Gift ideas sorted by who you're shopping for, by interest and by budget.",
+    "giftHub.intro":
+      "Finding the right gift can quickly become a headache. We've gathered our gift ideas here, sorted by profile (men, women, teens…) and by occasion (Christmas, birthdays) to help you find the right idea, whatever your budget. And if you're still unsure, our AI shopping advisor can refine the selection in just a few questions.",
+    "giftHub.advisorCta": "Find an idea with the advisor",
+    "giftHub.cardEyebrow": "Gift ideas · {time}",
 
     // Mobile
     "m.suggestions": "Suggestions",

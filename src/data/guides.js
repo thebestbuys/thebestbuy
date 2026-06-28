@@ -585,15 +585,277 @@ export const GUIDES = [
       },
     },
   },
+
+  // ── Idées cadeaux (type 'gift') ─────────────────────────────────────────────
+  {
+    slug: 'idees-cadeaux-homme',
+    category: 'gift',
+    type: 'gift',
+    content: {
+      fr: {
+        title: 'Idées cadeaux pour homme : la sélection 2026',
+        subtitle: "Des idées qui font mouche, du gadget malin au cadeau qui dure, pour tous les budgets.",
+        readTime: '6 min',
+        updated: 'Juin 2026',
+        intro:
+          "Offrir un cadeau à un homme tourne vite au cliché : énième cravate, énième coffret de gel douche. Pourtant, le bon cadeau n'est pas le plus cher, c'est celui qui correspond à sa façon de vivre. Voici nos idées classées par profil et par budget — pour viser juste sans y passer la soirée.",
+        sections: [
+          {
+            heading: '1. Partez de ses centres d\'intérêt, pas du rayon « cadeaux homme »',
+            body: [
+              "Le meilleur réflexe est de cerner ce qui l'occupe vraiment : cuisine, sport, jeux vidéo, voyage, bricolage, café… Un cadeau qui prolonge une passion existante a beaucoup plus d'impact qu'un objet « générique ». Un amateur de café appréciera un moulin à grains ou une cafetière à piston ; un sportif, des écouteurs qui tiennent à l'effort.",
+              "Si vous le connaissez peu, jouez la carte de l'utile haut de gamme : une belle gourde isotherme, un chargeur sans fil élégant ou une lampe de bureau design plaisent presque toujours, car ils remplacent un objet du quotidien par une version plus agréable.",
+            ],
+          },
+          {
+            heading: '2. Les valeurs sûres tech (qui ne déçoivent presque jamais)',
+            body: [
+              "Côté technologie, trois familles tiennent le haut du panier : les écouteurs sans fil (parfaits pour les transports et le sport), les enceintes Bluetooth nomades, et les accessoires de charge (batterie externe, station de charge). Ce sont des cadeaux qui servent tous les jours.",
+              "Pour un budget plus large, une montre connectée ou une liseuse sont des cadeaux marquants : on s'en sert pendant des années. Vérifiez juste la compatibilité (iPhone/Android) avant d'acheter une montre.",
+            ],
+          },
+          {
+            heading: '3. Faire plaisir avec un petit budget',
+            body: [
+              "Pas besoin de se ruiner. Un bon mug isotherme, un jeu de société convivial, un livre marquant ou un accessoire pour sa passion font d'excellents cadeaux à moins de 30 €. L'astuce : soigner le « pourquoi » du cadeau (un mot, un clin d'œil à une blague) compte souvent plus que le prix.",
+              "Les coffrets thématiques (bière, café de spécialité, soin de la barbe) sont aussi une valeur sûre pour découvrir sans se tromper, à condition de choisir un thème qui lui ressemble vraiment.",
+            ],
+          },
+        ],
+        checklist: [
+          'Partez de sa passion principale plutôt que d\'un cadeau « passe-partout »',
+          'Les écouteurs sans fil et batteries externes plaisent presque toujours',
+          'Pour marquer le coup : montre connectée, liseuse ou enceinte nomade',
+          'Petit budget : un objet du quotidien en version « premium »',
+          'Vérifiez la compatibilité iPhone/Android pour tout objet connecté',
+        ],
+        picks: [
+          { budget: 'Petit budget · ~25 €', name: 'Mug isotherme inox', note: 'Garde le café chaud des heures, utile au bureau comme en déplacement.', query: 'mug isotherme inox' },
+          { budget: 'Polyvalent · ~80 €', name: 'Écouteurs sans fil à réduction de bruit', note: 'Le cadeau tech qui sert tous les jours, transports comme sport.', query: 'ecouteurs sans fil reduction de bruit' },
+          { budget: 'Pour marquer le coup · ~150 €', name: 'Montre connectée', note: 'Sport, notifications, autonomie : un cadeau qui dure des années.', query: 'montre connectee homme' },
+          { budget: 'Passionné de café · ~60 €', name: 'Moulin à café manuel', note: 'Pour les amateurs qui veulent moudre leurs grains frais.', query: 'moulin a cafe manuel' },
+        ],
+      },
+    },
+  },
+  {
+    slug: 'idees-cadeaux-femme',
+    category: 'gift',
+    type: 'gift',
+    content: {
+      fr: {
+        title: 'Idées cadeaux pour femme : la sélection 2026',
+        subtitle: "Bien-être, tech, maison, créativité : des idées qui sortent du lot, pour tous les budgets.",
+        readTime: '6 min',
+        updated: 'Juin 2026',
+        intro:
+          "Le piège, quand on cherche un cadeau pour une femme, c'est de retomber dans les clichés (bougie, bijou au hasard). Un cadeau réussi part toujours de la personne : ce qu'elle aime faire, ce qui lui simplifierait la vie, ce dont elle se priverait par raison. Voici nos idées triées par envie et par budget.",
+        sections: [
+          {
+            heading: '1. Le bien-être et le « cocooning »',
+            body: [
+              "C'est une valeur sûre quand on cherche à faire plaisir sans se tromper. Un diffuseur d'huiles essentielles, un plaid très doux, un appareil de massage ou un coffret de soins transforment un moment ordinaire en parenthèse agréable. L'idée : offrir un instant pour soi.",
+              "Pour un budget plus généreux, un appareil de beauté (lisseur de qualité, sèche-cheveux performant) ou une montre connectée orientée bien-être (suivi du sommeil, activité) font des cadeaux durables et utilisés au quotidien.",
+            ],
+          },
+          {
+            heading: '2. Tech utile et objets du quotidien « premium »',
+            body: [
+              "La technologie n'est pas réservée aux hommes : écouteurs sans fil, enceinte Bluetooth design, liseuse pour les grandes lectrices, ou station de charge élégante sont des cadeaux qui servent vraiment. La liseuse est particulièrement appréciée : légère, des milliers de livres dans un sac à main.",
+              "Autre piste qui fonctionne bien : remplacer un objet courant par une version plus belle ou plus pratique — une gourde isotherme design, une lampe d'ambiance connectée, un beau carnet.",
+            ],
+          },
+          {
+            heading: '3. Créativité, maison et petits budgets',
+            body: [
+              "Si elle aime créer ou cuisiner, un accessoire de qualité pour sa passion (set d'aquarelle, robot pâtissier, beau plat) est un cadeau qui dit « je sais ce que tu aimes ». Côté maison, les plantes, les jolies bougies parfumées et les objets déco restent des valeurs sûres à petit prix.",
+              "Pour moins de 30 €, misez sur le soin du détail : un thé d'exception, un livre choisi avec attention, une trousse de toilette pratique. Le geste compte autant que l'objet.",
+            ],
+          },
+        ],
+        checklist: [
+          'Partez de ce qu\'elle aime faire, pas d\'un cadeau « par défaut »',
+          'Bien-être (diffuseur, plaid, massage) : une valeur sûre',
+          'La liseuse est idéale pour les grandes lectrices',
+          'Petit budget : un objet du quotidien en version soignée',
+          'Un accessoire de qualité pour sa passion fait toujours mouche',
+        ],
+        picks: [
+          { budget: 'Petit budget · ~25 €', name: 'Bougie parfumée artisanale', note: 'Une valeur sûre cocooning, à choisir selon ses senteurs préférées.', query: 'bougie parfumee artisanale' },
+          { budget: 'Bien-être · ~40 €', name: 'Diffuseur d\'huiles essentielles', note: 'Crée une ambiance apaisante à la maison, utilisé toute l\'année.', query: 'diffuseur huiles essentielles' },
+          { budget: 'Pour les lectrices · ~120 €', name: 'Liseuse à écran rétroéclairé', note: 'Des milliers de livres dans un objet léger, lisible au soleil.', query: 'liseuse ecran retroeclaire' },
+          { budget: 'Pour marquer le coup · ~150 €', name: 'Montre connectée bien-être', note: 'Suivi du sommeil et de l\'activité, un cadeau qui dure.', query: 'montre connectee femme' },
+        ],
+      },
+    },
+  },
+  {
+    slug: 'idees-cadeaux-noel',
+    category: 'gift',
+    type: 'gift',
+    content: {
+      fr: {
+        title: 'Idées cadeaux de Noël 2026 : la sélection pour toute la famille',
+        subtitle: "Pour lui, pour elle, pour les enfants, pour les ados : des idées de Noël qui plaisent vraiment.",
+        readTime: '7 min',
+        updated: 'Juin 2026',
+        intro:
+          "Noël approche et la liste s'allonge : conjoint, parents, enfants, beau-frère qu'on voit une fois par an… Pour éviter le rush de dernière minute (et les cadeaux génériques), mieux vaut s'y prendre tôt et avoir quelques idées solides par destinataire. Voici notre sélection de Noël, organisée pour vous faire gagner du temps.",
+        sections: [
+          {
+            heading: '1. Anticipez : les bonnes affaires se jouent avant décembre',
+            body: [
+              "Les meilleures offres tombent souvent en novembre (autour du Black Friday) plutôt qu'à quelques jours de Noël, où les prix remontent et les stocks fondent. Repérez vos idées tôt et surveillez les prix : vous offrirez mieux pour le même budget.",
+              "Pensez aussi aux délais de livraison : en décembre, mieux vaut commander avec de la marge. Un cadeau commandé trop tard, c'est le stress assuré.",
+            ],
+          },
+          {
+            heading: '2. Des idées qui plaisent à coup sûr',
+            body: [
+              "Pour les adultes, les valeurs sûres restent les écouteurs sans fil, les enceintes Bluetooth, les liseuses et les objets « cocooning » (plaid, diffuseur). Pour la cuisine, un bel ustensile ou un coffret gourmand fait toujours plaisir autour des fêtes.",
+              "Pour les enfants et ados, privilégiez ce qui les fait vraiment vibrer : jeux de société familiaux, jeux de construction, casque audio adapté, ou accessoires pour leur console. Le cadeau « tendance du moment » plaît, mais un classique de qualité dure plus longtemps.",
+            ],
+          },
+          {
+            heading: '3. Cadeaux malins quand on ne sait pas quoi offrir',
+            body: [
+              "Pour le collègue, le secret santa ou l'invité surprise, misez sur des cadeaux universels : coffret de thé ou de café, jeu d'ambiance, gourde isotherme, ou petit objet déco. Difficile de se tromper, et le budget reste maîtrisé.",
+              "Et si vous séchez complètement, décrivez la personne à notre conseiller : il vous proposera des idées adaptées en quelques questions.",
+            ],
+          },
+        ],
+        checklist: [
+          'Repérez vos idées dès novembre : meilleurs prix, meilleurs stocks',
+          'Commandez tôt pour éviter le stress des délais de décembre',
+          'Adultes : écouteurs, enceinte, liseuse, cocooning — valeurs sûres',
+          'Enfants/ados : un classique de qualité dure plus qu\'un effet de mode',
+          'Cadeau « secret santa » : coffret gourmand ou jeu d\'ambiance',
+        ],
+        picks: [
+          { budget: 'Secret Santa · ~20 €', name: 'Coffret de thés ou cafés', note: 'Le cadeau universel des fêtes, sans risque de se tromper.', query: 'coffret thes cafe degustation' },
+          { budget: 'Famille · ~30 €', name: 'Jeu de société convivial', note: 'Pour animer les soirées de Noël, des petits aux grands.', query: 'jeu de societe famille' },
+          { budget: 'Pour lui ou elle · ~90 €', name: 'Écouteurs sans fil', note: 'Un classique qui plaît à tous les âges et sert tous les jours.', query: 'ecouteurs sans fil bluetooth' },
+          { budget: 'Cadeau marquant · ~120 €', name: 'Liseuse', note: 'Idéal pour les lecteurs : léger, des milliers de livres à emporter.', query: 'liseuse' },
+        ],
+      },
+    },
+  },
+  {
+    slug: 'idees-cadeaux-ado',
+    category: 'gift',
+    type: 'gift',
+    content: {
+      fr: {
+        title: 'Idées cadeaux pour ado : ce qui plaît vraiment (2026)',
+        subtitle: "Tech, gaming, créativité, déco de chambre : des idées dans l'air du temps sans se tromper.",
+        readTime: '6 min',
+        updated: 'Juin 2026',
+        intro:
+          "Offrir un cadeau à un ado, c'est marcher sur un fil : trop « enfant » et c'est raté, trop cher et on explose le budget. La bonne nouvelle, c'est que les ados ont des centres d'intérêt très marqués (musique, gaming, réseaux, sport, déco de chambre). Visez juste là-dessus et le cadeau fait mouche.",
+        sections: [
+          {
+            heading: '1. La tech audio : le cadeau ado par excellence',
+            body: [
+              "Casque ou écouteurs sans fil arrivent presque toujours en tête. Les ados écoutent de la musique en continu, jouent et passent des appels : un bon casque est un cadeau utilisé tous les jours. Pour le gaming, un casque avec micro fait la différence.",
+              "Une enceinte Bluetooth nomade est aussi une excellente idée pour la chambre ou les sorties entre amis — robuste et étanche de préférence.",
+            ],
+          },
+          {
+            heading: '2. Gaming et accessoires',
+            body: [
+              "Si l'ado est joueur, les accessoires sont des cadeaux sûrs : manette supplémentaire, casque gaming, carte cadeau pour sa plateforme, ou éclairage LED pour le coin gaming. Vérifiez bien la console ou la plateforme qu'il utilise avant d'acheter un accessoire.",
+              "Pour les budgets plus élevés, une manette de qualité ou un bon casque gaming font des cadeaux marquants sans atteindre le prix d'une console.",
+            ],
+          },
+          {
+            heading: '3. Déco de chambre, créativité et petits budgets',
+            body: [
+              "La chambre est le territoire de l'ado : bandeaux LED, lampe d'ambiance, posters, coussins… autant d'idées sympas et abordables qui personnalisent son espace. Côté créativité, le matériel pour dessiner, créer du contenu (ring light, micro) ou un instrument plaît aux profils créatifs.",
+              "Pour moins de 25 €, les LED de chambre, une gourde stylée ou un accessoire pour smartphone (support, coque originale) sont des valeurs sûres.",
+            ],
+          },
+        ],
+        checklist: [
+          'Le casque/écouteurs sans fil : le cadeau ado quasi infaillible',
+          'Gaming : vérifiez la console/plateforme avant d\'acheter un accessoire',
+          'Déco de chambre (LED, lampe d\'ambiance) : sympa et abordable',
+          'Profil créatif : ring light, micro, matériel de dessin',
+          'Petit budget : LED de chambre ou accessoire smartphone original',
+        ],
+        picks: [
+          { budget: 'Petit budget · ~20 €', name: 'Bandeau LED pour chambre', note: 'Personnalise l\'espace, effet garanti pour un petit prix.', query: 'bandeau led chambre' },
+          { budget: 'Audio · ~50 €', name: 'Casque sans fil', note: 'Musique, appels, gaming : utilisé tous les jours.', query: 'casque sans fil ado' },
+          { budget: 'Gaming · ~45 €', name: 'Casque gaming avec micro', note: 'Pour jouer en ligne avec les copains, confort et micro clair.', query: 'casque gaming micro' },
+          { budget: 'Créatif · ~40 €', name: 'Ring light avec trépied', note: 'Pour les ados qui créent du contenu ou font des visios.', query: 'ring light trepied' },
+        ],
+      },
+    },
+  },
+  {
+    slug: 'idees-cadeaux-high-tech',
+    category: 'gift',
+    type: 'gift',
+    content: {
+      fr: {
+        title: 'Idées cadeaux high-tech : pour les passionnés de tech (2026)',
+        subtitle: "Gadgets malins, audio, objets connectés : des idées qui impressionnent les amateurs de tech.",
+        readTime: '7 min',
+        updated: 'Juin 2026',
+        intro:
+          "Offrir un cadeau high-tech à un passionné fait peur : « il a déjà tout », « je vais me tromper de modèle ». En réalité, les amateurs de tech adorent les accessoires malins et les objets qui améliorent leur quotidien — pas forcément les plus chers. Voici nos idées, du gadget à moins de 30 € à l'objet qui marque le coup.",
+        sections: [
+          {
+            heading: '1. Les accessoires qui améliorent le quotidien',
+            body: [
+              "C'est le terrain le plus sûr : station de charge multi-appareils, chargeur sans fil rapide, batterie externe compacte, ou hub USB-C pour le télétravail. Ce sont des objets qu'un passionné utilise tous les jours et qu'il n'achète pas toujours pour lui-même.",
+              "Les trackers Bluetooth (pour retrouver clés, sac ou valise) et les supports (pour téléphone, casque, tablette) sont aussi d'excellents cadeaux : utiles, abordables et appréciés.",
+            ],
+          },
+          {
+            heading: '2. Audio et image : la valeur sûre',
+            body: [
+              "Un bon casque à réduction de bruit, une enceinte Bluetooth de qualité ou des écouteurs haut de gamme sont des cadeaux qui font toujours plaisir. Pour les cinéphiles, un projecteur portable ou un bon éclairage d'ambiance (rétroéclairage TV) transforme l'expérience.",
+              "Astuce : si la personne est déjà très équipée, visez la qualité plutôt que la nouveauté — un accessoire premium qu'elle ne se serait pas offert.",
+            ],
+          },
+          {
+            heading: '3. Maison connectée et gadgets « waouh »',
+            body: [
+              "La domotique séduit les passionnés : ampoules connectées, prises intelligentes, assistant vocal ou capteurs. On peut commencer petit (une prise connectée) sans imposer tout un écosystème.",
+              "Pour l'effet « waouh » à budget contenu, pensez aux gadgets bien conçus : mini-imprimante photo, clavier mécanique compact, lampe de bureau à charge sans fil intégrée. Ils sortent de l'ordinaire sans coûter une fortune.",
+            ],
+          },
+        ],
+        checklist: [
+          'Les accessoires de charge sont des valeurs sûres (on s\'en sert tous les jours)',
+          'Trackers Bluetooth et supports : utiles et abordables',
+          'Audio premium : misez sur la qualité plutôt que la nouveauté',
+          'Maison connectée : on peut commencer par une seule prise intelligente',
+          'Effet « waouh » à petit prix : mini-imprimante photo, clavier mécanique',
+        ],
+        picks: [
+          { budget: 'Petit budget · ~25 €', name: 'Tracker Bluetooth', note: 'Pour ne plus jamais perdre ses clés, son sac ou sa valise.', query: 'tracker bluetooth objets' },
+          { budget: 'Pratique · ~35 €', name: 'Station de charge sans fil', note: 'Recharge téléphone et écouteurs sur un seul socle élégant.', query: 'station de charge sans fil' },
+          { budget: 'Audio · ~120 €', name: 'Casque à réduction de bruit', note: 'Le cadeau tech qui impressionne et sert au quotidien.', query: 'casque reduction de bruit' },
+          { budget: 'Maison connectée · ~30 €', name: 'Prise connectée (lot)', note: 'Une entrée facile dans la domotique, sans tout changer.', query: 'prise connectee wifi' },
+        ],
+      },
+    },
+  },
 ];
 
 // Renvoie le contenu d'un guide localisé pour la langue donnée.
 export function localizeGuide(guide, lang = 'fr') {
   if (!guide) return null;
   const c = guide.content[lang] || guide.content.fr;
-  return { slug: guide.slug, category: guide.category, ...c };
+  return { slug: guide.slug, category: guide.category, type: guide.type || 'buying', ...c };
 }
 
 export function getGuide(slug) {
   return GUIDES.find((g) => g.slug === slug) || null;
+}
+
+// Guides "idées cadeaux" (type 'gift') — alimentent le hub /idees-cadeaux.
+export function giftGuides() {
+  return GUIDES.filter((g) => g.type === 'gift');
 }

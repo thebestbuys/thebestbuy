@@ -21,6 +21,7 @@ const AskOpinionPanel = lazy(() => import('./components/AskOpinionPanel.jsx'));
 const LegalNotices = lazy(() => import('./components/LegalNotices.jsx'));
 const GuideArticle = lazy(() => import('./components/GuideArticle.jsx'));
 const GuidesPanel = lazy(() => import('./components/GuidesPanel.jsx'));
+const GiftHub = lazy(() => import('./components/GiftHub.jsx'));
 const OwnedPanel = lazy(() => import('./components/OwnedPanel.jsx'));
 import { GUIDES, localizeGuide, getGuide } from './data/guides.js';
 import { HeroCard, PriceTag, ProductImage, ProductLinkCard, ProductSkeleton, ScoreRing, SmallCard, VerifiedBadge, VerifiedRating } from './components/ProductCard.jsx';
@@ -72,6 +73,7 @@ function viewFromPath() {
   const path = typeof location !== 'undefined' ? location.pathname : '/';
   const m = path.match(/^\/guide\/([^/]+)\/?$/);
   if (m && getGuide(decodeURIComponent(m[1]))) return { guide: decodeURIComponent(m[1]) };
+  if (/^\/idees-cadeaux\/?$/.test(path)) return { giftHub: true };
   if (/^\/mentions-legales\/?$/.test(path)) return { legal: true };
   return {};
 }
@@ -367,7 +369,7 @@ function TrendingPanel({ onClose, onOpen }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifOpen, onToggleNotif, onCloseNotif, onGiftReminder, onOpenGift, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTrending, onOpenOwned, onOpenAdmin, onLoadConvo, onOpenProduct }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifOpen, onToggleNotif, onCloseNotif, onGiftReminder, onOpenGift, onOpenGiftHub, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTrending, onOpenOwned, onOpenAdmin, onLoadConvo, onOpenProduct }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -557,6 +559,14 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
               <span aria-hidden="true" className="home-gift-cta-emoji">🎁</span>
               {t('home.gift')}
             </button>
+            {/* Real href so crawlers reach the /idees-cadeaux hub; click stays SPA. */}
+            <a
+              href="/idees-cadeaux"
+              className="home-gifthub-link"
+              onClick={(e) => { e.preventDefault(); onOpenGiftHub?.(); }}
+            >
+              {t('home.giftHubLink')}
+            </a>
           </div>
 
           <div className="home-suggestions-slot">
@@ -753,6 +763,7 @@ export default function App() {
   // refresh, or the prerendered page handing off to the app).
   const [legalOpen, setLegalOpen] = useState(() => !!viewFromPath().legal);
   const [activeGuide, setActiveGuide] = useState(() => viewFromPath().guide || null);
+  const [giftHubOpen, setGiftHubOpen] = useState(() => !!viewFromPath().giftHub);
   const [objet, setObjet] = useState('');      // human search term sent to the AI
   const [answers, setAnswers] = useState([]);  // compact criteria JSON [{id,q,a,tags,min,max}]
   const [editIndex, setEditIndex] = useState(null); // answer index being edited in place
@@ -1075,7 +1086,11 @@ export default function App() {
     try { window.history.pushState({ oraklia: true }, '', url); } catch { /* noop */ }
   };
 
+  // Note: don't close the gift hub here — when a guide is opened from the hub it
+  // stays mounted underneath (the guide view takes render precedence), so Back
+  // from the guide returns to the hub.
   const navOpenGuide = (slug) => { pushHistory('/guide/' + slug); setActiveGuide(slug); };
+  const navOpenGiftHub = () => { pushHistory('/idees-cadeaux'); setGiftHubOpen(true); };
   const navOpenLegal = () => { pushHistory('/mentions-legales'); setLegalOpen(true); };
   const navOpenHistory = () => { pushHistory(); setHistoryOpen(true); };
   const navOpenSelections = () => { pushHistory(); setSelectionsOpen(true); };
@@ -1151,12 +1166,13 @@ export default function App() {
       if (trendingOpen) { setTrendingOpen(false); return; }
       if (ownedOpen) { setOwnedOpen(false); return; }
       if (activeGuide) { setActiveGuide(null); return; }
+      if (giftHubOpen) { setGiftHubOpen(false); return; }
       if (category) { handleHome(); return; }
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, giftOpen, askOpen, friendsOpen, adminOpen, profileOpen, selectionsOpen, guidesOpen, trendingOpen, ownedOpen, historyOpen, activeGuide, category]);
+  }, [selected, legalOpen, giftOpen, askOpen, friendsOpen, adminOpen, profileOpen, selectionsOpen, guidesOpen, trendingOpen, ownedOpen, historyOpen, activeGuide, giftHubOpen, category]);
 
   // Keep the tab title in sync with the open guide (matches the prerendered
   // per-guide <title>); reset to the brand title elsewhere.
@@ -1165,9 +1181,10 @@ export default function App() {
     const g = activeGuide ? getGuide(activeGuide) : null;
     document.title = g
       ? `${localizeGuide(g, lang).title} — Oraklia`
+      : giftHubOpen ? `${tr('giftHub.title')} — Oraklia`
       : legalOpen ? 'Mentions légales — Oraklia' : base;
     return () => { document.title = base; };
-  }, [activeGuide, legalOpen, lang]);
+  }, [activeGuide, giftHubOpen, legalOpen, lang, tr]);
 
   const getAmazonUrl = (p) => {
     if (p.amazon_url) return p.amazon_url;
@@ -1219,6 +1236,9 @@ export default function App() {
 
   const startAdvisorFromGuide = (cat) => {
     setActiveGuide(null);
+    // Gift guides / the gift hub lead into the dedicated gift flow rather than
+    // the generic advisor (which would search for the literal "gift").
+    if (cat === 'gift') { setGiftHubOpen(false); navOpenGift(); return; }
     setConvoId(newConversationId());
     setObjet(CATEGORIES.find((c) => c.id === cat)?.label || cat);
     setAnswers([]);
@@ -1258,6 +1278,19 @@ export default function App() {
     );
   }
 
+  // "Idées cadeaux" hub view (/idees-cadeaux)
+  if (giftHubOpen) {
+    return (
+      <Suspense fallback={null}>
+        <GiftHub
+          onBack={navBack}
+          onOpenGuide={navOpenGuide}
+          onStartAdvisor={() => startAdvisorFromGuide('gift')}
+        />
+      </Suspense>
+    );
+  }
+
   if (!category) {
     return (
       <>
@@ -1275,6 +1308,7 @@ export default function App() {
           onCloseNotif={() => setNotifOpen(false)}
           onGiftReminder={giftFromReminder}
           onOpenGift={navOpenGift}
+          onOpenGiftHub={navOpenGiftHub}
           onOpenLegal={navOpenLegal}
           onOpenGuide={navOpenGuide}
           onOpenGuides={navOpenGuides}
