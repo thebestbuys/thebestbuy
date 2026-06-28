@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
 import {
+  clearAllConversations,
   deleteConversation,
   formatRelative,
   listConversations,
@@ -39,6 +40,13 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
     setItems((cur) => cur.filter((c) => c.id !== id));
   };
 
+  const clearAll = () => {
+    if (!window.confirm(t('history.clearAllConfirm'))) return;
+    clearAllConversations(user?.sub);
+    setItems([]);
+    setQ('');
+  };
+
   const catLabelOf = (c) =>
     ['phone', 'laptop', 'headphones'].includes(c.category) ? t('cat.' + c.category) : c.category;
 
@@ -73,7 +81,7 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
         <div className="sheet-body">
 
         {items.length > 0 && (
-          <div className="friends-search">
+          <div className="history-toolbar">
             <input
               type="text"
               className="profile-input"
@@ -81,6 +89,9 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
               placeholder={t('history.searchPlaceholder')}
               onChange={(e) => setQ(e.target.value)}
             />
+            <button type="button" className="history-clear-all" onClick={clearAll}>
+              {t('history.clearAll')}
+            </button>
           </div>
         )}
 

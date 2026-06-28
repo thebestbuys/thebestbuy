@@ -342,6 +342,8 @@ const TRANSLATIONS = {
     "history.done": "✓ finalisée",
     "history.delete": "Supprimer",
     "history.deleteConvo": "Supprimer cette conversation",
+    "history.clearAll": "Tout effacer",
+    "history.clearAllConfirm": "Effacer tout l'historique des conversations ? Cette action est irréversible.",
     "history.searchPlaceholder": "Rechercher une conversation…",
 
     // Generic search
@@ -830,6 +832,8 @@ const TRANSLATIONS = {
     "history.done": "✓ finalized",
     "history.delete": "Delete",
     "history.deleteConvo": "Delete this conversation",
+    "history.clearAll": "Clear all",
+    "history.clearAllConfirm": "Clear your entire conversation history? This cannot be undone.",
     "history.searchPlaceholder": "Search a conversation…",
 
     // Generic search
