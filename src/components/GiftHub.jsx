@@ -1,5 +1,6 @@
 import { giftGuides, localizeGuide } from '../data/guides.js';
 import { useI18n } from '../lib/i18n.jsx';
+import { useAuth } from '../lib/auth.jsx';
 import LangToggle from './LangToggle.jsx';
 
 // Full-page "Idées cadeaux" hub at /idees-cadeaux. Lists the gift-type guides
@@ -8,6 +9,7 @@ import LangToggle from './LangToggle.jsx';
 // specific gift guide. Mirrored as static HTML by scripts/prerender.mjs.
 export default function GiftHub({ onBack, onOpenGuide, onStartAdvisor }) {
   const { t, lang } = useI18n();
+  const { user } = useAuth();
   const guides = giftGuides();
 
   return (
@@ -17,7 +19,7 @@ export default function GiftHub({ onBack, onOpenGuide, onStartAdvisor }) {
           <span aria-hidden="true">←</span> {t('guide.back')}
         </button>
         <div className="guide-topbar-right">
-          <LangToggle />
+          {user && <LangToggle />}
           <span className="guide-brand">Oraklia</span>
         </div>
       </div>

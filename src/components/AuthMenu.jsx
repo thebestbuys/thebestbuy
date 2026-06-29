@@ -5,6 +5,7 @@ import { listSelections } from '../lib/selections.js';
 import { isSuperuserEmail } from '../lib/cloud.js';
 import { getMode, setMode as setThemeMode } from '../lib/theme.js';
 import { requestsLeft } from '../lib/usage.js';
+import LangToggle from './LangToggle.jsx';
 
 const APPEARANCE_MODES = ['system', 'light', 'dark'];
 
@@ -214,6 +215,10 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
         </>
       )}
       <div className="auth-dropdown-sep" />
+      <div className="auth-appearance">
+        <span className="auth-appearance-label">{t('lang.label')}</span>
+        <LangToggle />
+      </div>
       <AppearanceToggle />
       <QuotaLine />
       <div className="auth-dropdown-sep" />

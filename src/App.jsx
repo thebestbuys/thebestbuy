@@ -5,7 +5,6 @@ import AuthMenu from './components/AuthMenu.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
 import FriendRequestsBell from './components/FriendRequestsBell.jsx';
 import FavoriteButton from './components/FavoriteButton.jsx';
-import LangToggle from './components/LangToggle.jsx';
 
 // Overlays / secondary views — code-split so they don't bloat the initial
 // bundle. Each is only mounted when its open flag is true (the panels already
@@ -543,7 +542,6 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             </svg>
           </button>
         )}
-        <LangToggle />
         <AuthMenu
           variant="home"
           onOpenProfile={onOpenProfile}
@@ -1530,7 +1528,6 @@ export default function App() {
               </button>
             )}
             <FriendRequestsBell open={notifOpen} onToggle={() => setNotifOpen((v) => !v)} onClose={() => setNotifOpen(false)} onGift={giftFromReminder} pingKey={notifOpen} />
-            <LangToggle />
             <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} onOpenOwned={navOpenOwned} onOpenAdmin={navOpenAdmin} />
           </>
         ) : null}
@@ -1556,7 +1553,6 @@ export default function App() {
               </button>
             )}
             <FriendRequestsBell open={notifOpen} onToggle={() => setNotifOpen((v) => !v)} onClose={() => setNotifOpen(false)} onGift={giftFromReminder} pingKey={notifOpen} />
-            <LangToggle />
             <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} onOpenOwned={navOpenOwned} onOpenAdmin={navOpenAdmin} />
           </div>
         </header>

@@ -1,9 +1,11 @@
 import { affiliateSearch } from '../data/guides.js';
 import { useI18n } from '../lib/i18n.jsx';
+import { useAuth } from '../lib/auth.jsx';
 import LangToggle from './LangToggle.jsx';
 
 export default function GuideArticle({ guide, onBack, onStartAdvisor }) {
   const { t } = useI18n();
+  const { user } = useAuth();
   if (!guide) return null;
   const isGift = guide.type === 'gift';
 
@@ -14,7 +16,7 @@ export default function GuideArticle({ guide, onBack, onStartAdvisor }) {
           <span aria-hidden="true">←</span> {t('guide.back')}
         </button>
         <div className="guide-topbar-right">
-          <LangToggle />
+          {user && <LangToggle />}
           <span className="guide-brand">Oraklia</span>
         </div>
       </div>
