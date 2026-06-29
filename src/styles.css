@@ -3218,6 +3218,10 @@ button.chat-bubble.chat-editable {
   flex-direction: column;
   animation: bb-rise 0.18s ease-out;
 }
+.owned-help-row {
+  flex-shrink: 0;
+  padding: 12px 28px 0;
+}
 .owned-page-head {
   flex-shrink: 0;
   display: flex;
@@ -5585,6 +5589,11 @@ select.profile-input {
 .home-trending {
   margin-top: 40px;
 }
+/* In the Trending panel the sheet-body already pads the top — drop the home's
+   extra margin so there's no dead space under the title header. */
+.trending-panel .home-trending {
+  margin-top: 0;
+}
 .trending-row {
   display: flex;
   gap: 12px;
@@ -6351,23 +6360,29 @@ select.profile-input {
   gap: 4px;
   flex-shrink: 0;
 }
-.panel-help-btn {
+/* "? Comment ça marche" pill, placed at the top of a panel's content. */
+.panel-help-link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start; /* stay compact inside flex-column bodies (side-panel) */
+  width: fit-content;
+  gap: 6px;
   appearance: none;
-  border: 0;
-  background: transparent;
+  border: 0.5px solid var(--border);
+  background: var(--bg-elev);
   color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 13px;
+  border-radius: 999px;
   cursor: pointer;
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  line-height: 1;
-  transition: background 0.15s ease, color 0.15s ease;
+  margin-bottom: 14px;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-.panel-help-btn:hover {
+.panel-help-link:hover {
   background: var(--accent-light);
   color: var(--accent);
+  border-color: transparent;
 }
 /* Tutorial overlay stacks above any open panel regardless of DOM order. */
 .auth-modal-bg--top {

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
-import PanelHelpButton from './PanelHelpButton.jsx';
 import { getProfile, saveProfile } from '../lib/profile.js';
 import { useDismiss } from '../lib/useDismiss.js';
 import DatePicker from './DatePicker.jsx';
@@ -147,16 +146,13 @@ export default function ProfilePanel({ open, onClose }) {
             </h2>
             <p className="history-sub">{t('profile.sub')}</p>
           </div>
-          <div className="panel-head-actions">
-            <PanelHelpButton />
-            <button
-              className="sheet-close"
-              onClick={close}
-              aria-label={t('auth.close')}
-            >
-              ✕
-            </button>
-          </div>
+          <button
+            className="sheet-close"
+            onClick={close}
+            aria-label={t('auth.close')}
+          >
+            ✕
+          </button>
         </header>
         <div className="sheet-body">
 

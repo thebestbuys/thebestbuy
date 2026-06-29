@@ -38,13 +38,12 @@ export default function GuidesPanel({ open, onClose, onOpenGuide }) {
             </h2>
             <p className="history-sub">{t('guides.sectionSub')}</p>
           </div>
-          <div className="panel-head-actions">
-            <PanelHelpButton />
-            <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>
-              ✕
-            </button>
-          </div>
+          <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>
+            ✕
+          </button>
         </header>
+
+        <PanelHelpButton />
 
         <div className="home-guides-grid">
           {GUIDES.map((g) => {

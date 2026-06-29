@@ -159,20 +159,18 @@ export default function GiftPanel({ open, onClose, onSubmit, initial }) {
             </h2>
             <p className="history-sub">{t('gift.sub')}</p>
           </div>
-          <div className="panel-head-actions">
-            <PanelHelpButton />
-            <button
-              type="button"
-              className="auth-modal-close"
-              onClick={onClose}
-              aria-label={t('auth.close')}
-            >
-              ✕
-            </button>
-          </div>
+          <button
+            type="button"
+            className="auth-modal-close"
+            onClick={onClose}
+            aria-label={t('auth.close')}
+          >
+            ✕
+          </button>
         </header>
 
         <div className="profile-form">
+          <PanelHelpButton />
           {friends.length > 0 && (
             <div className="gift-people">
               <div className="profile-label">{t('gift.friendsSection')}</div>

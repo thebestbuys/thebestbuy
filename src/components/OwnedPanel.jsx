@@ -23,12 +23,14 @@ export default function OwnedPanel({ open, onClose }) {
   const [clicked, setClicked] = useState([]);
   const [ownedExtra, setOwnedExtra] = useState([]);
   const [activeId, setActiveId] = useState(null);
+  const [q, setQ] = useState('');
 
   useEffect(() => {
     if (!open) return;
     setOwnedSet(ownedIdSet(user?.sub));
     setClicked(listClicked(user?.sub));
     setOwnedExtra(listOwned(user?.sub));
+    setQ('');
   }, [open, user?.sub]);
 
   useEffect(() => {
@@ -65,6 +67,15 @@ export default function OwnedPanel({ open, onClose }) {
 
   const active = items.find((p) => p.id === activeId) || null;
 
+  // Filter the left list by brand/model (same logic as SelectionsPanel). The
+  // selection stays valid even if the active product is filtered out of view.
+  const term = q.trim().toLowerCase();
+  const visible = term
+    ? items.filter((p) =>
+        [p.brand, p.model].filter(Boolean).some((s) => String(s).toLowerCase().includes(term)),
+      )
+    : items;
+
   const toggle = (p) => {
     const nowOwned = toggleOwned(user?.sub, p);
     setOwnedSet((prev) => {
@@ -83,11 +94,10 @@ export default function OwnedPanel({ open, onClose }) {
           <h2 id="owned-title" className="owned-page-title">{t('owned.title')}</h2>
           <p className="owned-page-sub">{t('owned.sub')}</p>
         </div>
-        <div className="panel-head-actions">
-          <PanelHelpButton />
-          <button type="button" className="owned-page-close" onClick={close} aria-label={t('auth.close')}>✕</button>
-        </div>
+        <button type="button" className="owned-page-close" onClick={close} aria-label={t('auth.close')}>✕</button>
       </header>
+
+      <div className="owned-help-row"><PanelHelpButton /></div>
 
       {items.length === 0 ? (
         <div className="owned-empty">
@@ -98,8 +108,20 @@ export default function OwnedPanel({ open, onClose }) {
       ) : (
         <div className="owned-layout">
           <aside className="owned-listcol">
+            <div className="friends-search">
+              <input
+                type="text"
+                className="profile-input"
+                value={q}
+                placeholder={t('owned.searchPlaceholder')}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
+            {visible.length === 0 ? (
+              <div className="friends-hint">{t('search.noResults')}</div>
+            ) : (
             <ul className="owned-list">
-              {items.map((p) => {
+              {visible.map((p) => {
                 const isOwned = ownedSet.has(p.id);
                 return (
                   <li key={p.id}>
@@ -133,6 +155,7 @@ export default function OwnedPanel({ open, onClose }) {
                 );
               })}
             </ul>
+            )}
           </aside>
 
           <section className="owned-detailcol">

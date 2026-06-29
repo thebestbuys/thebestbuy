@@ -71,18 +71,16 @@ export default function HistoryPanel({ open, onClose, onLoad, currentId }) {
               {user ? t('history.subUser') : t('history.subGuest')}
             </p>
           </div>
-          <div className="panel-head-actions">
-            <PanelHelpButton />
-            <button
-              className="sheet-close"
-              onClick={close}
-              aria-label={t('auth.close')}
-            >
-              ✕
-            </button>
-          </div>
+          <button
+            className="sheet-close"
+            onClick={close}
+            aria-label={t('auth.close')}
+          >
+            ✕
+          </button>
         </header>
         <div className="sheet-body">
+          <PanelHelpButton />
 
         {items.length > 0 && (
           <div className="history-toolbar">

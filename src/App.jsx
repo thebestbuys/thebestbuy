@@ -387,12 +387,10 @@ function TrendingPanel({ onClose, onOpen }) {
           <h2 id="trending-panel-title" className="history-title">{t('trending.title')}</h2>
           <p className="history-sub">{t('trending.sub')}</p>
         </div>
-        <div className="panel-head-actions">
-          <PanelHelpButton />
-          <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
-        </div>
+        <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
       </header>
       <div className="sheet-body">
+        <PanelHelpButton />
         <TrendingCircle onOpen={onOpen} hideHeader />
       </div>
     </div>
