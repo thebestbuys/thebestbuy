@@ -655,7 +655,8 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
                 : [170, 150, 190, 160, 140].map((w, i) => (
                     <span key={i}
                       className={'suggestion-chip-skel' + (skelOut ? ' is-leaving' : '')}
-                      style={{ width: w }} aria-hidden="true" />
+                      style={{ width: w, animationDelay: `${i * (skelOut ? CHIP_OUT_STAGGER : CHIP_IN_STAGGER)}ms` }}
+                      aria-hidden="true" />
                   ))}
             </div>
           </div>

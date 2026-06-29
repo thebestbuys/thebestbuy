@@ -401,7 +401,9 @@ ul {
     color-mix(in oklch, var(--accent-light) 62%, white) 37%,
     var(--accent-light) 63%);
   background-size: 480px 100%;
-  animation: skelShimmer 1.3s ease-in-out infinite;
+  /* Same staggered pop-in as the real chips (animation-delay set inline, per
+     chip), layered with the shimmer sweep that keeps running once it's in. */
+  animation: skelShimmer 1.3s ease-in-out infinite, chip-pop 0.4s ease-out both;
 }
 /* Reverse-pop: skeletons fade/shrink out before the real chips pop in. */
 @keyframes chip-pop-out {
