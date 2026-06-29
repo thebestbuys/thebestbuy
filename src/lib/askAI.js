@@ -110,6 +110,13 @@ export async function fetchSuggestions({ lang = 'fr', profile = '' } = {}) {
   }
 }
 
+// Ask Gemini about ONE specific product already shown (detail page "ask for
+// more detail" button + the mini Q&A chat). `history` is the running Q&A so
+// far ([{role:'user'|'assistant', text}]) so follow-up questions stay coherent.
+export function askProductQuestion({ product, question = '', history = [], lang = 'fr', token = '' }) {
+  return postChat({ mode: 'product_qa', product, question, history, lang }, token);
+}
+
 // Enrich a product with real Amazon data (image, URL, rating, reviews).
 // Returns the same product object with extra fields merged in.
 export async function enrichProduct(product) {

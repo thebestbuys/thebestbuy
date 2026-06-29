@@ -119,6 +119,11 @@ const TRANSLATIONS = {
     "product.viewAmazon": "Voir sur Amazon",
     "product.viewPriceAmazon": "Voir le prix sur Amazon",
     "product.matchLabel": "match",
+    "product.qaTitle": "Une question sur ce produit ?",
+    "product.askDetailed": "Demander un avis plus détaillé",
+    "product.askPlaceholder": "Posez une question sur ce produit…",
+    "product.askSend": "Envoyer",
+    "product.qaError": "Impossible d'obtenir une réponse, réessayez.",
 
     // Auth
     "auth.signIn": "Se connecter",
@@ -615,6 +620,11 @@ const TRANSLATIONS = {
     "product.viewAmazon": "View on Amazon",
     "product.viewPriceAmazon": "See price on Amazon",
     "product.matchLabel": "match",
+    "product.qaTitle": "A question about this product?",
+    "product.askDetailed": "Ask for a more detailed opinion",
+    "product.askPlaceholder": "Ask a question about this product…",
+    "product.askSend": "Send",
+    "product.qaError": "Couldn't get an answer, please try again.",
 
     // Auth
     "auth.signIn": "Sign in",

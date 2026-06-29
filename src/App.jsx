@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { CATEGORIES } from './data.js';
-import { askQuestion, recommend, enrichProduct, fetchSuggestions } from './lib/askAI.js';
+import { askQuestion, recommend, enrichProduct, fetchSuggestions, askProductQuestion } from './lib/askAI.js';
 import AuthMenu from './components/AuthMenu.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
 import FriendRequestsBell from './components/FriendRequestsBell.jsx';
@@ -673,6 +673,88 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
   );
 }
 
+// Mini Q&A thread on the product detail page: a "ask for a more detailed
+// opinion" button plus a free-text follow-up input, both grounded in this one
+// product (api/chat.js mode:'product_qa'). `history` is sent back on every
+// turn so follow-ups stay coherent without re-sending the whole product each
+// time the user types.
+function ProductQa({ product }) {
+  const { t, lang } = useI18n();
+  const [qaHistory, setQaHistory] = useState([]); // [{role:'user'|'assistant', content}]
+  const [qaInput, setQaInput] = useState('');
+  const [qaLoading, setQaLoading] = useState(false);
+  const [qaError, setQaError] = useState(false);
+  const threadRef = useRef(null);
+
+  useEffect(() => {
+    if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
+  }, [qaHistory, qaLoading]);
+
+  const runQa = async (question, displayText) => {
+    if (qaLoading) return;
+    const history = qaHistory;
+    setQaHistory((h) => [...h, { role: 'user', content: displayText }]);
+    setQaError(false);
+    setQaLoading(true);
+    try {
+      const json = await askProductQuestion({ product, question, history, lang, token: getAccessToken() || '' });
+      setQaHistory((h) => [...h, { role: 'assistant', content: json?.reply || '' }]);
+    } catch {
+      setQaError(true);
+    } finally {
+      setQaLoading(false);
+    }
+  };
+
+  const askDetailed = () => runQa('', t('product.askDetailed'));
+  const submitQa = (e) => {
+    e.preventDefault();
+    const text = qaInput.trim();
+    if (!text) return;
+    setQaInput('');
+    runQa(text, text);
+  };
+
+  return (
+    <div className="modal-qa">
+      <div className="modal-section-title">{t('product.qaTitle')}</div>
+      {qaHistory.length === 0 ? (
+        <button type="button" className="modal-qa-ask-btn" onClick={askDetailed} disabled={qaLoading}>
+          <span aria-hidden="true">✦</span>
+          {qaLoading ? <span className="typing"><i/><i/><i/></span> : t('product.askDetailed')}
+        </button>
+      ) : (
+        <div className="modal-qa-thread" ref={threadRef}>
+          {qaHistory.map((m, i) => (
+            <div key={i} className={'chat-bubble ' + (m.role === 'assistant' ? 'role-bot' : 'role-user')}>
+              <div className="chat-bubble-text">{m.content}</div>
+            </div>
+          ))}
+          {qaLoading && (
+            <div className="chat-bubble role-bot">
+              <div className="chat-bubble-text"><span className="typing"><i/><i/><i/></span></div>
+            </div>
+          )}
+        </div>
+      )}
+      {qaError && <div className="modal-qa-error">{t('product.qaError')}</div>}
+      <form className="modal-qa-input chat-input" onSubmit={submitQa}>
+        <input
+          type="text"
+          placeholder={t('product.askPlaceholder')}
+          value={qaInput}
+          onChange={(e) => setQaInput(e.target.value)}
+        />
+        <button type="submit" disabled={!qaInput.trim() || qaLoading} aria-label={t('product.askSend')}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M2 8 L14 8 M9 3 L14 8 L9 13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function ProductDetail({ product, onClose, onBuy }) {
   const { t, lang } = useI18n();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
@@ -685,6 +767,7 @@ function ProductDetail({ product, onClose, onBuy }) {
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+        <div className="modal-scroll">
         <div className={'modal-grid' + (hasImage ? '' : ' no-image')}>
           {hasImage && (
             <div className="modal-left">
@@ -749,7 +832,9 @@ function ProductDetail({ product, onClose, onBuy }) {
                 </a>
               </div>
             </div>
+            <ProductQa product={product} />
           </div>
+        </div>
         </div>
       </div>
     </div>

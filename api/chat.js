@@ -302,6 +302,26 @@ Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 {"suggestions":[{"label":"Climatiseur","icon":"ac"}]}`;
 }
 
+// ── Product Q&A (detail page "ask Gemini about this product") ──────────────
+// Grounds the model in the ONE product already shown to the user (brand/model/
+// price/specs/why) so it answers about that exact item, not a generic lookup.
+function buildProductQaPrompt(product, lang) {
+  const specs = Array.isArray(product?.specs) && product.specs.length ? product.specs.join(', ') : 'non précisées';
+  const price = product?.price != null ? `${product.price} €` : 'inconnu';
+  return `Tu es Oraklia, un conseiller d'achat expert. ${langLineFor(lang)}
+L'utilisateur regarde la fiche de ce produit, déjà identifié — ne demande JAMAIS de précisions sur "lequel" :
+- Marque : ${product?.brand || 'inconnue'}
+- Modèle : ${product?.model || 'inconnu'}
+- Prix indicatif : ${price}
+- Caractéristiques : ${specs}
+- Pourquoi il a été recommandé : ${product?.why || 'non précisé'}
+
+Réponds à sa question (ou donne un avis détaillé si la demande est générique) UNIQUEMENT sur CE produit : points forts, limites éventuelles, pour qui c'est adapté. Sois concret et honnête, 3 à 7 phrases maximum, sans répéter les infos déjà affichées sur la fiche.
+
+Réponds UNIQUEMENT par un objet JSON valide de cette forme:
+{"reply":"<ta réponse>"}`;
+}
+
 // ── Gift mode ──────────────────────────────────────────────────────────────
 // One next question to refine gift ideas for the described recipient.
 function buildGiftAskPrompt(giftStr, answers, lang) {
@@ -544,7 +564,7 @@ export default async function handler(req, res) {
   }
   const t1_ms = ms(t1);
 
-  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', conversationId = '', requestId = '', exclude = [] } = body;
+  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', conversationId = '', requestId = '', exclude = [], product = null, question = '', history = [] } = body;
 
   // Home-page suggestion chips: a light, self-contained path (no Amazon
   // verification). Gemini picks ~8 product categories for the current season /
@@ -636,7 +656,14 @@ export default async function handler(req, res) {
   // 2. Build prompt — new path sends a compact criteria JSON; legacy sends the transcript.
   const t2 = performance.now();
   let systemPrompt, contents, temperature;
-  if (legacy) {
+  if (mode === 'product_qa') {
+    systemPrompt = buildProductQaPrompt(product, lang);
+    const qaHistory = Array.isArray(history) ? history.slice(-8) : [];
+    const qaQuestion = String(question || '').trim() ||
+      (lang === 'en' ? 'Give me a more detailed opinion on this product.' : 'Donne-moi un avis plus détaillé sur ce produit.');
+    contents = [...toGeminiContents(qaHistory), { role: 'user', parts: [{ text: qaQuestion }] }];
+    temperature = 0.6;
+  } else if (legacy) {
     systemPrompt = isGift
       ? buildGiftSystemPrompt(giftStr, lang, surprise, friendWishlist)
       : buildSystemPrompt(category, lang, profile);
@@ -659,7 +686,7 @@ export default async function handler(req, res) {
   // is never truncated (truncation => invalid JSON => 502): recommend returns a
   // batch of products, ask returns one short question. Legacy may do either, so
   // it gets the larger cap. The model stops when done — this doesn't pad output.
-  const maxOutputTokens = (legacy || isRecommend) ? 2048 : 1024;
+  const maxOutputTokens = mode === 'product_qa' ? 700 : (legacy || isRecommend) ? 2048 : 1024;
   const geminiPayload = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents,
