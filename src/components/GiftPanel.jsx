@@ -159,6 +159,7 @@ export default function GiftPanel({ open, onClose, onSubmit, initial }) {
             </h2>
             <p className="history-sub">{t('gift.sub')}</p>
           </div>
+          <PanelHelpButton flat />
           <button
             type="button"
             className="auth-modal-close"
@@ -170,7 +171,6 @@ export default function GiftPanel({ open, onClose, onSubmit, initial }) {
         </header>
 
         <div className="profile-form">
-          <PanelHelpButton />
           {friends.length > 0 && (
             <div className="gift-people">
               <div className="profile-label">{t('gift.friendsSection')}</div>

@@ -139,11 +139,11 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
             </p>
           </div>
           <div className="selections-head-actions">
+            <PanelHelpButton />
             <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
           </div>
         </header>
         <div className="sheet-body">
-          <PanelHelpButton />
 
         {(lists.length > 0 || unfiledCount > 0) && (
           <div className="sel-lists-bar">

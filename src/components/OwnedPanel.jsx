@@ -94,10 +94,11 @@ export default function OwnedPanel({ open, onClose }) {
           <h2 id="owned-title" className="owned-page-title">{t('owned.title')}</h2>
           <p className="owned-page-sub">{t('owned.sub')}</p>
         </div>
-        <button type="button" className="owned-page-close" onClick={close} aria-label={t('auth.close')}>✕</button>
+        <div className="panel-head-actions">
+          <PanelHelpButton />
+          <button type="button" className="owned-page-close" onClick={close} aria-label={t('auth.close')}>✕</button>
+        </div>
       </header>
-
-      <div className="owned-help-row"><PanelHelpButton /></div>
 
       {items.length === 0 ? (
         <div className="owned-empty">

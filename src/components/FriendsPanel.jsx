@@ -158,10 +158,12 @@ export default function FriendsPanel({ open, onClose }) {
               </>
             )}
           </div>
-          <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
+          <div className="panel-head-actions">
+            <PanelHelpButton />
+            <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
+          </div>
         </header>
         <div className="sheet-body">
-          <PanelHelpButton />
 
         {!user ? (
           <div className="history-empty">

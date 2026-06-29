@@ -94,10 +94,12 @@ export default function AskOpinionPanel({ open, onClose, getAmazonUrl }) {
           <div>
             <h2 id="poll-title" className="history-title">{t('poll.title')}</h2>
           </div>
-          <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
+          <div className="panel-head-actions">
+            <PanelHelpButton />
+            <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
+          </div>
         </header>
         <div className="sheet-body">
-          <PanelHelpButton />
 
         {!user ? (
           <div className="history-empty">

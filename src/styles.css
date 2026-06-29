@@ -3218,10 +3218,6 @@ button.chat-bubble.chat-editable {
   flex-direction: column;
   animation: bb-rise 0.18s ease-out;
 }
-.owned-help-row {
-  flex-shrink: 0;
-  padding: 12px 28px 0;
-}
 .owned-page-head {
   flex-shrink: 0;
   display: flex;
@@ -6360,29 +6356,36 @@ select.profile-input {
   gap: 4px;
   flex-shrink: 0;
 }
-/* "? Comment ça marche" pill, placed at the top of a panel's content. */
-.panel-help-link {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start; /* stay compact inside flex-column bodies (side-panel) */
-  width: fit-content;
-  gap: 6px;
-  appearance: none;
+/* "?" help button in a panel header, sized to match its close (✕). */
+.panel-help-btn {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
   border: 0.5px solid var(--border);
-  background: var(--bg-elev);
+  border-radius: 50%;
+  background: var(--bg);
   color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 600;
-  padding: 7px 13px;
-  border-radius: 999px;
   cursor: pointer;
-  margin-bottom: 14px;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
-.panel-help-link:hover {
+.panel-help-btn:hover {
   background: var(--accent-light);
   color: var(--accent);
-  border-color: transparent;
+}
+/* Flat variant matching .auth-modal-close (Gift / Guides), placed left of it. */
+.panel-help-btn--flat {
+  position: absolute;
+  top: 10px;
+  right: 46px;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 6px 8px;
+  line-height: 1;
 }
 /* Tutorial overlay stacks above any open panel regardless of DOM order. */
 .auth-modal-bg--top {
