@@ -9,7 +9,7 @@ import { useI18n } from '../lib/i18n.jsx';
 //   gif   → <step>.<tier>.gif
 // A missing file degrades gracefully to a placeholder, so you can ship steps
 // one at a time. MP4/WebM are usually far lighter than GIF for screen captures.
-const MEDIA_KIND = 'video'; // 'video' | 'gif'
+const MEDIA_KIND = 'gif'; // 'video' | 'gif'
 
 // The walkthrough, in order. Each id is also the asset basename under /tuto/.
 const STEPS = ['search', 'questions', 'compare', 'buy'];
