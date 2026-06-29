@@ -361,20 +361,22 @@ export default function NotificationsPanel({ open = true, onClose, onGift }) {
                 placeholder={t('occ.labelPlaceholder')}
                 onChange={(e) => setLabel(e.target.value)}
               />
-              <DatePicker
-                value={date}
-                lang={lang}
-                placeholder={t('profile.birthdayPlaceholder')}
-                ariaLabel={t('occ.addTitle')}
-                yearLabel={t('occ.year')}
-                clearLabel={t('profile.clear')}
-                minYear={new Date().getFullYear() - 100}
-                maxYear={new Date().getFullYear() + 5}
-                onChange={setDate}
-              />
-              <button type="button" className="friend-btn" disabled={!label.trim() || !date} onClick={addManual}>
-                {t('occ.add')}
-              </button>
+              <div className="occ-add-row">
+                <DatePicker
+                  value={date}
+                  lang={lang}
+                  placeholder={t('profile.birthdayPlaceholder')}
+                  ariaLabel={t('occ.addTitle')}
+                  yearLabel={t('occ.year')}
+                  clearLabel={t('profile.clear')}
+                  minYear={new Date().getFullYear() - 100}
+                  maxYear={new Date().getFullYear() + 5}
+                  onChange={setDate}
+                />
+                <button type="button" className="friend-btn" disabled={!label.trim() || !date} onClick={addManual}>
+                  {t('occ.add')}
+                </button>
+              </div>
             </div>
           </div>
         )}
