@@ -101,10 +101,53 @@ export function recommend({ objet, answers, lang = 'fr', profile = '', gift = ''
 // Home-page suggestion chips chosen by the AI for the current season / events,
 // personalized by the optional free-form `profile`. Returns [{label, icon}]
 // ([] on any failure, so the caller keeps its static fallback list).
-export async function fetchSuggestions({ lang = 'fr', profile = '' } = {}) {
+//
+// Cached per (UTC day, lang, profile) in localStorage: the chips only need to
+// change daily, but the effect that fetches them re-runs on every home mount.
+// Without the cache that's one Gemini "suggestions" call per visit — pure waste.
+// `force` (the "other ideas" re-roll) bypasses the cache AND refreshes it, so the
+// newest set sticks for later visits that day.
+const SUGG_CACHE_KEY = 'bb_suggestions';
+
+function suggHash(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return h.toString(36);
+}
+
+function suggCacheKey(lang, profile) {
+  const day = new Date().toISOString().slice(0, 10);
+  return `${day}|${lang}|${suggHash(profile || '')}`;
+}
+
+function readSuggCache(lang, profile) {
+  try {
+    const raw = localStorage.getItem(SUGG_CACHE_KEY);
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (!o || o.key !== suggCacheKey(lang, profile)) return null;
+    return Array.isArray(o.list) && o.list.length ? o.list : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSuggCache(lang, profile, list) {
+  try {
+    localStorage.setItem(SUGG_CACHE_KEY, JSON.stringify({ key: suggCacheKey(lang, profile), list }));
+  } catch {}
+}
+
+export async function fetchSuggestions({ lang = 'fr', profile = '', force = false } = {}) {
+  if (!force) {
+    const cached = readSuggCache(lang, profile);
+    if (cached) return cached;
+  }
   try {
     const json = await postChat({ mode: 'suggestions', lang, profile });
-    return Array.isArray(json?.suggestions) ? json.suggestions : [];
+    const list = Array.isArray(json?.suggestions) ? json.suggestions : [];
+    if (list.length) writeSuggCache(lang, profile, list);
+    return list;
   } catch {
     return [];
   }

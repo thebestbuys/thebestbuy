@@ -414,6 +414,9 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
   const [skelOut, setSkelOut] = useState(false); // skeletons playing their exit
   // Bumped by the "other ideas" chip to re-roll the suggestions on demand.
   const [refreshTick, setRefreshTick] = useState(0);
+  // Tracks the last seen refreshTick so the effect can tell a deliberate re-roll
+  // (force a fresh Gemini call) from a plain mount/lang change (use the cache).
+  const prevTickRef = useRef(0);
   // While true, the real chips play the same pop-out exit as the skeletons,
   // before we swap back to the loading state and re-fetch.
   const [chipsLeaving, setChipsLeaving] = useState(false);
@@ -442,7 +445,11 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
       setSkelOut(true);
       swapTimer = setTimeout(() => { if (alive) setSuggestions(list); }, 230);
     };
-    fetchSuggestions({ lang, profile })
+    // A re-roll ("other ideas") bumps refreshTick → force a fresh fetch; a plain
+    // mount / lang / user change reuses today's cached chips.
+    const force = refreshTick !== prevTickRef.current;
+    prevTickRef.current = refreshTick;
+    fetchSuggestions({ lang, profile, force })
       .then((s) => resolve(Array.isArray(s) && s.length ? s : fallback))
       .catch(() => resolve(fallback));
     return () => { alive = false; clearTimeout(swapTimer); };
