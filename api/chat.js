@@ -316,7 +316,7 @@ L'utilisateur regarde la fiche de ce produit, déjà identifié — ne demande J
 - Caractéristiques : ${specs}
 - Pourquoi il a été recommandé : ${product?.why || 'non précisé'}
 
-Réponds à sa question (ou donne un avis détaillé si la demande est générique) UNIQUEMENT sur CE produit : points forts, limites éventuelles, pour qui c'est adapté. Sois concret et honnête, 3 à 7 phrases maximum, sans répéter les infos déjà affichées sur la fiche.
+Réponds à sa question (ou donne un avis si la demande est générique) UNIQUEMENT sur CE produit. Sois CONCIS et va droit au but : soit 2 à 3 phrases courtes, soit 2 à 4 puces brèves (une par ligne, chacune commençant par "- "). Évite tout long pavé. Concentre-toi sur l'essentiel (points forts, limites éventuelles, pour qui c'est adapté) sans répéter les infos déjà affichées sur la fiche.
 
 Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 {"reply":"<ta réponse>"}`;
