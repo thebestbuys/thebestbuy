@@ -6206,27 +6206,31 @@ select.profile-input {
   margin: 0;
   color: var(--text);
 }
+/* The frame shrink-wraps the clip: it takes the media's own width (centered),
+   so wide desktop clips fill the width and tall phone clips show without side
+   bands — the window matches the GIF's real dimensions. */
 .tuto-stage {
   position: relative;
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--accent-soft);
   border: 0.5px solid var(--border);
   line-height: 0;
 }
-/* The frame hugs the clip's real aspect ratio (no cropping) — full width,
-   height follows the media. */
+/* Media keeps its aspect ratio, bounded by the modal width and a height cap
+   (so tall portrait clips never overflow the viewport). */
 .tuto-media {
-  width: 100%;
+  width: auto;
   height: auto;
-  /* Cap tall (portrait/phone) clips so the modal stays usable; contain keeps
-     the whole frame visible without distortion (soft bands fill the rest). */
+  max-width: 100%;
   max-height: 58vh;
-  object-fit: contain;
   display: block;
 }
 .tuto-media--placeholder {
+  width: 100%;
   aspect-ratio: 16 / 10;
   line-height: 1.4;
   display: flex;
@@ -6328,12 +6332,13 @@ select.profile-input {
   text-decoration: underline;
 }
 @media (max-width: 599px) {
+  /* Height follows the content (i.e. the clip) instead of filling the screen,
+     so the modal no longer overflows top & bottom. Capped at the viewport with
+     internal scroll as a safety net, and small gutters so it reads as a card. */
   .tuto-modal {
-    max-width: 100%;
-    max-height: 100dvh;
-    height: 100dvh;
-    border-radius: 0;
-    justify-content: center;
+    max-width: calc(100% - 24px);
+    max-height: calc(100dvh - 24px);
+    padding: 16px 16px 14px;
   }
 }
 
