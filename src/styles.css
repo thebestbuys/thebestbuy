@@ -6197,6 +6197,10 @@ select.profile-input {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  /* Keep overscroll inside the modal: dragging it on a phone never bubbles up to
+     trigger the browser's pull-to-refresh. (The edge-back gesture still works —
+     it closes the tutorial via the history Back handler.) */
+  overscroll-behavior: contain;
 }
 .tuto-head {
   display: flex;
@@ -6234,6 +6238,26 @@ select.profile-input {
   max-width: 100%;
   max-height: 58vh;
   display: block;
+}
+/* Slide + fade the clip in when the step changes, so a swipe/next clearly reads
+   as "moved on". Direction comes from data-dir on the stage; the media remounts
+   (key={i}) each step so the animation replays. */
+@keyframes tuto-in-next {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes tuto-in-prev {
+  from { opacity: 0; transform: translateX(-28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.tuto-stage .tuto-media {
+  animation: tuto-in-next 0.3s ease;
+}
+.tuto-stage[data-dir="prev"] .tuto-media {
+  animation-name: tuto-in-prev;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tuto-stage .tuto-media { animation: none; }
 }
 .tuto-media--placeholder {
   width: 100%;

@@ -88,12 +88,18 @@ export default function TutorialModal({ open, onClose, onOpenGuides }) {
   const { t } = useI18n();
   const tier = useDeviceTier();
   const [i, setI] = useState(0);
+  const [dir, setDir] = useState('next'); // drives the slide-in direction
   const touch = useRef(null);
 
-  useEffect(() => { if (open) setI(0); }, [open]);
+  useEffect(() => { if (open) { setI(0); setDir('next'); } }, [open]);
 
-  const goNext = () => setI((v) => Math.min(v + 1, STEPS.length - 1));
-  const goPrev = () => setI((v) => Math.max(v - 1, 0));
+  const goTo = (idx) => {
+    const next = Math.max(0, Math.min(idx, STEPS.length - 1));
+    setDir(next >= i ? 'next' : 'prev');
+    setI(next);
+  };
+  const goNext = () => goTo(i + 1);
+  const goPrev = () => goTo(i - 1);
 
   // Swipe left/right on the media to move between steps (phone / tablet).
   const onTouchStart = (e) => {
@@ -115,8 +121,8 @@ export default function TutorialModal({ open, onClose, onOpenGuides }) {
     if (!open) return;
     const onKey = (e) => {
       if (e.key === 'Escape') onClose();
-      else if (e.key === 'ArrowRight') setI((v) => Math.min(v + 1, STEPS.length - 1));
-      else if (e.key === 'ArrowLeft') setI((v) => Math.max(v - 1, 0));
+      else if (e.key === 'ArrowRight') { setDir('next'); setI((v) => Math.min(v + 1, STEPS.length - 1)); }
+      else if (e.key === 'ArrowLeft') { setDir('prev'); setI((v) => Math.max(v - 1, 0)); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -142,8 +148,9 @@ export default function TutorialModal({ open, onClose, onOpenGuides }) {
           <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
         </header>
 
-        <div className="tuto-stage" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-          <StepMedia step={step} tier={tier} />
+        <div className="tuto-stage" data-dir={dir} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+          {/* key={i} remounts the media each step so the slide-in animation replays */}
+          <StepMedia key={i} step={step} tier={tier} />
         </div>
 
         <div className="tuto-caption">
@@ -161,7 +168,7 @@ export default function TutorialModal({ open, onClose, onOpenGuides }) {
               aria-label={t(`tuto.${s}.title`)}
               aria-selected={idx === i}
               role="tab"
-              onClick={() => setI(idx)}
+              onClick={() => goTo(idx)}
             />
           ))}
         </div>
@@ -171,7 +178,7 @@ export default function TutorialModal({ open, onClose, onOpenGuides }) {
             type="button"
             className="tuto-btn tuto-btn--ghost"
             disabled={isFirst}
-            onClick={() => setI((v) => Math.max(v - 1, 0))}
+            onClick={goPrev}
           >
             {t('tuto.prev')}
           </button>
@@ -183,7 +190,7 @@ export default function TutorialModal({ open, onClose, onOpenGuides }) {
             <button
               type="button"
               className="tuto-btn tuto-btn--primary"
-              onClick={() => setI((v) => Math.min(v + 1, STEPS.length - 1))}
+              onClick={goNext}
             >
               {t('tuto.next')}
             </button>
