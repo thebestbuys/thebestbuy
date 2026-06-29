@@ -533,20 +533,6 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
     <div className="home">
       <div className="home-topbar">
         <FriendRequestsBell open={notifOpen} onToggle={onToggleNotif} onClose={onCloseNotif} onGift={onGiftReminder} pingKey={notifOpen} />
-        {!user && (
-          <button
-            type="button"
-            className="auth-trigger auth-trigger-home"
-            onClick={onOpenHistory}
-            title={t('home.history')}
-            aria-label={t('home.history')}
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.4" />
-              <path d="M8 4.8V8l2.2 1.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-        )}
         <AuthMenu
           variant="home"
           onOpenProfile={onOpenProfile}
@@ -1522,7 +1508,7 @@ export default function App() {
         onFreeText={handleFreeText}
         onRestart={handleRestart}
         onHome={navBack}
-        onOpenHistory={user ? null : navOpenHistory}
+        onOpenHistory={null}
         onStartEdit={startEditAnswer}
         onCancelEdit={cancelEditAnswer}
         onApplyEdit={(qId, choice) => applyEditAnswer(editIndex, choice.label, choice)}
