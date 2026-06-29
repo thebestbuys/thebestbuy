@@ -43,15 +43,6 @@ const OCCASIONS = [
   { k: 'other', e: '🎁' },
 ];
 
-// Quick budget brackets (in €). Empty min/max = open-ended.
-const BUDGET_PRESETS = [
-  { min: '', max: '25', label: '≤ 25 €' },
-  { min: '25', max: '50', label: '25–50 €' },
-  { min: '50', max: '100', label: '50–100 €' },
-  { min: '100', max: '200', label: '100–200 €' },
-  { min: '200', max: '', label: '200 €+' },
-];
-
 // Recipient form for gift mode. Collects relationship, gender, age, interests,
 // occasion and budget, then hands the payload to onSubmit which starts a gift
 // advisor session (reusing the normal recommend/refine pipeline).
@@ -320,23 +311,6 @@ export default function GiftPanel({ open, onClose, onSubmit, initial }) {
 
             <div className="profile-field profile-field-wide">
               <label className="profile-label">{t('gift.budget')}</label>
-              <div className="gift-bchips">
-                {BUDGET_PRESETS.map((b, i) => {
-                  const active =
-                    String(form.budgetMin) === String(b.min) &&
-                    String(form.budgetMax) === String(b.max);
-                  return (
-                    <button
-                      type="button"
-                      key={i}
-                      className={'gift-bchip' + (active ? ' is-active' : '')}
-                      onClick={() => setForm((f) => ({ ...f, budgetMin: b.min, budgetMax: b.max }))}
-                    >
-                      {b.label}
-                    </button>
-                  );
-                })}
-              </div>
               <div className="gift-budget-inputs">
                 <input
                   className="profile-input"
