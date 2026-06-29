@@ -1,5 +1,5 @@
 import { searchItems, creatorsConfigured } from './_creators.js';
-import { logApiCalls } from './_metrics.js';
+import { logApiCalls, setRequestUser } from './_metrics.js';
 
 // Primary + backup models are env-overridable. On the free tier each model has
 // its OWN quota bucket, so a backup from a different line (default 2.5 Flash-Lite)
@@ -610,6 +610,9 @@ export default async function handler(req, res) {
   // single row so the call-volume admin panel doesn't cost one insert per call.
   const supaCalls = { n: 0 };
   const requesterId = await getRequesterId(req, supaCalls);
+  // Attribute every API call logged for the rest of this request to the user,
+  // so the dashboard can exclude tester accounts from the call-volume stats.
+  setRequestUser(requesterId);
   let usageAdmin = null;
   let usageBefore = null;
   if (requesterId && SUPA_URL && SUPA_SERVICE) {

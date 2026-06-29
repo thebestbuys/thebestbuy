@@ -131,6 +131,7 @@ export default function AdminPanel({ open, onClose }) {
   const [metrics, setMetrics] = useState(null);
   const [topProducts, setTopProducts] = useState(null);
   const [dailySeries, setDailySeries] = useState(null);
+  const [includeTesters, setIncludeTesters] = useState(false);
   // Which user's row is expanded inline (accordion), and that user's profile.
   const [expandedId, setExpandedId] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -161,14 +162,16 @@ export default function AdminPanel({ open, onClose }) {
 
   if (!open) return null;
 
-  const selectMainTab = (next) => {
-    setMainTab(next);
-    if (next === 'metrics') {
-      if (metrics === null) adminMetrics().then(setMetrics);
-      if (topProducts === null) adminTopProducts(12).then(setTopProducts);
-      if (dailySeries === null) adminDailySeries(365).then(setDailySeries);
-    }
-  };
+  const selectMainTab = (next) => setMainTab(next);
+
+  // (Re)load the dashboard whenever it's shown or the "include testers" toggle
+  // changes, so the stats reflect the current choice.
+  useEffect(() => {
+    if (!open || mainTab !== 'metrics') return;
+    adminMetrics(includeTesters).then(setMetrics);
+    adminTopProducts(12, null, null, includeTesters).then(setTopProducts);
+    adminDailySeries(365, includeTesters).then(setDailySeries);
+  }, [open, mainTab, includeTesters]);
 
   // Toggle a user's inline detail (accordion). Opening one resets the per-user
   // data and loads their profile + first tab; clicking the open one collapses it.
@@ -435,7 +438,13 @@ export default function AdminPanel({ open, onClose }) {
                 )}
               </>
             ) : (
-              <MetricsDashboard metrics={metrics} topProducts={topProducts} dailySeries={dailySeries} />
+              <MetricsDashboard
+                metrics={metrics}
+                topProducts={topProducts}
+                dailySeries={dailySeries}
+                includeTesters={includeTesters}
+                onIncludeTesters={setIncludeTesters}
+              />
             )}
           </div>
         )}

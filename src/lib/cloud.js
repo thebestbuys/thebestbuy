@@ -472,9 +472,9 @@ export async function adminUserConversations(targetId) {
 }
 
 // Aggregate database metrics (BestBuys dashboard). {} for non-superusers.
-export async function adminMetrics() {
+export async function adminMetrics(includeTesters = false) {
   if (!hasCloudSession()) return {};
-  const { data, error } = await supabase.rpc('admin_metrics');
+  const { data, error } = await supabase.rpc('admin_metrics', { p_include_testers: includeTesters });
   if (error) return {};
   return data || {};
 }
@@ -482,21 +482,22 @@ export async function adminMetrics() {
 // Daily activity series for the dashboard charts (superuser only). Returns one
 // row per day ({ d, new_users, active_users, conversations, link_clicks,
 // selections }); [] for non-superusers / on error.
-export async function adminDailySeries(days = 90) {
+export async function adminDailySeries(days = 90, includeTesters = false) {
   if (!hasCloudSession()) return [];
-  const { data, error } = await supabase.rpc('admin_daily_series', { days });
+  const { data, error } = await supabase.rpc('admin_daily_series', { days, p_include_testers: includeTesters });
   if (error) return [];
   return data || [];
 }
 
 // Most popular products (saves + clicks), each with a snapshot. saves/clicks are
 // counted within [from, to] (ISO 'YYYY-MM-DD') when given, else all-time.
-export async function adminTopProducts(max = 12, from = null, to = null) {
+export async function adminTopProducts(max = 12, from = null, to = null, includeTesters = false) {
   if (!hasCloudSession()) return [];
   const { data, error } = await supabase.rpc('admin_top_products', {
     max_items: max,
     p_from: from,
     p_to: to,
+    p_include_testers: includeTesters,
   });
   if (error) return [];
   return (data || [])

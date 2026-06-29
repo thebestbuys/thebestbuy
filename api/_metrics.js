@@ -2,8 +2,19 @@
 // dashboard. Best-effort: a logging failure must never affect the real
 // request, and writes go through the service role directly (api_call_logs
 // has no RLS policy, so anon/authenticated get neither read nor write).
+import { AsyncLocalStorage } from 'node:async_hooks';
+
 const SUPA_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const SUPA_SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+// Per-request signed-in user id, so logged API calls can be attributed (and
+// tester accounts excluded from the dashboard's API-volume stats). The handler
+// seeds it once the token is verified; logApiCalls() reads it. Best-effort:
+// when unset (anonymous / suggestions), calls log with user_id = null.
+export const userContext = new AsyncLocalStorage();
+export function setRequestUser(userId) {
+  userContext.enterWith({ userId: userId || null });
+}
 
 let _client; // undefined = not yet resolved, null = unavailable
 async function adminClient() {
@@ -23,6 +34,7 @@ export async function logApiCalls(service, count = 1) {
   try {
     const c = await adminClient();
     if (!c) return;
-    await c.from('api_call_logs').insert({ service, count });
+    const userId = userContext.getStore()?.userId ?? null;
+    await c.from('api_call_logs').insert({ service, count, user_id: userId });
   } catch { /* analytics is best-effort */ }
 }

@@ -127,7 +127,7 @@ const Tile = ({ value, label }) => (
   </div>
 );
 
-export default function MetricsDashboard({ metrics, topProducts, dailySeries }) {
+export default function MetricsDashboard({ metrics, topProducts, dailySeries, includeTesters = false, onIncludeTesters }) {
   const [range, setRange] = useState('1m');
   const [customFrom, setCustomFrom] = useState(''); // 'YYYY-MM-DD'
   const [customTo, setCustomTo] = useState('');
@@ -290,11 +290,11 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
   useEffect(() => {
     if (win.end < win.start || !fromISO || !toISO) return;
     let alive = true;
-    adminTopProducts(50, fromISO, toISO).then((r) => {
+    adminTopProducts(50, fromISO, toISO, includeTesters).then((r) => {
       if (alive && Array.isArray(r)) setLocalTop(r);
     });
     return () => { alive = false; };
-  }, [fromISO, toISO]);
+  }, [fromISO, toISO, includeTesters]);
 
   // Real conversion funnel over the SELECTED period (sums of the daily series),
   // no fabricated ratios. clicks/selections aren't strict subsets of
@@ -340,6 +340,17 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
                 style={{ font: '500 12.5px Inter,sans-serif', color: C.ink, background: C.soft, border: `1px solid ${C.border}`, borderRadius: 9, padding: '7px 10px', outline: 'none' }} />
             </div>
           )}
+          <button
+            type="button"
+            onClick={() => onIncludeTesters?.(!includeTesters)}
+            role="switch"
+            aria-checked={includeTesters}
+            title="Inclure ou exclure les comptes testeurs des statistiques"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, font: '600 12.5px Inter,sans-serif', cursor: 'pointer', padding: '9px 14px', borderRadius: 10, border: `1px solid ${includeTesters ? C.accent : C.border}`, background: includeTesters ? C.accent : '#fff', color: includeTesters ? '#fff' : C.muted }}
+          >
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: includeTesters ? '#fff' : C.faint, display: 'inline-block' }} />
+            {includeTesters ? 'Testeurs inclus' : 'Testeurs exclus'}
+          </button>
           <button type="button" onClick={exportCsv} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, font: '600 13px Inter,sans-serif', color: '#fff', background: C.accent, border: 'none', borderRadius: 10, padding: '10px 16px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(191,94,58,.28)' }}>↓ Export CSV</button>
         </div>
       </div>
