@@ -6191,6 +6191,10 @@ select.profile-input {
 .tuto-media {
   width: 100%;
   height: auto;
+  /* Cap tall (portrait/phone) clips so the modal stays usable; contain keeps
+     the whole frame visible without distortion (soft bands fill the rest). */
+  max-height: 58vh;
+  object-fit: contain;
   display: block;
 }
 .tuto-media--placeholder {
