@@ -805,6 +805,7 @@ function ProductDetail({ product, onClose, onBuy }) {
                 </ul>
               </>
             )}
+            <ProductQa product={product} />
             <div className="modal-bottom">
               <div>
                 <div className="modal-price-label">
@@ -832,7 +833,6 @@ function ProductDetail({ product, onClose, onBuy }) {
                 </a>
               </div>
             </div>
-            <ProductQa product={product} />
           </div>
         </div>
         </div>

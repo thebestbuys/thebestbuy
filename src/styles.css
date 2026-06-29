@@ -2080,9 +2080,8 @@ button.chat-bubble.chat-editable {
    detailed opinion, plus a free-text follow-up chat. Both grounded in this
    one product (api/chat.js mode:'product_qa'). */
 .modal-qa {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 0.5px solid var(--border-soft);
+  margin-top: 8px;
+  margin-bottom: 24px;
 }
 .modal-qa-ask-btn {
   display: inline-flex;
