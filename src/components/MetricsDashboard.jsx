@@ -64,7 +64,7 @@ function buildSeries(totalUsers = 2847) {
   const totalNew = newU.reduce((a, b) => a + b, 0);
   let run = (totalUsers || 2847) - totalNew, cum = [];
   for (let i = 0; i < N; i++) { run += newU[i]; cum.push(run); }
-  return { labels, dates, newU, cum, convos, clicks, sels, dau };
+  return { labels, dates, newU, cum, convos, clicks, sels, owned, dau };
 }
 
 // Build the chart series from the REAL daily rows returned by admin_daily_series
