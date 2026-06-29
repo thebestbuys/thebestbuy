@@ -109,7 +109,7 @@ export default function TutorialModal({ open, onClose, onOpenGuides }) {
   const isLast = i === STEPS.length - 1;
 
   return (
-    <div className="auth-modal-bg" onClick={onClose}>
+    <div className="auth-modal-bg auth-modal-bg--top" onClick={onClose}>
       <div
         className="tuto-modal"
         role="dialog"

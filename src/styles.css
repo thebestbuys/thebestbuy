@@ -6295,3 +6295,35 @@ select.profile-input {
     justify-content: center;
   }
 }
+
+/* ── Per-panel help "?" button ────────────────────────────────────────────
+   Sits in panel headers next to the close (✕); opens the tutorial modal.
+   .panel-head-actions groups it with the close so they hug the right edge. */
+.panel-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.panel-help-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.panel-help-btn:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+/* Tutorial overlay stacks above any open panel regardless of DOM order. */
+.auth-modal-bg--top {
+  z-index: 200;
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
+import PanelHelpButton from './PanelHelpButton.jsx';
 import { GIFT_EMPTY } from '../lib/gift.js';
 import {
   listRecipients,
@@ -158,14 +159,17 @@ export default function GiftPanel({ open, onClose, onSubmit, initial }) {
             </h2>
             <p className="history-sub">{t('gift.sub')}</p>
           </div>
-          <button
-            type="button"
-            className="auth-modal-close"
-            onClick={onClose}
-            aria-label={t('auth.close')}
-          >
-            ✕
-          </button>
+          <div className="panel-head-actions">
+            <PanelHelpButton />
+            <button
+              type="button"
+              className="auth-modal-close"
+              onClick={onClose}
+              aria-label={t('auth.close')}
+            >
+              ✕
+            </button>
+          </div>
         </header>
 
         <div className="profile-form">

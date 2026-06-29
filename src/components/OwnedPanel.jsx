@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
+import PanelHelpButton from './PanelHelpButton.jsx';
 import { PriceTag, ProductImage, ScoreRing, VerifiedBadge, VerifiedRating } from './ProductCard.jsx';
 import { listClicked } from '../lib/clicked.js';
 import { logLinkClick } from '../lib/cloud.js';
@@ -82,7 +83,10 @@ export default function OwnedPanel({ open, onClose }) {
           <h2 id="owned-title" className="owned-page-title">{t('owned.title')}</h2>
           <p className="owned-page-sub">{t('owned.sub')}</p>
         </div>
-        <button type="button" className="owned-page-close" onClick={close} aria-label={t('auth.close')}>✕</button>
+        <div className="panel-head-actions">
+          <PanelHelpButton />
+          <button type="button" className="owned-page-close" onClick={close} aria-label={t('auth.close')}>✕</button>
+        </div>
       </header>
 
       {items.length === 0 ? (

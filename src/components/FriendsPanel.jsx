@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
+import PanelHelpButton from './PanelHelpButton.jsx';
 import {
   searchUsers,
   sendFriendRequest,
@@ -157,7 +158,10 @@ export default function FriendsPanel({ open, onClose }) {
               </>
             )}
           </div>
-          <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
+          <div className="panel-head-actions">
+            <PanelHelpButton />
+            <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
+          </div>
         </header>
         <div className="sheet-body">
 

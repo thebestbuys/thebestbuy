@@ -25,6 +25,7 @@ const GiftHub = lazy(() => import('./components/GiftHub.jsx'));
 const OwnedPanel = lazy(() => import('./components/OwnedPanel.jsx'));
 import { GUIDES, localizeGuide, getGuide } from './data/guides.js';
 import { HeroCard, PriceTag, ProductImage, ProductLinkCard, ProductSkeleton, ScoreRing, SmallCard, VerifiedBadge, VerifiedRating } from './components/ProductCard.jsx';
+import PanelHelpButton from './components/PanelHelpButton.jsx';
 import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './lib/i18n.jsx';
 import { getProfile, profileToPrompt } from './lib/profile.js';
@@ -386,7 +387,10 @@ function TrendingPanel({ onClose, onOpen }) {
           <h2 id="trending-panel-title" className="history-title">{t('trending.title')}</h2>
           <p className="history-sub">{t('trending.sub')}</p>
         </div>
-        <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
+        <div className="panel-head-actions">
+          <PanelHelpButton />
+          <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
+        </div>
       </header>
       <div className="sheet-body">
         <TrendingCircle onOpen={onOpen} hideHeader />
@@ -1301,6 +1305,8 @@ export default function App() {
   useEffect(() => {
     const onPop = () => {
       // Close the topmost open layer; at home, let the browser navigate away.
+      // Tutorial is checked first: it can stack on top of any panel.
+      if (tutorialOpen) { setTutorialOpen(false); return; }
       if (selected) { setSelected(null); return; }
       if (legalOpen) { setLegalOpen(false); return; }
       if (giftOpen) { setGiftOpen(false); return; }
@@ -1311,7 +1317,6 @@ export default function App() {
       if (selectionsOpen) { setSelectionsOpen(false); return; }
       if (historyOpen) { setHistoryOpen(false); return; }
       if (guidesOpen) { setGuidesOpen(false); return; }
-      if (tutorialOpen) { setTutorialOpen(false); return; }
       if (trendingOpen) { setTrendingOpen(false); return; }
       if (ownedOpen) { setOwnedOpen(false); return; }
       if (activeGuide) { setActiveGuide(null); return; }
@@ -1322,6 +1327,15 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, legalOpen, giftOpen, askOpen, friendsOpen, adminOpen, profileOpen, selectionsOpen, guidesOpen, tutorialOpen, trendingOpen, ownedOpen, historyOpen, activeGuide, giftHubOpen, category]);
+
+  // The per-panel "?" help buttons (PanelHelpButton) open the tutorial via this
+  // window event, so panels don't each need an onOpenTutorial prop.
+  useEffect(() => {
+    const open = () => { pushHistory(); setTutorialOpen(true); };
+    window.addEventListener('oraklia:open-tutorial', open);
+    return () => window.removeEventListener('oraklia:open-tutorial', open);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Keep the tab title in sync with the open guide (matches the prerendered
   // per-guide <title>); reset to the brand title elsewhere.

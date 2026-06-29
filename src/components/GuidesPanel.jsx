@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useI18n } from '../lib/i18n.jsx';
+import PanelHelpButton from './PanelHelpButton.jsx';
 import { GUIDES, localizeGuide } from '../data/guides.js';
 
 // Overlay listing the buying guides — moved off the home so the home stays
@@ -37,9 +38,12 @@ export default function GuidesPanel({ open, onClose, onOpenGuide }) {
             </h2>
             <p className="history-sub">{t('guides.sectionSub')}</p>
           </div>
-          <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>
-            ✕
-          </button>
+          <div className="panel-head-actions">
+            <PanelHelpButton />
+            <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>
+              ✕
+            </button>
+          </div>
         </header>
 
         <div className="home-guides-grid">

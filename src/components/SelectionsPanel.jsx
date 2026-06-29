@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useI18n } from '../lib/i18n.jsx';
+import PanelHelpButton from './PanelHelpButton.jsx';
 import { AmazonPrice, ProductImage, Stars } from './ProductCard.jsx';
 import { formatRelative } from '../lib/history.js';
 import {
@@ -138,6 +139,7 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
             </p>
           </div>
           <div className="selections-head-actions">
+            <PanelHelpButton />
             <button className="sheet-close" onClick={close} aria-label={t('auth.close')}>✕</button>
           </div>
         </header>
