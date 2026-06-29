@@ -4333,28 +4333,57 @@ button.chat-bubble.chat-editable {
   color: var(--text-muted);
   font-size: 12px;
 }
-/* Tester flag — a small badge next to the name + a toggle button. Tester rows
-   are dimmed so they read as "excluded from the stats" at a glance. */
-.admin-tester-badge {
-  margin-left: 8px;
-  padding: 1px 7px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--accent-light-ink, #8a4326);
-  background: var(--accent-soft, #f4e3d8);
-  vertical-align: middle;
+/* Tester flag — a labelled toggle switch on each user row. Tester rows get a
+   warm accent tint so they read as "excluded from the stats" at a glance. */
+.admin-tester-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  font-size: 12px;
+  color: var(--text-muted);
 }
-.admin-tester-btn.is-active {
-  border-color: var(--accent);
+.admin-tester-switch-label {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.admin-tester-track {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background 0.18s ease;
+}
+.admin-tester-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.18s ease;
+}
+.admin-tester-switch.is-on {
   color: var(--accent);
   font-weight: 600;
 }
-.admin-user.is-tester > .friend-row {
-  opacity: 0.62;
+.admin-tester-switch.is-on .admin-tester-track {
+  background: var(--accent);
 }
-.admin-user.is-tester > .friend-row:hover {
-  opacity: 1;
+.admin-tester-switch.is-on .admin-tester-knob {
+  transform: translateX(14px);
+}
+/* Tester row: warm tint + accent border so it stands out from real users. */
+.admin-user.is-tester > .friend-row {
+  background: var(--accent-soft);
+  border-color: var(--accent-light);
 }
 /* Inline accordion: a user row + its expandable detail. */
 .admin-user {

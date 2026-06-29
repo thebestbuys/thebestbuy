@@ -405,7 +405,6 @@ export default function AdminPanel({ open, onClose }) {
                             <Avatar name={u.display_name || u.email} url={u.avatar_url} />
                             <span className="friend-name">
                               {u.display_name || u.email}
-                              {u.is_tester && <span className="admin-tester-badge">{t('admin.tester')}</span>}
                               {u.display_name && u.email && (
                                 <span className="admin-user-email"> · {u.email}</span>
                               )}
@@ -415,11 +414,14 @@ export default function AdminPanel({ open, onClose }) {
                             )}
                             <button
                               type="button"
-                              className={'friend-btn admin-tester-btn' + (u.is_tester ? ' is-active' : '')}
+                              role="switch"
+                              aria-checked={!!u.is_tester}
+                              className={'admin-tester-switch' + (u.is_tester ? ' is-on' : '')}
                               onClick={() => toggleTester(u)}
                               title={t('admin.testerHint')}
                             >
-                              {u.is_tester ? t('admin.unmarkTester') : t('admin.markTester')}
+                              <span className="admin-tester-switch-label">{t('admin.tester')}</span>
+                              <span className="admin-tester-track"><span className="admin-tester-knob" /></span>
                             </button>
                             <button type="button" className="friend-btn" onClick={() => toggleUser(u)}>
                               {isOpen ? t('admin.hideProfile') : t('admin.viewProfile')}
