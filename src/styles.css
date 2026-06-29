@@ -2299,23 +2299,30 @@ button.chat-bubble.chat-editable {
   .small-grid {
     grid-template-columns: 1fr;
   }
+  /* Product detail header on phones: a SQUARE image floated to the top-right with
+     the brand + title flowing to its left, and everything from the score down
+     clearing below it full-width. The square photo (object-fit:contain, never
+     cropped) sits in the corner instead of a full-width banner — it saves
+     vertical space and stays fully visible even in in-app browsers (Messenger). */
   .modal-grid {
-    grid-template-columns: 1fr;
+    display: block;
+    padding: 20px;
   }
-  /* Product detail: turn the big square image into a compact banner and tighten
-     spacing so the whole card fits on small screens without scrolling. */
-  .modal-left { padding: 16px; }
-  .prod-img-wrap[data-size="modal"] {
-    aspect-ratio: auto;
+  .modal-left {
+    float: right;
+    width: 38%;
+    max-width: 140px;
+    margin: 0 0 10px 14px;
+    padding: 0;
+    background: transparent;
+  }
+  .modal-left .prod-img-wrap[data-size="modal"] {
+    aspect-ratio: 1;
     min-height: 0;
-    /* Viewport-bounded banner: never eats more than ~22vh, so the photo stays
-       visible without pushing the content off-screen. vh (not a fixed px) keeps
-       it sane across in-app browsers (Messenger/Instagram) and short screens. */
-    height: clamp(120px, 22vh, 200px);
+    height: auto;
+    border-radius: 12px;
+    background: var(--bg-soft);
   }
-  /* Fit the WHOLE product into that banner (contain) instead of cropping it. The
-     old max-width/height:78% is a percentage of the wrap, which collapses in some
-     in-app browsers → the portrait photo overflowed and only a sliver showed. */
   .modal-left .prod-img-amazon {
     width: 100%;
     height: 100%;
@@ -2323,7 +2330,10 @@ button.chat-bubble.chat-editable {
     max-height: 100%;
     object-fit: contain;
   }
-  .modal-right { padding: 20px; }
+  /* Brand + title wrap beside the image; the rest starts below it, full-width. */
+  .modal-rating,
+  .modal-score-row { clear: both; }
+  .modal-right { padding: 0; }
   .modal-title { font-size: 24px; }
   .modal-score-row { margin-bottom: 14px; }
   .modal-specs { margin-bottom: 14px; }
@@ -2332,9 +2342,8 @@ button.chat-bubble.chat-editable {
 @media (max-width: 560px) {
   .modal-bg { padding: 0; }
   .modal { max-height: 100dvh; border-radius: 0; }
-  .prod-img-wrap[data-size="modal"] { height: clamp(96px, 18vh, 160px); }
-  .modal-left { padding: 12px; }
-  .modal-right { padding: 14px 16px 18px; }
+  .modal-grid { padding: 14px 16px 18px; }
+  .modal-left { max-width: 116px; margin: 0 0 8px 12px; }
   .modal-title { font-size: 21px; margin-bottom: 8px; }
   .modal-price { font-size: 26px; }
   .modal-specs li { font-size: 13px; }
