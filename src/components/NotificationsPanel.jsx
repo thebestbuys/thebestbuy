@@ -24,6 +24,11 @@ import {
   REMIND_PAST,
 } from '../lib/occasions.js';
 import { upcomingHolidays } from '../lib/holidays.js';
+import { monthNames } from '../lib/dateLocale.js';
+
+const CUR_YEAR = new Date().getFullYear();
+const DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+const YEARS = Array.from({ length: 106 }, (_, i) => String(CUR_YEAR + 5 - i));
 
 function initials(name = '') {
   const p = String(name).trim().split(/\s+/).filter(Boolean);
@@ -34,7 +39,7 @@ function initials(name = '') {
 // manual occasions), each with a "find a gift" shortcut.
 export default function NotificationsPanel({ open = true, onClose, onGift }) {
   const { user } = useAuth();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [incoming, setIncoming] = useState([]);
   const [friends, setFriends] = useState([]);
   const [occasions, setOccasions] = useState([]);
@@ -42,7 +47,13 @@ export default function NotificationsPanel({ open = true, onClose, onGift }) {
   const [outPolls, setOutPolls] = useState([]);
   const [hidden, setHidden] = useState(() => getDismissed(user?.sub));
   const [label, setLabel] = useState('');
-  const [date, setDate] = useState('');
+  // A custom day/month/year picker, not <input type="date">: its native
+  // calendar popup follows the browser/OS language, not ours, so it stayed in
+  // English even when the app was switched to French.
+  const [day, setDay] = useState('');
+  const [month, setMonth] = useState('');
+  const [year, setYear] = useState(String(CUR_YEAR));
+  const date = day && month && year ? `${year}-${month}-${day}` : '';
 
   const refresh = () => {
     listIncomingRequests().then(setIncoming);
@@ -91,7 +102,9 @@ export default function NotificationsPanel({ open = true, onClose, onGift }) {
     if (!open) return;
     refresh();
     setLabel('');
-    setDate('');
+    setDay('');
+    setMonth('');
+    setYear(String(CUR_YEAR));
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -170,7 +183,9 @@ export default function NotificationsPanel({ open = true, onClose, onGift }) {
     if (!label.trim() || !date) return;
     addOccasion(user?.sub, { label, date, recurring: true });
     setLabel('');
-    setDate('');
+    setDay('');
+    setMonth('');
+    setYear(String(CUR_YEAR));
     setOccasions(listOccasions(user?.sub));
   };
 
@@ -360,12 +375,40 @@ export default function NotificationsPanel({ open = true, onClose, onGift }) {
                 placeholder={t('occ.labelPlaceholder')}
                 onChange={(e) => setLabel(e.target.value)}
               />
-              <input
-                type="date"
-                className="profile-input occ-date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
+              <div className="occ-date-group">
+                <select
+                  className="profile-input occ-date-day"
+                  value={day}
+                  aria-label={t('occ.day')}
+                  onChange={(e) => setDay(e.target.value)}
+                >
+                  <option value="">{t('occ.day')}</option>
+                  {DAYS.map((d) => (
+                    <option key={d} value={d}>{Number(d)}</option>
+                  ))}
+                </select>
+                <select
+                  className="profile-input occ-date-month"
+                  value={month}
+                  aria-label={t('occ.month')}
+                  onChange={(e) => setMonth(e.target.value)}
+                >
+                  <option value="">{t('occ.month')}</option>
+                  {monthNames(lang).map((name, i) => (
+                    <option key={name} value={String(i + 1).padStart(2, '0')}>{name}</option>
+                  ))}
+                </select>
+                <select
+                  className="profile-input occ-date-year"
+                  value={year}
+                  aria-label={t('occ.year')}
+                  onChange={(e) => setYear(e.target.value)}
+                >
+                  {YEARS.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
               <button type="button" className="friend-btn" disabled={!label.trim() || !date} onClick={addManual}>
                 {t('occ.add')}
               </button>

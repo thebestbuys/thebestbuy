@@ -4066,9 +4066,19 @@ button.chat-bubble.chat-editable {
   flex: 1;
   min-width: 0;
 }
-.occ-add .occ-date {
+.occ-add .occ-date-group {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 100%;
+}
+.occ-date-day,
+.occ-date-month {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.occ-date-year {
   flex: 0 0 auto;
-  width: 150px;
+  width: 84px;
 }
 
 /* Polls (ask a friend's opinion) */
