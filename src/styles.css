@@ -6152,8 +6152,8 @@ select.profile-input {
 .tuto-modal {
   position: relative;
   width: 100%;
-  max-width: 540px;
-  max-height: 90vh;
+  max-width: 760px;
+  max-height: 92vh;
   overflow-y: auto;
   background: var(--bg-elev);
   border-radius: var(--radius-lg);
@@ -6180,19 +6180,22 @@ select.profile-input {
 .tuto-stage {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 10;
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--accent-soft);
   border: 0.5px solid var(--border);
+  line-height: 0;
 }
+/* The frame hugs the clip's real aspect ratio (no cropping) — full width,
+   height follows the media. */
 .tuto-media {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
   display: block;
 }
 .tuto-media--placeholder {
+  aspect-ratio: 16 / 10;
+  line-height: 1.4;
   display: flex;
   flex-direction: column;
   align-items: center;
