@@ -245,6 +245,10 @@ export default function AuthMenu({ variant = 'home', onOpenSelections, onOpenPro
   if (!user) {
     return (
       <>
+        {/* Signed-in users get the FR/EN toggle inside this menu's dropdown
+            (see UserDropdown below) — but a signed-out visitor has no menu to
+            open, so without this they'd have no way to switch language at all. */}
+        <LangToggle />
         <button
           type="button"
           className={`auth-trigger auth-trigger-${variant}`}

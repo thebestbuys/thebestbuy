@@ -38,8 +38,9 @@ export default function DatePicker({
   const [open, setOpen] = useState(false);
   const [yearGrid, setYearGrid] = useState(false);
   const [pos, setPos] = useState(null); // {top, left} in viewport coords (position: fixed)
-  // Month currently shown in the calendar.
-  const initial = selected || { y: maxYear - 25, m: 0, d: 1 };
+  const today = new Date();
+  // Month currently shown in the calendar: the selected date, or today.
+  const initial = selected || { y: today.getFullYear(), m: today.getMonth(), d: today.getDate() };
   const [view, setView] = useState({ y: initial.y, m: initial.m });
   const triggerRef = useRef(null);
   const popRef = useRef(null);
@@ -104,7 +105,6 @@ export default function DatePicker({
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
-  const today = new Date();
   const isToday = (d) => today.getFullYear() === view.y && today.getMonth() === view.m && today.getDate() === d;
   const isSelected = (d) => selected && selected.y === view.y && selected.m === view.m && selected.d === d;
 
