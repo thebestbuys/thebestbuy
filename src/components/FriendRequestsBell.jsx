@@ -67,6 +67,11 @@ export default function FriendRequestsBell({ open = false, onToggle, onClose, on
   useEffect(() => {
     if (!open) return;
     const onDoc = (e) => {
+      // The date picker inside NotificationsPanel (occasions form) is portaled
+      // to document.body so its calendar isn't clipped by this popover's own
+      // overflow:auto body — exclude it or every click inside it (month nav,
+      // year grid, …) would register as "outside" and close this popover.
+      if (e.target.closest('.birthday-pop')) return;
       if (wrapRef.current && !wrapRef.current.contains(e.target)) onClose?.();
     };
     const onKey = (e) => {

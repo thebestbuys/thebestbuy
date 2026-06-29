@@ -4066,19 +4066,9 @@ button.chat-bubble.chat-editable {
   flex: 1;
   min-width: 0;
 }
-.occ-add .occ-date-group {
-  display: flex;
-  gap: 6px;
-  flex: 1 1 100%;
-}
-.occ-date-day,
-.occ-date-month {
-  flex: 1 1 auto;
+.occ-add .birthday-field {
+  flex: 1 1 160px;
   min-width: 0;
-}
-.occ-date-year {
-  flex: 0 0 auto;
-  width: 84px;
 }
 
 /* Polls (ask a friend's opinion) */
@@ -4613,12 +4603,13 @@ select.profile-input {
   color: var(--text-muted);
 }
 .birthday-pop {
-  position: absolute;
-  z-index: 60;
-  top: calc(100% + 6px);
-  left: 0;
+  /* position: fixed + top/left are set inline (src/components/DatePicker.jsx),
+     computed from the trigger's own getBoundingClientRect(): the popover is
+     portaled to document.body so a scrollable host (e.g. the notifications
+     popover's overflow:auto body) never clips it. z-index comfortably above
+     every other overlay (.modal/.notif-pop top out at 100). */
+  z-index: 150;
   width: 280px;
-  max-width: 100%;
   padding: 12px;
   background: var(--bg-elev);
   border: 0.5px solid var(--border);
