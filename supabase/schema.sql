@@ -522,8 +522,25 @@ language sql stable security definer set search_path = public, auth as $$
 $$;
 grant execute on function public.is_superuser() to authenticated;
 
+-- Tester / internal accounts to EXCLUDE from the admin dashboard aggregates, so
+-- the stats reflect real users only. Matched on the display name the dashboard
+-- shows (case-insensitive), plus known internal emails as a fallback. Edit the
+-- two lists to add/remove testers. Internal helper: execute is revoked from
+-- clients; only the owner-run admin_* functions (SECURITY DEFINER) call it.
+create or replace function public.tester_ids()
+returns table (user_id uuid)
+language sql stable security definer set search_path = public, auth as $$
+  select p.user_id from public.profiles p
+  where lower(btrim(coalesce(p.display_name, ''))) in ('elcocogld', 'romain marcucci', 'best buys')
+  union
+  select u.id from auth.users u
+  where lower(coalesce(u.email, '')) in ('thebestbuyersclub@gmail.com', 'romain.marcucci@3ds.com');
+$$;
+revoke all on function public.tester_ids() from public, anon, authenticated;
+
 -- Every registered user (superuser only). Mirrors list_friends' shape (+ email)
 -- so the Admin panel can reuse the friend-row UI. Empty for non-superusers.
+-- Tester/internal accounts are hidden so the list matches the filtered stats.
 create or replace function public.admin_list_users()
 returns table (user_id uuid, display_name text, avatar_url text, email text, wishlist_count integer)
 language sql security definer set search_path = public as $$
@@ -532,6 +549,7 @@ language sql security definer set search_path = public as $$
   from public.profiles p
   where public.is_superuser()
     and p.user_id <> auth.uid()
+    and p.user_id not in (select user_id from public.tester_ids())
   order by coalesce(nullif(btrim(p.display_name), ''), p.email);
 $$;
 grant execute on function public.admin_list_users() to authenticated;
@@ -625,22 +643,22 @@ create or replace function public.admin_metrics()
 returns jsonb
 language sql stable security definer set search_path = public, auth as $$
   select case when not public.is_superuser() then '{}'::jsonb else jsonb_build_object(
-    'users',            (select count(*) from auth.users),
-    'new_users_7d',     (select count(*) from auth.users where created_at > now() - interval '7 days'),
-    'new_users_30d',    (select count(*) from auth.users where created_at > now() - interval '30 days'),
-    'active_users_7d',  (select count(distinct user_id) from public.link_clicks where clicked_at > now() - interval '7 days'),
-    'selections',       (select count(*) from public.selections),
-    'owned',            (select count(*) from public.owned),
-    'conversations',    (select count(*) from public.conversations),
-    'convos_7d',        (select count(*) from public.conversations where updated_at > now() - interval '7 days'),
-    'link_clicks',      (select count(*) from public.link_clicks),
-    'clicks_7d',        (select count(*) from public.link_clicks where clicked_at > now() - interval '7 days'),
-    'friendships',      (select count(*) from public.friend_requests where status = 'accepted'),
-    'pending_requests', (select count(*) from public.friend_requests where status = 'pending'),
-    'lists',            (select count(*) from public.lists),
-    'public_lists',     (select count(*) from public.lists where visibility = 'public'),
-    'polls',            (select count(*) from public.polls),
-    'occasions',        (select count(*) from public.occasions),
+    'users',            (select count(*) from auth.users where id not in (select user_id from public.tester_ids())),
+    'new_users_7d',     (select count(*) from auth.users where created_at > now() - interval '7 days' and id not in (select user_id from public.tester_ids())),
+    'new_users_30d',    (select count(*) from auth.users where created_at > now() - interval '30 days' and id not in (select user_id from public.tester_ids())),
+    'active_users_7d',  (select count(distinct user_id) from public.link_clicks where clicked_at > now() - interval '7 days' and user_id not in (select user_id from public.tester_ids())),
+    'selections',       (select count(*) from public.selections where user_id not in (select user_id from public.tester_ids())),
+    'owned',            (select count(*) from public.owned where user_id not in (select user_id from public.tester_ids())),
+    'conversations',    (select count(*) from public.conversations where user_id not in (select user_id from public.tester_ids())),
+    'convos_7d',        (select count(*) from public.conversations where updated_at > now() - interval '7 days' and user_id not in (select user_id from public.tester_ids())),
+    'link_clicks',      (select count(*) from public.link_clicks where user_id not in (select user_id from public.tester_ids())),
+    'clicks_7d',        (select count(*) from public.link_clicks where clicked_at > now() - interval '7 days' and user_id not in (select user_id from public.tester_ids())),
+    'friendships',      (select count(*) from public.friend_requests where status = 'accepted' and requester_id not in (select user_id from public.tester_ids()) and addressee_id not in (select user_id from public.tester_ids())),
+    'pending_requests', (select count(*) from public.friend_requests where status = 'pending' and requester_id not in (select user_id from public.tester_ids()) and addressee_id not in (select user_id from public.tester_ids())),
+    'lists',            (select count(*) from public.lists where user_id not in (select user_id from public.tester_ids())),
+    'public_lists',     (select count(*) from public.lists where visibility = 'public' and user_id not in (select user_id from public.tester_ids())),
+    'polls',            (select count(*) from public.polls where owner_id not in (select user_id from public.tester_ids())),
+    'occasions',        (select count(*) from public.occasions where user_id not in (select user_id from public.tester_ids())),
     'gemini_calls',     (select coalesce(sum(count), 0)::int from public.api_call_logs where service = 'gemini'),
     'amazon_calls',     (select coalesce(sum(count), 0)::int from public.api_call_logs where service = 'amazon'),
     'supabase_calls',   (select coalesce(sum(count), 0)::int from public.api_call_logs where service = 'supabase')
@@ -662,12 +680,14 @@ language sql security definer set search_path = public as $$
     select product_id, count(*)::int as saves from public.selections
     where (p_from is null or added_at::date >= p_from)
       and (p_to   is null or added_at::date <= p_to)
+      and user_id not in (select user_id from public.tester_ids())
     group by product_id
   ),
   clk as (
     select product_id, count(*)::int as clicks from public.link_clicks
     where (p_from is null or clicked_at::date >= p_from)
       and (p_to   is null or clicked_at::date <= p_to)
+      and user_id not in (select user_id from public.tester_ids())
     group by product_id
   ),
   ids as (
@@ -676,8 +696,10 @@ language sql security definer set search_path = public as $$
   -- all signals (a save or a click), with their timestamp, for the trend window
   sig as (
     select product_id, added_at as ts from public.selections
+    where user_id not in (select user_id from public.tester_ids())
     union all
     select product_id, clicked_at as ts from public.link_clicks
+    where user_id not in (select user_id from public.tester_ids())
   ),
   recent as (
     select product_id, count(*)::int as c from sig
@@ -692,8 +714,10 @@ language sql security definer set search_path = public as $$
     -- one representative snapshot per product: the most recent signal
     select distinct on (product_id) product_id, data from (
       select product_id, data, added_at as ts from public.selections
+      where user_id not in (select user_id from public.tester_ids())
       union all
       select product_id, data, clicked_at as ts from public.link_clicks
+      where user_id not in (select user_id from public.tester_ids())
     ) s order by product_id, ts desc
   )
   select i.product_id, rep.data, coalesce(sav.saves, 0), coalesce(clk.clicks, 0),
@@ -778,12 +802,12 @@ language sql stable security definer set search_path = public, auth as $$
     ) as d
   )
   select s.d,
-    (select count(*) from auth.users u where u.created_at::date = s.d)::int,
-    (select count(distinct lc.user_id) from public.link_clicks lc where lc.clicked_at::date = s.d)::int,
-    (select count(*) from public.conversations c where c.updated_at::date = s.d)::int,
-    (select count(*) from public.link_clicks lc where lc.clicked_at::date = s.d)::int,
-    (select count(*) from public.selections se where se.added_at::date = s.d)::int,
-    (select count(*) from public.owned o where o.added_at::date = s.d)::int,
+    (select count(*) from auth.users u where u.created_at::date = s.d and u.id not in (select user_id from public.tester_ids()))::int,
+    (select count(distinct lc.user_id) from public.link_clicks lc where lc.clicked_at::date = s.d and lc.user_id not in (select user_id from public.tester_ids()))::int,
+    (select count(*) from public.conversations c where c.updated_at::date = s.d and c.user_id not in (select user_id from public.tester_ids()))::int,
+    (select count(*) from public.link_clicks lc where lc.clicked_at::date = s.d and lc.user_id not in (select user_id from public.tester_ids()))::int,
+    (select count(*) from public.selections se where se.added_at::date = s.d and se.user_id not in (select user_id from public.tester_ids()))::int,
+    (select count(*) from public.owned o where o.added_at::date = s.d and o.user_id not in (select user_id from public.tester_ids()))::int,
     (select coalesce(sum(count), 0) from public.api_call_logs l where l.service = 'gemini'   and l.created_at::date = s.d)::int,
     (select coalesce(sum(count), 0) from public.api_call_logs l where l.service = 'amazon'   and l.created_at::date = s.d)::int,
     (select coalesce(sum(count), 0) from public.api_call_logs l where l.service = 'supabase' and l.created_at::date = s.d)::int
