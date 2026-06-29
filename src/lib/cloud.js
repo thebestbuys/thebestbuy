@@ -414,6 +414,14 @@ export async function adminListUsers() {
   return data || [];
 }
 
+// Toggle a user's "tester" flag (superuser only). Tester users are excluded
+// from the admin dashboard aggregates. Returns true on success.
+export async function adminSetTester(targetId, tester) {
+  if (!hasCloudSession() || !targetId) return false;
+  const { error } = await supabase.rpc('admin_set_tester', { target: targetId, p_tester: !!tester });
+  return !error;
+}
+
 // All of a user's lists (private included), with item counts.
 export async function adminUserLists(targetId) {
   if (!hasCloudSession() || !targetId) return [];

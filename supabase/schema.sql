@@ -48,8 +48,13 @@ create table if not exists public.profiles (
   avatar_url   text,
   email        text,
   data         jsonb       not null default '{}'::jsonb,
+  -- Tester / internal account flag, toggled from the admin panel. Tester users
+  -- are excluded from the dashboard aggregates (see tester_ids()).
+  is_tester    boolean     not null default false,
   updated_at   timestamptz not null default now()
 );
+-- Backfill for existing deployments (create table if not exists won't add it).
+alter table public.profiles add column if not exists is_tester boolean not null default false;
 
 -- ── Friend requests / friendships ──────────────────────────────────────────
 create table if not exists public.friend_requests (
@@ -523,33 +528,55 @@ $$;
 grant execute on function public.is_superuser() to authenticated;
 
 -- Tester / internal accounts to EXCLUDE from the admin dashboard aggregates, so
--- the stats reflect real users only. Matched on the display name the dashboard
--- shows (case-insensitive), plus known internal emails as a fallback. Edit the
--- two lists to add/remove testers. Internal helper: execute is revoked from
--- clients; only the owner-run admin_* functions (SECURITY DEFINER) call it.
+-- the stats reflect real users only. Now fully dynamic: it returns the user ids
+-- flagged profiles.is_tester, which the superuser toggles from the admin panel
+-- (admin_set_tester below). Internal helper: execute is revoked from clients;
+-- only the owner-run admin_* functions (SECURITY DEFINER) call it.
 create or replace function public.tester_ids()
 returns table (user_id uuid)
-language sql stable security definer set search_path = public, auth as $$
-  select p.user_id from public.profiles p
-  where lower(btrim(coalesce(p.display_name, ''))) in ('elcocogld', 'romain marcucci', 'best buys')
-  union
-  select u.id from auth.users u
-  where lower(coalesce(u.email, '')) in ('thebestbuyersclub@gmail.com', 'romain.marcucci@3ds.com');
+language sql stable security definer set search_path = public as $$
+  select p.user_id from public.profiles p where p.is_tester;
 $$;
 revoke all on function public.tester_ids() from public, anon, authenticated;
 
+-- One-time seed of the originally-known testers, so a fresh install starts with
+-- them excluded. Guarded: only runs when no tester is flagged yet, so it never
+-- clobbers choices the admin later makes from the panel.
+do $$
+begin
+  if not exists (select 1 from public.profiles where is_tester) then
+    update public.profiles
+    set is_tester = true
+    where lower(btrim(coalesce(display_name, ''))) in ('elcocogld', 'romain marcucci', 'best buys');
+  end if;
+end $$;
+
+-- Superuser toggles a user's tester flag from the admin panel. No-op for anyone
+-- else (the is_superuser() guard makes the UPDATE match zero rows).
+create or replace function public.admin_set_tester(target uuid, p_tester boolean)
+returns void
+language sql security definer set search_path = public as $$
+  update public.profiles
+  set is_tester = coalesce(p_tester, false), updated_at = now()
+  where public.is_superuser() and user_id = target;
+$$;
+grant execute on function public.admin_set_tester(uuid, boolean) to authenticated;
+
 -- Every registered user (superuser only). Mirrors list_friends' shape (+ email)
 -- so the Admin panel can reuse the friend-row UI. Empty for non-superusers.
--- Tester/internal accounts are hidden so the list matches the filtered stats.
+-- Includes the is_tester flag so the panel can show/toggle it; testers are NOT
+-- hidden here (the admin needs to see them to manage the flag) — they're only
+-- excluded from the aggregate stats. Return signature changed → drop first.
+drop function if exists public.admin_list_users();
 create or replace function public.admin_list_users()
-returns table (user_id uuid, display_name text, avatar_url text, email text, wishlist_count integer)
+returns table (user_id uuid, display_name text, avatar_url text, email text, wishlist_count integer, is_tester boolean)
 language sql security definer set search_path = public as $$
   select p.user_id, p.display_name, p.avatar_url, p.email,
-    (select count(*)::int from public.selections s where s.user_id = p.user_id) as wishlist_count
+    (select count(*)::int from public.selections s where s.user_id = p.user_id) as wishlist_count,
+    coalesce(p.is_tester, false) as is_tester
   from public.profiles p
   where public.is_superuser()
     and p.user_id <> auth.uid()
-    and p.user_id not in (select user_id from public.tester_ids())
   order by coalesce(nullif(btrim(p.display_name), ''), p.email);
 $$;
 grant execute on function public.admin_list_users() to authenticated;

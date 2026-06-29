@@ -13,6 +13,7 @@ import {
   adminTopProducts,
   adminDailySeries,
   adminUserProfile,
+  adminSetTester,
 } from '../lib/cloud.js';
 import { AmazonPrice, ProductImage } from './ProductCard.jsx';
 import MetricsDashboard from './MetricsDashboard.jsx';
@@ -187,6 +188,17 @@ export default function AdminPanel({ open, onClose }) {
     setConvos(null);
     setOpenConvoId(null);
     adminUserProfile(u.user_id).then(setProfile);
+  };
+
+  // Flag / unflag a user as a tester (excluded from the dashboard stats).
+  // Optimistic: update the row immediately, revert if the RPC fails.
+  const toggleTester = async (u) => {
+    const next = !u.is_tester;
+    setUsers((list) => (list || []).map((x) => (x.user_id === u.user_id ? { ...x, is_tester: next } : x)));
+    const ok = await adminSetTester(u.user_id, next);
+    if (!ok) {
+      setUsers((list) => (list || []).map((x) => (x.user_id === u.user_id ? { ...x, is_tester: !next } : x)));
+    }
   };
 
   const selectTab = (next) => {
@@ -388,11 +400,12 @@ export default function AdminPanel({ open, onClose }) {
                     {filtered.map((u) => {
                       const isOpen = expandedId === u.user_id;
                       return (
-                        <li key={u.user_id} className={'admin-user' + (isOpen ? ' is-open' : '')}>
+                        <li key={u.user_id} className={'admin-user' + (isOpen ? ' is-open' : '') + (u.is_tester ? ' is-tester' : '')}>
                           <div className="friend-row">
                             <Avatar name={u.display_name || u.email} url={u.avatar_url} />
                             <span className="friend-name">
                               {u.display_name || u.email}
+                              {u.is_tester && <span className="admin-tester-badge">{t('admin.tester')}</span>}
                               {u.display_name && u.email && (
                                 <span className="admin-user-email"> · {u.email}</span>
                               )}
@@ -400,6 +413,14 @@ export default function AdminPanel({ open, onClose }) {
                             {u.wishlist_count > 0 && (
                               <span className="sel-list-n">{t('friends.wishCount', { n: u.wishlist_count })}</span>
                             )}
+                            <button
+                              type="button"
+                              className={'friend-btn admin-tester-btn' + (u.is_tester ? ' is-active' : '')}
+                              onClick={() => toggleTester(u)}
+                              title={t('admin.testerHint')}
+                            >
+                              {u.is_tester ? t('admin.unmarkTester') : t('admin.markTester')}
+                            </button>
                             <button type="button" className="friend-btn" onClick={() => toggleUser(u)}>
                               {isOpen ? t('admin.hideProfile') : t('admin.viewProfile')}
                             </button>
