@@ -43,6 +43,23 @@ const TRANSLATIONS = {
     "guides.cardEyebrow": "Guide · {time}",
     "guides.read": "Lire le guide →",
 
+    // Tutorial walkthrough (home help button)
+    "tuto.title": "Comment ça marche",
+    "tuto.step": "Étape {n} sur {total}",
+    "tuto.prev": "Précédent",
+    "tuto.next": "Suivant",
+    "tuto.done": "C'est parti !",
+    "tuto.placeholder": "Démo bientôt disponible",
+    "tuto.guidesLink": "Voir nos guides d'achat →",
+    "tuto.search.title": "Décrivez ce que vous cherchez",
+    "tuto.search.desc": "Tapez un produit ou une envie dans la barre de recherche. Pas besoin d'être précis : l'IA s'occupe du reste.",
+    "tuto.questions.title": "Répondez à quelques questions",
+    "tuto.questions.desc": "Oraklia vous pose des questions adaptées (budget, usage…) pour cerner exactement votre besoin.",
+    "tuto.compare.title": "Comparez les recommandations",
+    "tuto.compare.desc": "Vous recevez une sélection de produits vérifiés sur Amazon, avec prix réels et points forts.",
+    "tuto.buy.title": "Achetez en un clic",
+    "tuto.buy.desc": "Ouvrez la fiche Amazon du produit choisi. Vous gardez vos favoris et votre historique.",
+
     // Footer / legal
     "footer.affiliate":
       "En tant que Partenaire Amazon, Oraklia réalise un bénéfice sur les achats remplissant les conditions requises.",
@@ -548,6 +565,23 @@ const TRANSLATIONS = {
       "Clear, independent advice to choose the right product — no jargon.",
     "guides.cardEyebrow": "Guide · {time}",
     "guides.read": "Read the guide →",
+
+    // Tutorial walkthrough (home help button)
+    "tuto.title": "How it works",
+    "tuto.step": "Step {n} of {total}",
+    "tuto.prev": "Back",
+    "tuto.next": "Next",
+    "tuto.done": "Let's go!",
+    "tuto.placeholder": "Demo coming soon",
+    "tuto.guidesLink": "See our buying guides →",
+    "tuto.search.title": "Describe what you're looking for",
+    "tuto.search.desc": "Type a product or a wish in the search bar. No need to be precise — the AI handles the rest.",
+    "tuto.questions.title": "Answer a few questions",
+    "tuto.questions.desc": "Oraklia asks tailored questions (budget, use case…) to pin down exactly what you need.",
+    "tuto.compare.title": "Compare the recommendations",
+    "tuto.compare.desc": "You get a shortlist of Amazon-verified products, with real prices and key strengths.",
+    "tuto.buy.title": "Buy in one click",
+    "tuto.buy.desc": "Open the Amazon page for your pick. Your favourites and history are kept.",
 
     // Footer / legal
     "footer.affiliate":

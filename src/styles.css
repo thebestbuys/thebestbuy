@@ -6138,3 +6138,160 @@ select.profile-input {
 .prod-img-wrap.is-photo .prod-img-amazon {
   filter: none;
 }
+
+/* ── Tutorial walkthrough ("Comment ça marche") ───────────────────────────
+   Opened from the home help (?) button. Reuses .auth-modal-bg as the overlay;
+   the card is a media-first column (stage → caption → dots → nav). The stage
+   keeps a fixed aspect so swapping between desktop/tablet/phone captures (and
+   the placeholder) never makes the modal jump. */
+.tuto-modal {
+  position: relative;
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--bg-elev);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px 18px;
+  box-shadow: var(--shadow-lg);
+  animation: bb-rise 0.22s ease-out;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.tuto-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tuto-title {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--text);
+}
+.tuto-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--accent-soft);
+  border: 0.5px solid var(--border);
+}
+.tuto-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.tuto-media--placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-faint);
+  font-size: 13px;
+}
+.tuto-caption {
+  text-align: center;
+  min-height: 92px;
+}
+.tuto-step-no {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.tuto-step-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--text);
+}
+.tuto-step-desc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin: 0;
+}
+.tuto-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.tuto-dot {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  cursor: pointer;
+  transition: background 0.15s, width 0.15s;
+}
+.tuto-dot.is-active {
+  width: 22px;
+  background: var(--accent);
+}
+.tuto-nav {
+  display: flex;
+  gap: 10px;
+}
+.tuto-btn {
+  flex: 1;
+  appearance: none;
+  border-radius: 999px;
+  padding: 11px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+}
+.tuto-btn--ghost {
+  background: transparent;
+  border: 0.5px solid var(--border);
+  color: var(--text-muted);
+}
+.tuto-btn--ghost:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.tuto-btn--primary {
+  background: var(--accent);
+  border: 0.5px solid var(--accent);
+  color: #fff;
+}
+.tuto-btn--primary:hover {
+  opacity: 0.92;
+}
+.tuto-guides-link {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 2px;
+  align-self: center;
+}
+.tuto-guides-link:hover {
+  text-decoration: underline;
+}
+@media (max-width: 599px) {
+  .tuto-modal {
+    max-width: 100%;
+    max-height: 100dvh;
+    height: 100dvh;
+    border-radius: 0;
+    justify-content: center;
+  }
+}

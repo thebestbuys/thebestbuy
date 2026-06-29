@@ -20,6 +20,7 @@ const AskOpinionPanel = lazy(() => import('./components/AskOpinionPanel.jsx'));
 const LegalNotices = lazy(() => import('./components/LegalNotices.jsx'));
 const GuideArticle = lazy(() => import('./components/GuideArticle.jsx'));
 const GuidesPanel = lazy(() => import('./components/GuidesPanel.jsx'));
+const TutorialModal = lazy(() => import('./components/TutorialModal.jsx'));
 const GiftHub = lazy(() => import('./components/GiftHub.jsx'));
 const OwnedPanel = lazy(() => import('./components/OwnedPanel.jsx'));
 import { GUIDES, localizeGuide, getGuide } from './data/guides.js';
@@ -394,7 +395,7 @@ function TrendingPanel({ onClose, onOpen }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifOpen, onToggleNotif, onCloseNotif, onGiftReminder, onOpenGift, onOpenGiftHub, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTrending, onOpenOwned, onOpenAdmin, onLoadConvo, onOpenProduct }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifOpen, onToggleNotif, onCloseNotif, onGiftReminder, onOpenGift, onOpenGiftHub, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTutorial, onOpenTrending, onOpenOwned, onOpenAdmin, onLoadConvo, onOpenProduct }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -594,7 +595,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
             <button
               type="button"
               className="home-help-btn"
-              onClick={onOpenGuides}
+              onClick={onOpenTutorial}
               title={t('home.helpTooltip')}
               aria-label={t('home.helpTooltip')}
             >
@@ -879,6 +880,7 @@ export default function App() {
   const [askOpen, setAskOpen] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
   const [guidesOpen, setGuidesOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [trendingOpen, setTrendingOpen] = useState(false);
   const [ownedOpen, setOwnedOpen] = useState(false);
   const [giftPrefill, setGiftPrefill] = useState(null); // {occasion} when opened from a reminder
@@ -1246,6 +1248,7 @@ export default function App() {
   const navOpenAsk = () => { pushHistory(); setAskOpen(true); };
   const navOpenGift = () => { setGiftPrefill(null); pushHistory(); setGiftOpen(true); };
   const navOpenGuides = () => { pushHistory(); setGuidesOpen(true); };
+  const navOpenTutorial = () => { pushHistory(); setTutorialOpen(true); };
   const navOpenTrending = () => { pushHistory(); setTrendingOpen(true); };
   const navOpenOwned = () => { pushHistory(); setOwnedOpen(true); };
   // From a reminder: friend birthday → start directly; holiday/occasion → open
@@ -1308,6 +1311,7 @@ export default function App() {
       if (selectionsOpen) { setSelectionsOpen(false); return; }
       if (historyOpen) { setHistoryOpen(false); return; }
       if (guidesOpen) { setGuidesOpen(false); return; }
+      if (tutorialOpen) { setTutorialOpen(false); return; }
       if (trendingOpen) { setTrendingOpen(false); return; }
       if (ownedOpen) { setOwnedOpen(false); return; }
       if (activeGuide) { setActiveGuide(null); return; }
@@ -1317,7 +1321,7 @@ export default function App() {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, giftOpen, askOpen, friendsOpen, adminOpen, profileOpen, selectionsOpen, guidesOpen, trendingOpen, ownedOpen, historyOpen, activeGuide, giftHubOpen, category]);
+  }, [selected, legalOpen, giftOpen, askOpen, friendsOpen, adminOpen, profileOpen, selectionsOpen, guidesOpen, tutorialOpen, trendingOpen, ownedOpen, historyOpen, activeGuide, giftHubOpen, category]);
 
   // Keep the tab title in sync with the open guide (matches the prerendered
   // per-guide <title>); reset to the brand title elsewhere.
@@ -1457,6 +1461,7 @@ export default function App() {
           onOpenLegal={navOpenLegal}
           onOpenGuide={navOpenGuide}
           onOpenGuides={navOpenGuides}
+          onOpenTutorial={navOpenTutorial}
           onOpenTrending={navOpenTrending}
           onOpenOwned={navOpenOwned}
           onLoadConvo={loadConversation}
@@ -1479,6 +1484,7 @@ export default function App() {
           {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
           {giftOpen && <GiftPanel open onClose={navBack} onSubmit={startGift} initial={giftPrefill} />}
           {guidesOpen && <GuidesPanel open onClose={navBack} onOpenGuide={navOpenGuide} />}
+          {tutorialOpen && <TutorialModal open onClose={navBack} onOpenGuides={navOpenGuides} />}
           {trendingOpen && <TrendingPanel onClose={navBack} onOpen={navOpenProduct} />}
           {ownedOpen && <OwnedPanel open onClose={navBack} />}
           {legalOpen && <LegalNotices open onClose={navBack} />}
