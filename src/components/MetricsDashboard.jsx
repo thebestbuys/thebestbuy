@@ -11,11 +11,10 @@
 //       par
 //         <MetricsDashboard metrics={metrics} topProducts={topProducts} />
 //
-// Données réelles : `metrics` (admin_metrics) et `topProducts`
-// (admin_top_products) sont utilisés tels quels. Les COURBES temporelles
-// n'existent pas encore côté backend : elles sont générées (mock) et calées
-// sur le total réel d'utilisateurs. Pour des vraies séries, ajoute un RPC
-// renvoyant des comptes journaliers et remplace buildSeries() ci-dessous.
+// Données réelles uniquement : `metrics` (admin_metrics), `topProducts`
+// (admin_top_products) et les séries journalières (admin_daily_series) — tous
+// excluent les comptes testeurs côté SQL. Quand un jeu de données est vide, on
+// n'affiche RIEN (séries à zéro, table vide) — aucune valeur factice/mock.
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Chart from 'chart.js/auto';
@@ -32,43 +31,25 @@ const dec = (n) => n.toFixed(1).replace('.', ',');
 
 const CAT_COLOR = { Audio: C.accent, Charge: C.blue, Ventilateur: C.green, 'Café': C.amber, Maison: C.purple, Stockage: C.blue, Bureau: C.green, Cuisine: C.amber, Wearable: C.purple };
 
-// Demo fallback (used when admin_top_products returns nothing, e.g. non-superuser dev).
-const DEMO = [
-  ['Sony', 'WH-1000XM5', 'Audio', 1284, 3192, 14.2], ['JBL', 'Charge 5', 'Audio', 968, 2487, 6.1],
-  ['Apple', 'AirPods Pro 2', 'Audio', 1102, 1893, -2.3], ['Anker', 'Prime 240W', 'Charge', 742, 2106, 22.4],
-  ['Dyson', 'V12 Detect', 'Maison', 531, 1678, 9.8], ["De'Longhi", 'Dedica Arte', 'Café', 624, 1455, 4.5],
-  ['Dreo', 'Cruiser Pro', 'Ventilateur', 489, 1320, 31.2], ['Samsung', 'T7 1 To', 'Stockage', 712, 1188, 1.7],
-  ['Logitech', 'MX Master 3S', 'Bureau', 845, 1043, 7.9], ['Bose', 'QuietComfort', 'Audio', 398, 967, -5.4],
-  ['Soundcore', 'Space One', 'Audio', 356, 902, 18.6], ['Philips', 'Hue Starter Kit', 'Maison', 421, 814, 3.2],
-  ['Ninja', 'Foodi MAX', 'Cuisine', 367, 706, 12.1], ['Xiaomi', 'Smart Band 9', 'Wearable', 503, 689, -1.8],
-];
-
-// Mock daily series (90 d), cumulative calé sur totalUsers. Remplace par un vrai RPC.
-function buildSeries(totalUsers = 2847) {
-  let s = 1337;
-  const rnd = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-  const N = 90, labels = [], dates = [], newU = [], convos = [], clicks = [], sels = [], owned = [], dau = [];
-  const geminiCalls = [], amazonCalls = [], supabaseCalls = [];
+// Empty series over the last `days` days: real date axis, everything at zero so
+// the dashboard shows NOTHING when there's no real data (no mock/demo values).
+// The cumulative line stays flat at the real total user count when known.
+function zeroSeries(totalUsers = 0, days = 90) {
+  const N = Math.max(1, days);
+  const labels = [], dates = [];
   const today = new Date();
   for (let i = 0; i < N; i++) {
-    const t = i / (N - 1), wk = 1 + 0.18 * Math.sin((i % 7) / 7 * Math.PI * 2);
-    newU.push(Math.max(1, Math.round((3 + 6 * t + rnd() * 5) * wk)));
-    convos.push(Math.round((110 + 90 * t + 28 * Math.sin(i / 3) + rnd() * 26) * wk));
-    clicks.push(Math.round((320 + 250 * t + 80 * Math.sin(i / 3.5) + rnd() * 70) * wk));
-    sels.push(Math.round((180 + 150 * t + 40 * Math.sin(i / 4) + rnd() * 38) * wk));
-    owned.push(Math.round((40 + 50 * t + 12 * Math.sin(i / 4.5) + rnd() * 14) * wk));
-    dau.push(Math.round((230 + 130 * t + 30 * Math.sin(i / 2.5) + rnd() * 30) * wk));
-    geminiCalls.push(Math.round((140 + 120 * t + 30 * Math.sin(i / 3) + rnd() * 30) * wk));
-    amazonCalls.push(Math.round((90 + 70 * t + 18 * Math.sin(i / 3.2) + rnd() * 18) * wk));
-    supabaseCalls.push(Math.round((260 + 200 * t + 50 * Math.sin(i / 2.8) + rnd() * 50) * wk));
     const d = new Date(today); d.setDate(d.getDate() - (N - 1 - i));
     labels.push(d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
     dates.push(d.toISOString().slice(0, 10));
   }
-  const totalNew = newU.reduce((a, b) => a + b, 0);
-  let run = (totalUsers || 2847) - totalNew, cum = [];
-  for (let i = 0; i < N; i++) { run += newU[i]; cum.push(run); }
-  return { labels, dates, newU, cum, convos, clicks, sels, owned, dau, geminiCalls, amazonCalls, supabaseCalls };
+  const zeros = () => new Array(N).fill(0);
+  return {
+    labels, dates,
+    newU: zeros(), cum: new Array(N).fill(totalUsers || 0),
+    convos: zeros(), clicks: zeros(), sels: zeros(), owned: zeros(), dau: zeros(),
+    geminiCalls: zeros(), amazonCalls: zeros(), supabaseCalls: zeros(),
+  };
 }
 
 // Build the chart series from the REAL daily rows returned by admin_daily_series
@@ -107,7 +88,8 @@ function normalizeProducts(topProducts) {
       return { brand, model, cat, saves, clicks, total: saves + clicks, trend: Number(p.trend ?? d.trend ?? 0) };
     });
   }
-  return DEMO.map(([brand, model, cat, saves, clicks, trend]) => ({ brand, model, cat, saves, clicks, total: saves + clicks, trend }));
+  // No real data → nothing (no demo/placeholder rows).
+  return [];
 }
 
 const KPI = ({ label, value, sub, delta, canvasRef }) => (
@@ -157,7 +139,7 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
   const m = metrics || {};
   // Real daily series when available (admin_daily_series); mock as a fallback.
   const series = useMemo(
-    () => fromDaily(dailySeries, m.users) || buildSeries(m.users),
+    () => fromDaily(dailySeries, m.users) || zeroSeries(m.users),
     [dailySeries, m.users],
   );
   const products = useMemo(() => normalizeProducts(localTop ?? topProducts), [localTop, topProducts]);
