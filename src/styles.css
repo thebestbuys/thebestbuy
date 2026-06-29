@@ -6224,6 +6224,7 @@ select.profile-input {
   background: var(--accent-soft);
   border: 0.5px solid var(--border);
   line-height: 0;
+  touch-action: pan-y; /* let horizontal swipes drive the carousel */
 }
 /* Media keeps its aspect ratio, bounded by the modal width and a height cap
    (so tall portrait clips never overflow the viewport). */

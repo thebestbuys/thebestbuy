@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../lib/i18n.jsx';
 
 // ── Asset format ────────────────────────────────────────────────────────────
@@ -88,8 +88,28 @@ export default function TutorialModal({ open, onClose, onOpenGuides }) {
   const { t } = useI18n();
   const tier = useDeviceTier();
   const [i, setI] = useState(0);
+  const touch = useRef(null);
 
   useEffect(() => { if (open) setI(0); }, [open]);
+
+  const goNext = () => setI((v) => Math.min(v + 1, STEPS.length - 1));
+  const goPrev = () => setI((v) => Math.max(v - 1, 0));
+
+  // Swipe left/right on the media to move between steps (phone / tablet).
+  const onTouchStart = (e) => {
+    const p = e.touches[0];
+    touch.current = { x: p.clientX, y: p.clientY };
+  };
+  const onTouchEnd = (e) => {
+    if (!touch.current) return;
+    const p = e.changedTouches[0];
+    const dx = p.clientX - touch.current.x;
+    const dy = p.clientY - touch.current.y;
+    touch.current = null;
+    // Ignore taps and mostly-vertical drags.
+    if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy)) return;
+    if (dx < 0) goNext(); else goPrev();
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -122,7 +142,7 @@ export default function TutorialModal({ open, onClose, onOpenGuides }) {
           <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
         </header>
 
-        <div className="tuto-stage">
+        <div className="tuto-stage" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
           <StepMedia step={step} tier={tier} />
         </div>
 
