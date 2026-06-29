@@ -271,7 +271,7 @@ function buildRecommendPrompt(objet, answers, lang, exclude = [], profile = '', 
 L'utilisateur cherche à acheter : "${objet || 'un produit'}".${profileLine(profile)}
 Critères recueillis (JSON): ${answersJson(answers)}
 
-Propose EXACTEMENT ${count} produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, correspondant au mieux à ces critères. Donne des marques et modèles PRÉCIS. Chaque produit a un score de correspondance 0-99 selon les critères.${excludeLine}
+Propose EXACTEMENT ${count} produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, correspondant au mieux à ces critères. Donne des marques et modèles PRÉCIS. Chaque produit a un score de correspondance 0-99 selon les critères. La phrase d'introduction ("reply") ne doit JAMAIS indiquer le nombre de produits (écris "Voici quelques idées…", jamais "Voici 6 produits…").${excludeLine}
 
 Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 {"reply":"<courte phrase d'introduction>","products":[{"id":"p1","brand":"Marque","model":"Modèle exact","price":999,"score":94,"specs":["Spec 1","Spec 2","Spec 3","Spec 4"],"why":"Raison courte"}]}`;
@@ -350,7 +350,7 @@ function buildGiftRecommendPrompt(giftStr, answers, lang, exclude = [], surprise
 On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".${wishlistLine}
 Préférences de raffinement (JSON): ${answersJson(answers)}
 
-Propose EXACTEMENT ${count} idées de cadeaux : des produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, qui feraient de bons cadeaux pour CETTE personne, pour cette occasion et DANS le budget indiqué. VARIE les catégories (pas ${count} produits du même type). Donne des marques et modèles PRÉCIS. "why" explique en une phrase pourquoi ça correspond à la personne. Score 0-99 = à quel point l'idée lui correspond.${surpriseLine}${excludeLine}
+Propose EXACTEMENT ${count} idées de cadeaux : des produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, qui feraient de bons cadeaux pour CETTE personne, pour cette occasion et DANS le budget indiqué. VARIE les catégories (pas ${count} produits du même type). Donne des marques et modèles PRÉCIS. "why" explique en une phrase pourquoi ça correspond à la personne. Score 0-99 = à quel point l'idée lui correspond. La phrase d'introduction ("reply") ne doit JAMAIS indiquer le nombre de produits (écris "Voici des idées de cadeaux…", jamais "Voici 6 idées…").${surpriseLine}${excludeLine}
 
 Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 {"reply":"<courte phrase d'introduction>","products":[{"id":"p1","brand":"Marque","model":"Modèle exact","price":999,"score":94,"specs":["Spec 1","Spec 2","Spec 3"],"why":"Pourquoi ce cadeau lui correspond"}]}`;
