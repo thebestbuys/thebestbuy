@@ -601,6 +601,23 @@ language sql security definer set search_path = public as $$
 $$;
 grant execute on function public.admin_user_profile(uuid) to authenticated;
 
+-- ── Backend API call volume (Gemini / Amazon / Supabase) ───────────────────
+-- Counts of calls our own serverless functions (api/*.js) make to each backing
+-- service, for the admin dashboard. One row per flush, `count` lets a single
+-- request batch several calls (e.g. all the Supabase reads in one /api/chat
+-- request) into one insert. Written only by the server (service role) — no
+-- RLS policy means anon/authenticated get neither read nor write; only the
+-- service-role key (which bypasses RLS) can touch it.
+create table if not exists public.api_call_logs (
+  id         bigint      generated always as identity primary key,
+  service    text        not null check (service in ('gemini', 'amazon', 'supabase')),
+  count      integer     not null default 1,
+  created_at timestamptz not null default now()
+);
+alter table public.api_call_logs enable row level security;
+create index if not exists api_call_logs_service_day_idx
+  on public.api_call_logs (service, created_at);
+
 -- ── Admin metrics (BestBuys dashboard, superuser only) ──────────────────────
 -- One round-trip of aggregate database stats. Returns {} for non-superusers.
 -- Reads auth.users for true signup counts (profiles has no created_at).
@@ -623,7 +640,10 @@ language sql stable security definer set search_path = public, auth as $$
     'lists',            (select count(*) from public.lists),
     'public_lists',     (select count(*) from public.lists where visibility = 'public'),
     'polls',            (select count(*) from public.polls),
-    'occasions',        (select count(*) from public.occasions)
+    'occasions',        (select count(*) from public.occasions),
+    'gemini_calls',     (select coalesce(sum(count), 0)::int from public.api_call_logs where service = 'gemini'),
+    'amazon_calls',     (select coalesce(sum(count), 0)::int from public.api_call_logs where service = 'amazon'),
+    'supabase_calls',   (select coalesce(sum(count), 0)::int from public.api_call_logs where service = 'supabase')
   ) end;
 $$;
 grant execute on function public.admin_metrics() to authenticated;
@@ -740,7 +760,7 @@ as $$
 $$;
 
 revoke all on function public.increment_ai_usage(uuid, bigint, bigint) from public, anon, authenticated;
-grant execute on function public.admin_top_products(int) to authenticated;
+grant execute on function public.admin_top_products(int, date, date) to authenticated;
 
 -- Daily activity series for the admin dashboard charts (superuser only). One row
 -- per calendar day over the last `days` days (server tz / UTC), with the day's
@@ -748,7 +768,7 @@ grant execute on function public.admin_top_products(int) to authenticated;
 -- touched, Amazon clicks and selections. Empty for non-superusers.
 drop function if exists public.admin_daily_series(int);
 create or replace function public.admin_daily_series(days int default 90)
-returns table (d date, new_users int, active_users int, conversations int, link_clicks int, selections int, owned int)
+returns table (d date, new_users int, active_users int, conversations int, link_clicks int, selections int, owned int, gemini_calls int, amazon_calls int, supabase_calls int)
 language sql stable security definer set search_path = public, auth as $$
   with span as (
     select generate_series(
@@ -763,7 +783,10 @@ language sql stable security definer set search_path = public, auth as $$
     (select count(*) from public.conversations c where c.updated_at::date = s.d)::int,
     (select count(*) from public.link_clicks lc where lc.clicked_at::date = s.d)::int,
     (select count(*) from public.selections se where se.added_at::date = s.d)::int,
-    (select count(*) from public.owned o where o.added_at::date = s.d)::int
+    (select count(*) from public.owned o where o.added_at::date = s.d)::int,
+    (select coalesce(sum(count), 0) from public.api_call_logs l where l.service = 'gemini'   and l.created_at::date = s.d)::int,
+    (select coalesce(sum(count), 0) from public.api_call_logs l where l.service = 'amazon'   and l.created_at::date = s.d)::int,
+    (select coalesce(sum(count), 0) from public.api_call_logs l where l.service = 'supabase' and l.created_at::date = s.d)::int
   from span s
   where public.is_superuser()
   order by s.d;

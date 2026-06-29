@@ -1,4 +1,5 @@
 import { searchItems, creatorsConfigured } from './_creators.js';
+import { logApiCalls } from './_metrics.js';
 
 // Primary + backup models are env-overridable. On the free tier each model has
 // its OWN quota bucket, so a backup from a different line (default 2.5 Flash-Lite)
@@ -61,7 +62,7 @@ function profileDataToString(data, lang = 'fr') {
 // verifying (a) the bearer token is valid and (b) an accepted friendship exists.
 // Returns { text, debug } — text is the compact profile string ('' if anything
 // is missing/unverified); debug carries only booleans/lengths (never the data).
-async function resolveFriendProfile(req, friendId, lang) {
+async function resolveFriendProfile(req, friendId, lang, supaCalls) {
   const debug = {
     env: { url: !!SUPA_URL, anon: !!SUPA_ANON, service: !!SUPA_SERVICE },
     hasToken: false,
@@ -81,6 +82,7 @@ async function resolveFriendProfile(req, friendId, lang) {
 
     const anon = createClient(SUPA_URL, SUPA_ANON);
     const { data: userData, error: userErr } = await anon.auth.getUser(token);
+    if (supaCalls) supaCalls.n++;
     const requesterId = userData?.user?.id;
     debug.userOk = !!requesterId;
     if (userErr || !requesterId || requesterId === friendId) {
@@ -98,6 +100,7 @@ async function resolveFriendProfile(req, friendId, lang) {
           `and(requester_id.eq.${friendId},addressee_id.eq.${requesterId})`,
       )
       .maybeSingle();
+    if (supaCalls) supaCalls.n++;
     if (linkErr) debug.error = 'link: ' + (linkErr.message || 'failed');
     if (!link) return { text: '', debug }; // not friends → never use their profile
     debug.verified = true;
@@ -107,6 +110,7 @@ async function resolveFriendProfile(req, friendId, lang) {
       .select('data')
       .eq('user_id', friendId)
       .maybeSingle();
+    if (supaCalls) supaCalls.n++;
     if (profErr) debug.error = 'profile: ' + (profErr.message || 'failed');
     const text = profileDataToString(prof?.data, lang);
     debug.profileLen = text.length;
@@ -118,6 +122,7 @@ async function resolveFriendProfile(req, friendId, lang) {
       .select('data')
       .eq('user_id', friendId)
       .limit(40);
+    if (supaCalls) supaCalls.n++;
     const items = (sels || [])
       .map((r) => r.data)
       .filter(Boolean)
@@ -141,7 +146,7 @@ async function resolveFriendProfile(req, friendId, lang) {
 // Resolve the signed-in user's id from the bearer token, verified via Supabase
 // auth. Returns null when not signed in, no token, or anything is misconfigured
 // (so quota metering simply doesn't apply rather than blocking the request).
-async function getRequesterId(req) {
+async function getRequesterId(req, supaCalls) {
   try {
     const auth = req.headers?.authorization || req.headers?.Authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
@@ -149,6 +154,7 @@ async function getRequesterId(req) {
     const { createClient } = await import('@supabase/supabase-js');
     const anon = createClient(SUPA_URL, SUPA_ANON);
     const { data, error } = await anon.auth.getUser(token);
+    if (supaCalls) supaCalls.n++;
     if (error) return null;
     return data?.user?.id || null;
   } catch {
@@ -157,7 +163,7 @@ async function getRequesterId(req) {
 }
 
 // Today's (UTC) usage row for a user. Missing row → zeroed totals.
-async function readUsageToday(admin, userId) {
+async function readUsageToday(admin, userId, supaCalls) {
   const day = new Date().toISOString().slice(0, 10);
   const { data } = await admin
     .from('ai_usage')
@@ -165,6 +171,7 @@ async function readUsageToday(admin, userId) {
     .eq('user_id', userId)
     .eq('day', day)
     .maybeSingle();
+  if (supaCalls) supaCalls.n++;
   return data || { requests: 0, input_tokens: 0, output_tokens: 0 };
 }
 
@@ -474,12 +481,14 @@ async function checkAmazon(brand, model, searchContext, opts = {}) {
   }
 }
 
-function callGeminiModel(apiKey, model, body) {
-  return fetch(`${geminiUrl(model)}?key=${apiKey}`, {
+async function callGeminiModel(apiKey, model, body) {
+  const res = await fetch(`${geminiUrl(model)}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+  await logApiCalls('gemini');
+  return res;
 }
 
 // Calls the primary model; on a quota/availability error (429 rate/daily-cap,
@@ -576,16 +585,21 @@ export default async function handler(req, res) {
   // today's usage and reject early with 429 when over the cap. Any misconfig or
   // error skips metering so the advisor never breaks (graceful degradation).
   // usageAdmin / usageBefore are reused after the response to bump the counter.
-  const requesterId = await getRequesterId(req);
+  // supaCalls counts every Supabase round-trip this request makes (auth check,
+  // usage read/write, friend profile lookups) — flushed once at the end as a
+  // single row so the call-volume admin panel doesn't cost one insert per call.
+  const supaCalls = { n: 0 };
+  const requesterId = await getRequesterId(req, supaCalls);
   let usageAdmin = null;
   let usageBefore = null;
   if (requesterId && SUPA_URL && SUPA_SERVICE) {
     try {
       const { createClient } = await import('@supabase/supabase-js');
       usageAdmin = createClient(SUPA_URL, SUPA_SERVICE, { auth: { persistSession: false } });
-      usageBefore = await readUsageToday(usageAdmin, requesterId);
+      usageBefore = await readUsageToday(usageAdmin, requesterId, supaCalls);
       const usedTokens = (usageBefore.input_tokens || 0) + (usageBefore.output_tokens || 0);
       if (usageBefore.requests >= AI_DAILY_REQUEST_CAP || usedTokens >= AI_DAILY_TOKEN_CAP) {
+        await logApiCalls('supabase', supaCalls.n);
         return send(res, 429, {
           error: 'Daily AI quota reached',
           quota: {
@@ -609,7 +623,7 @@ export default async function handler(req, res) {
   // Gift mode: a recipient description is sent instead of a product "objet".
   // For a friend, resolve their PRIVATE profile server-side (verified friendship)
   // and fold it into the recipient description — it never reaches the client.
-  const friendRes = friendId ? await resolveFriendProfile(req, friendId, lang) : { text: '', wishlist: '', debug: null };
+  const friendRes = friendId ? await resolveFriendProfile(req, friendId, lang, supaCalls) : { text: '', wishlist: '', debug: null };
   const friendProfile = friendRes.text;
   const friendWishlist = friendRes.wishlist || '';
   const giftStr = [gift, friendProfile].map((s) => String(s || '').trim()).filter(Boolean).join('; ');
@@ -867,6 +881,7 @@ export default async function handler(req, res) {
         p_out: outputTokens || 0,
       });
     } catch { /* counter is best-effort */ }
+    supaCalls.n++;
     const beforeTok = usageBefore ? (usageBefore.input_tokens || 0) + (usageBefore.output_tokens || 0) : 0;
     parsed._debug.usage = {
       requests: (usageBefore?.requests || 0) + 1,
@@ -878,5 +893,6 @@ export default async function handler(req, res) {
     parsed._debug.usage = null;
   }
 
+  await logApiCalls('supabase', supaCalls.n);
   return send(res, 200, parsed);
 }

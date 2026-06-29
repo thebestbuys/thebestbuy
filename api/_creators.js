@@ -21,6 +21,8 @@
 //   AMAZON_CREATORS_API_BASE      default https://creatorsapi.amazon/catalog/v1
 //   AMAZON_CREATORS_RESOURCES     comma-separated override of the fields below
 
+import { logApiCalls } from './_metrics.js';
+
 const CLIENT_ID = process.env.AMAZON_CREATORS_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.AMAZON_CREATORS_CLIENT_SECRET || '';
 export const PARTNER_TAG = process.env.AMAZON_PARTNER_TAG || 'oraklia123-21';
@@ -114,6 +116,7 @@ async function catalog(operation, body) {
     }),
     signal: AbortSignal.timeout(6000),
   });
+  await logApiCalls('amazon');
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     // 403 (account not yet eligible), 429 (1 TPS / daily-cap throttle), 5xx…

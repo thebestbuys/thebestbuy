@@ -48,6 +48,7 @@ function buildSeries(totalUsers = 2847) {
   let s = 1337;
   const rnd = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const N = 90, labels = [], dates = [], newU = [], convos = [], clicks = [], sels = [], owned = [], dau = [];
+  const geminiCalls = [], amazonCalls = [], supabaseCalls = [];
   const today = new Date();
   for (let i = 0; i < N; i++) {
     const t = i / (N - 1), wk = 1 + 0.18 * Math.sin((i % 7) / 7 * Math.PI * 2);
@@ -57,6 +58,9 @@ function buildSeries(totalUsers = 2847) {
     sels.push(Math.round((180 + 150 * t + 40 * Math.sin(i / 4) + rnd() * 38) * wk));
     owned.push(Math.round((40 + 50 * t + 12 * Math.sin(i / 4.5) + rnd() * 14) * wk));
     dau.push(Math.round((230 + 130 * t + 30 * Math.sin(i / 2.5) + rnd() * 30) * wk));
+    geminiCalls.push(Math.round((140 + 120 * t + 30 * Math.sin(i / 3) + rnd() * 30) * wk));
+    amazonCalls.push(Math.round((90 + 70 * t + 18 * Math.sin(i / 3.2) + rnd() * 18) * wk));
+    supabaseCalls.push(Math.round((260 + 200 * t + 50 * Math.sin(i / 2.8) + rnd() * 50) * wk));
     const d = new Date(today); d.setDate(d.getDate() - (N - 1 - i));
     labels.push(d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
     dates.push(d.toISOString().slice(0, 10));
@@ -64,7 +68,7 @@ function buildSeries(totalUsers = 2847) {
   const totalNew = newU.reduce((a, b) => a + b, 0);
   let run = (totalUsers || 2847) - totalNew, cum = [];
   for (let i = 0; i < N; i++) { run += newU[i]; cum.push(run); }
-  return { labels, dates, newU, cum, convos, clicks, sels, owned, dau };
+  return { labels, dates, newU, cum, convos, clicks, sels, owned, dau, geminiCalls, amazonCalls, supabaseCalls };
 }
 
 // Build the chart series from the REAL daily rows returned by admin_daily_series
@@ -82,12 +86,15 @@ function fromDaily(rows, totalUsers) {
   const sels = rows.map((r) => Number(r.selections) || 0);
   const owned = rows.map((r) => Number(r.owned) || 0);
   const dau = rows.map((r) => Number(r.active_users) || 0);
+  const geminiCalls = rows.map((r) => Number(r.gemini_calls) || 0);
+  const amazonCalls = rows.map((r) => Number(r.amazon_calls) || 0);
+  const supabaseCalls = rows.map((r) => Number(r.supabase_calls) || 0);
   // Cumulative users, ending at the real total: signups before the window are
   // folded into the starting baseline.
   const totalNew = newU.reduce((a, b) => a + b, 0);
   let run = Math.max(0, (totalUsers || totalNew) - totalNew);
   const cum = newU.map((n) => (run += n));
-  return { labels, dates, newU, cum, convos, clicks, sels, owned, dau };
+  return { labels, dates, newU, cum, convos, clicks, sels, owned, dau, geminiCalls, amazonCalls, supabaseCalls };
 }
 
 function normalizeProducts(topProducts) {
@@ -197,6 +204,7 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
 
   // ── refs for canvases
   const spkUsers = useRef(), spkActive = useRef(), spkConvos = useRef(), spkClicks = useRef();
+  const spkGemini = useRef(), spkAmazon = useRef(), spkSupabase = useRef();
   const growth = useRef(), activity = useRef(), social = useRef();
   const charts = useRef({});
 
@@ -221,6 +229,9 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
     spark('sa', spkActive, series.dau, C.blue);
     spark('sc', spkConvos, series.convos, C.green);
     spark('sk', spkClicks, series.clicks, C.amber);
+    spark('sg', spkGemini, series.geminiCalls, C.purple);
+    spark('sz', spkAmazon, series.amazonCalls, C.amber);
+    spark('sb', spkSupabase, series.supabaseCalls, C.blue);
 
     const L = slice(series.labels);
     const pr = L.length <= 3 ? 3 : 0; // show dots when the window is tiny (24h)
@@ -357,6 +368,17 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries }) 
         <KPI label="Actifs · 7 j" value={fmt(m.active_users_7d)} sub={`${m.users ? dec(m.active_users_7d / m.users * 100) : '—'} % de la base`} delta={winDelta(series.dau)} canvasRef={spkActive} />
         <KPI label="Conversations" value={fmt(winSum(series.convos))} sub={`${fmt(m.conversations)} au total`} delta={winDelta(series.convos)} canvasRef={spkConvos} />
         <KPI label="Clics Amazon" value={fmt(winSum(series.clicks))} sub={`${fmt(m.link_clicks)} au total · sortants affiliés`} delta={winDelta(series.clicks)} canvasRef={spkClicks} />
+      </div>
+
+      {/* Backend API call volume */}
+      <div style={{ margin: '4px 0 8px' }}>
+        <h3 style={{ font: '600 14px Inter,sans-serif', margin: '0 0 2px' }}>Volumétrie API backend</h3>
+        <p style={{ fontSize: 11.5, color: C.faint, margin: 0 }}>Appels réellement exécutés par le serveur (api/*.js)</p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 14, marginBottom: 16 }}>
+        <KPI label="Appels Gemini" value={fmt(winSum(series.geminiCalls))} sub={`${fmt(m.gemini_calls)} au total · génération IA`} delta={winDelta(series.geminiCalls)} canvasRef={spkGemini} />
+        <KPI label="Appels Amazon" value={fmt(winSum(series.amazonCalls))} sub={`${fmt(m.amazon_calls)} au total · Creators API`} delta={winDelta(series.amazonCalls)} canvasRef={spkAmazon} />
+        <KPI label="Requêtes Supabase" value={fmt(winSum(series.supabaseCalls))} sub={`${fmt(m.supabase_calls)} au total · côté serveur`} delta={winDelta(series.supabaseCalls)} canvasRef={spkSupabase} />
       </div>
 
       {/* charts */}
