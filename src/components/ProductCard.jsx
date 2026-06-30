@@ -1,6 +1,15 @@
 import { useI18n } from '../lib/i18n.jsx';
 import FavoriteButton from './FavoriteButton.jsx';
 
+// Staggered pop in/out for result cards (hero/small/link + their skeletons),
+// same handoff as the home suggestion chips: entry cascades slowly, exit is
+// snappier. CARD_SWAP_DELAY_MS is how long the 3-card skeleton row's pop-out
+// takes before the real cards swap in — keep in sync with .card-pop-out below.
+export const CARD_IN_STAGGER_MS = 90;
+export const CARD_OUT_STAGGER_MS = 45;
+export const CARD_POP_ANIM_MS = 220;
+export const CARD_SWAP_DELAY_MS = 2 * CARD_OUT_STAGGER_MS + CARD_POP_ANIM_MS + 20;
+
 // Only show a real product photo when it comes from a verified Amazon result.
 // Gemini-sourced candidates must never display a scraped/guessed Amazon image
 // (Amazon Associates Operating Agreement, art. 1 — Program Content).
@@ -206,11 +215,15 @@ export function ScoreRing({ score, size = 64 }) {
   );
 }
 
-export function HeroCard({ product, density, budget, onSelect }) {
+export function HeroCard({ product, density, budget, onSelect, delay = 0 }) {
   const { t, lang } = useI18n();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   return (
-    <article className={'hero-card density-' + density} onClick={() => onSelect(product)}>
+    <article
+      className={'hero-card density-' + density + ' card-pop-in'}
+      style={{ animationDelay: `${delay}ms` }}
+      onClick={() => onSelect(product)}
+    >
       <div className="hero-badge">
         <span className="hero-badge-dot" />
         {t('product.bestMatch')}
@@ -255,11 +268,16 @@ export function HeroCard({ product, density, budget, onSelect }) {
 // the chat stream on narrow viewports. Reuses ProductImage + PriceTag so the
 // amazon_verified rules hold automatically (placeholder + estimated range when
 // the product wasn't verified against Amazon; never a fake price/image/stars).
-export function ProductLinkCard({ product, rank, friendCount, budget, onSelect }) {
+export function ProductLinkCard({ product, rank, friendCount, budget, onSelect, delay = 0 }) {
   const { t, lang } = useI18n();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   return (
-    <button type="button" className="product-link-card" onClick={() => onSelect(product)}>
+    <button
+      type="button"
+      className="product-link-card card-pop-in"
+      style={{ animationDelay: `${delay}ms` }}
+      onClick={() => onSelect(product)}
+    >
       {rank != null && <span className="plc-rank">#{rank}</span>}
       {friendCount != null && (
         <span className="plc-friends" title={t('trending.friendsCount', { n: friendCount })}>
@@ -290,10 +308,12 @@ export function ProductLinkCard({ product, rank, friendCount, budget, onSelect }
 // Shimmer placeholder shown while a recommendation request is in flight, so the
 // results area reserves space and reads as "loading" instead of jumping from an
 // empty state straight to three cards. Variants mirror the real cards.
-export function ProductSkeleton({ variant = 'small' }) {
+export function ProductSkeleton({ variant = 'small', delay = 0, leaving = false }) {
+  const animClass = leaving ? 'card-pop-out' : 'card-pop-in';
+  const style = { animationDelay: `${delay}ms` };
   if (variant === 'hero') {
     return (
-      <div className="hero-card skel-card" aria-hidden="true">
+      <div className={'hero-card skel-card ' + animClass} style={style} aria-hidden="true">
         <div className="hero-grid">
           <div className="skel-block skel-img-large" />
           <div className="hero-meta">
@@ -309,7 +329,7 @@ export function ProductSkeleton({ variant = 'small' }) {
   }
   if (variant === 'link') {
     return (
-      <div className="product-link-card skel-card" aria-hidden="true">
+      <div className={'product-link-card skel-card ' + animClass} style={style} aria-hidden="true">
         <span className="skel-block skel-thumb" />
         <span className="plc-body">
           <div className="skel-line w40" />
@@ -320,7 +340,7 @@ export function ProductSkeleton({ variant = 'small' }) {
     );
   }
   return (
-    <div className="small-card skel-card" aria-hidden="true">
+    <div className={'small-card skel-card ' + animClass} style={style} aria-hidden="true">
       <div className="skel-block skel-img-small" />
       <div className="small-info">
         <div className="skel-line w50" />
@@ -331,11 +351,15 @@ export function ProductSkeleton({ variant = 'small' }) {
   );
 }
 
-export function SmallCard({ product, rank, density, budget, onSelect }) {
+export function SmallCard({ product, rank, density, budget, onSelect, delay = 0 }) {
   const { t, lang } = useI18n();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   return (
-    <article className={'small-card density-' + density} onClick={() => onSelect(product)}>
+    <article
+      className={'small-card density-' + density + ' card-pop-in'}
+      style={{ animationDelay: `${delay}ms` }}
+      onClick={() => onSelect(product)}
+    >
       <div className="small-rank">#{rank}</div>
       <FavoriteButton product={product} />
       <ProductImage product={product} size="small" />

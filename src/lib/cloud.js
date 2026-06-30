@@ -105,6 +105,28 @@ export async function cloudFetchOwned() {
   return (data || []).map((r) => r.data).filter(Boolean);
 }
 
+// ─── Link clicks ("Consultés" — products the user clicked through to Amazon)
+// link_clicks is an append-only log (see logLinkClick below): the same
+// product can have many rows, so we dedupe client-side, keeping the most
+// recent click per product_id.
+export async function cloudFetchLinkClicks(limit = 200) {
+  if (!hasCloudSession()) return null;
+  const { data, error } = await supabase
+    .from('link_clicks')
+    .select('product_id, data, clicked_at')
+    .order('clicked_at', { ascending: false })
+    .limit(limit);
+  if (error) return null;
+  const seen = new Set();
+  const out = [];
+  for (const r of data || []) {
+    if (!r?.data || seen.has(r.product_id)) continue;
+    seen.add(r.product_id);
+    out.push({ ...r.data, clickedAt: r.clicked_at });
+  }
+  return out;
+}
+
 // ─── Recipients (saved gift profiles) ──────────────────────────────────────
 export async function cloudUpsertRecipient(item) {
   if (!hasCloudSession() || item?.id == null) return;

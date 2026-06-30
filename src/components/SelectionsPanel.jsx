@@ -11,22 +11,38 @@ import {
   removeListFromAll,
 } from '../lib/selections.js';
 import { listLists, getListsRevision, updateList, deleteList } from '../lib/lists.js';
+import { listOwned, removeOwned } from '../lib/owned.js';
+import { cloudFetchLinkClicks } from '../lib/cloud.js';
 import { buildShareUrl } from '../lib/gift.js';
 import FavoriteButton from './FavoriteButton.jsx';
 import { useDismiss } from '../lib/useDismiss.js';
 
-// Saved products, organized into named lists (private/public).
-export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) {
+// "Mes sélections" — three tabs sharing one page:
+//  • Favoris   — saved products, organized into named lists (private/public).
+//  • Consultés — products the user clicked through to Amazon (server log,
+//    signed-in only — see cloudFetchLinkClicks).
+//  • Achetés   — products marked "already bought" from the product detail
+//    modal; feeds the advisor's exclude list (see ownedExclude in App.jsx).
+// `initialTab` picks which tab is active on open (the account menu has two
+// entries — "Mes sélections" and "Déjà acheté" — that both open this panel,
+// just on a different tab). Clicking a Consultés/Achetés card opens the
+// shared product detail modal (`onOpenProduct`); Favoris cards still link
+// straight to Amazon, unchanged.
+export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, onOpenProduct, initialTab = 'favorites' }) {
   const { user } = useAuth();
   const { t, lang } = useI18n();
   const { closing, close } = useDismiss(onClose);
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
+  const [tab, setTab] = useState(initialTab);
   const [items, setItems] = useState([]);
   const [lists, setLists] = useState([]);
   const [active, setActive] = useState('all'); // 'all' | listId | 'unfiled'
   const [shared, setShared] = useState(false);
   const [q, setQ] = useState('');
   const loadedSig = useRef(null);
+  const [ownedItems, setOwnedItems] = useState([]);
+  const [clickedItems, setClickedItems] = useState(null); // null = not loaded yet
+  const [clickedLoading, setClickedLoading] = useState(false);
 
   const reload = () => {
     setItems(listSelections(user?.sub));
@@ -41,6 +57,26 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user?.sub]);
+
+  const reloadOwned = () => setOwnedItems(listOwned(user?.sub));
+
+  useEffect(() => {
+    if (!open) return;
+    reloadOwned();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user?.sub]);
+
+  useEffect(() => {
+    if (!open || tab !== 'clicked' || !user) return;
+    let alive = true;
+    setClickedLoading(true);
+    cloudFetchLinkClicks().then((list) => {
+      if (!alive) return;
+      setClickedItems(Array.isArray(list) ? list : []);
+      setClickedLoading(false);
+    });
+    return () => { alive = false; };
+  }, [open, tab, user?.sub]);
 
   useEffect(() => {
     if (!open) return;
@@ -77,6 +113,12 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
     e.stopPropagation();
     removeSelection(user?.sub, id);
     reload();
+  };
+
+  const removeOwnedItem = (id, e) => {
+    e.stopPropagation();
+    removeOwned(user?.sub, id);
+    reloadOwned();
   };
 
   const onDeleteList = () => {
@@ -145,129 +187,233 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy }) 
         </header>
         <div className="sheet-body">
 
-        {(lists.length > 0 || unfiledCount > 0) && (
-          <div className="sel-lists-bar">
-            <button
-              type="button"
-              className={'sel-list-chip' + (active === 'all' ? ' is-active' : '')}
-              onClick={() => setActive('all')}
-            >
-              {t('lists.all')} <span className="sel-list-n">{items.length}</span>
-            </button>
-            {lists.map((l) => (
-              <button
-                key={l.id}
-                type="button"
-                className={'sel-list-chip' + (active === l.id ? ' is-active' : '')}
-                onClick={() => setActive(l.id)}
-              >
-                {l.visibility === 'public' ? '🌐 ' : ''}{l.name}{' '}
-                <span className="sel-list-n">{countFor(l.id)}</span>
-              </button>
-            ))}
-            {unfiledCount > 0 && (
-              <button
-                type="button"
-                className={'sel-list-chip' + (active === 'unfiled' ? ' is-active' : '')}
-                onClick={() => setActive('unfiled')}
-              >
-                {t('lists.unfiled')} <span className="sel-list-n">{unfiledCount}</span>
-              </button>
-            )}
-          </div>
-        )}
+        <div className="sel-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={tab === 'favorites'} className={'sel-tab' + (tab === 'favorites' ? ' is-active' : '')} onClick={() => setTab('favorites')}>
+            {t('sel.tabFavorites')}
+          </button>
+          <button type="button" role="tab" aria-selected={tab === 'clicked'} className={'sel-tab' + (tab === 'clicked' ? ' is-active' : '')} onClick={() => setTab('clicked')}>
+            {t('sel.tabClicked')}
+          </button>
+          <button type="button" role="tab" aria-selected={tab === 'owned'} className={'sel-tab' + (tab === 'owned' ? ' is-active' : '')} onClick={() => setTab('owned')}>
+            {t('sel.tabOwned')}
+          </button>
+        </div>
 
-        {activeList && (
-          <div className="sel-list-manage">
-            <button type="button" className="sel-manage-btn" onClick={onToggleVisibility}>
-              {activeList.visibility === 'public' ? t('lists.makePrivate') : t('lists.makePublic')}
-            </button>
-            <span className="sel-manage-note">
-              {activeList.visibility === 'public'
-                ? t('lists.visibilityPublicNote')
-                : t('lists.visibilityPrivateNote')}
-            </span>
-            <span className="sel-manage-spacer" />
-            <button type="button" className="sel-manage-btn" onClick={shareList}>
-              <span aria-hidden="true">🔗</span> {shared ? t('selections.shareCopied') : t('selections.share')}
-            </button>
-            <button type="button" className="sel-manage-btn" onClick={onRenameList}>
-              {t('lists.rename')}
-            </button>
-            <button type="button" className="sel-manage-btn danger" onClick={onDeleteList}>
-              {t('lists.delete')}
-            </button>
-          </div>
-        )}
-
-        {items.length > 0 && (
-          <div className="friends-search">
-            <input
-              type="text"
-              className="profile-input"
-              value={q}
-              placeholder={t('selections.searchPlaceholder')}
-              onChange={(e) => setQ(e.target.value)}
-            />
-          </div>
-        )}
-
-        {shown.length === 0 ? (
-          <div className="history-empty">
-            <div className="history-empty-icon">♡</div>
-            <div className="history-empty-text">{t('selections.emptyText')}</div>
-            <div className="history-empty-sub">{t('selections.emptySub')}</div>
-          </div>
-        ) : visible.length === 0 ? (
-          <div className="friends-hint">{t('search.noResults')}</div>
-        ) : (
+        {tab === 'favorites' && (
           <>
-            <ul className="selections-grid">
-              {visible.map((p) => {
-                const url = getAmazonUrl ? getAmazonUrl(p) : p.amazon_url;
-                return (
-                  <li key={p.id} className="amz-card">
-                    <FavoriteButton product={p} variant="manage" onChange={reload} />
-                    <button
-                      type="button"
-                      className="amz-card-remove"
-                      aria-label={t('selections.remove')}
-                      title={t('selections.remove')}
-                      onClick={(e) => remove(p.id, e)}
-                    >
-                      ✕
-                    </button>
-                    <a className="amz-card-img" href={url} target="_blank" rel="noopener noreferrer sponsored" onClick={() => onBuy?.(p)}>
-                      <ProductImage product={p} size="small" />
-                    </a>
-                    <div className="amz-card-body">
-                      <a className="amz-card-title" href={url} target="_blank" rel="noopener noreferrer sponsored" onClick={() => onBuy?.(p)}>
-                        {[p.brand, p.model].filter(Boolean).join(' ')}
-                      </a>
-                      {p.rating != null && (
-                        <div className="amz-card-rating">
-                          <Stars rating={p.rating} />
-                          {p.reviews != null && (
-                            <span className="amz-card-reviews">{p.reviews.toLocaleString(locale)}</span>
+            {(lists.length > 0 || unfiledCount > 0) && (
+              <div className="sel-lists-bar">
+                <button
+                  type="button"
+                  className={'sel-list-chip' + (active === 'all' ? ' is-active' : '')}
+                  onClick={() => setActive('all')}
+                >
+                  {t('lists.all')} <span className="sel-list-n">{items.length}</span>
+                </button>
+                {lists.map((l) => (
+                  <button
+                    key={l.id}
+                    type="button"
+                    className={'sel-list-chip' + (active === l.id ? ' is-active' : '')}
+                    onClick={() => setActive(l.id)}
+                  >
+                    {l.visibility === 'public' ? '🌐 ' : ''}{l.name}{' '}
+                    <span className="sel-list-n">{countFor(l.id)}</span>
+                  </button>
+                ))}
+                {unfiledCount > 0 && (
+                  <button
+                    type="button"
+                    className={'sel-list-chip' + (active === 'unfiled' ? ' is-active' : '')}
+                    onClick={() => setActive('unfiled')}
+                  >
+                    {t('lists.unfiled')} <span className="sel-list-n">{unfiledCount}</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {activeList && (
+              <div className="sel-list-manage">
+                <button type="button" className="sel-manage-btn" onClick={onToggleVisibility}>
+                  {activeList.visibility === 'public' ? t('lists.makePrivate') : t('lists.makePublic')}
+                </button>
+                <span className="sel-manage-note">
+                  {activeList.visibility === 'public'
+                    ? t('lists.visibilityPublicNote')
+                    : t('lists.visibilityPrivateNote')}
+                </span>
+                <span className="sel-manage-spacer" />
+                <button type="button" className="sel-manage-btn" onClick={shareList}>
+                  <span aria-hidden="true">🔗</span> {shared ? t('selections.shareCopied') : t('selections.share')}
+                </button>
+                <button type="button" className="sel-manage-btn" onClick={onRenameList}>
+                  {t('lists.rename')}
+                </button>
+                <button type="button" className="sel-manage-btn danger" onClick={onDeleteList}>
+                  {t('lists.delete')}
+                </button>
+              </div>
+            )}
+
+            {items.length > 0 && (
+              <div className="friends-search">
+                <input
+                  type="text"
+                  className="profile-input"
+                  value={q}
+                  placeholder={t('selections.searchPlaceholder')}
+                  onChange={(e) => setQ(e.target.value)}
+                />
+              </div>
+            )}
+
+            {shown.length === 0 ? (
+              <div className="history-empty">
+                <div className="history-empty-icon">♡</div>
+                <div className="history-empty-text">{t('selections.emptyText')}</div>
+                <div className="history-empty-sub">{t('selections.emptySub')}</div>
+              </div>
+            ) : visible.length === 0 ? (
+              <div className="friends-hint">{t('search.noResults')}</div>
+            ) : (
+              <>
+                <ul className="selections-grid">
+                  {visible.map((p) => {
+                    const url = getAmazonUrl ? getAmazonUrl(p) : p.amazon_url;
+                    return (
+                      <li key={p.id} className="amz-card">
+                        <FavoriteButton product={p} variant="manage" onChange={reload} />
+                        <button
+                          type="button"
+                          className="amz-card-remove"
+                          aria-label={t('selections.remove')}
+                          title={t('selections.remove')}
+                          onClick={(e) => remove(p.id, e)}
+                        >
+                          ✕
+                        </button>
+                        <a className="amz-card-img" href={url} target="_blank" rel="noopener noreferrer sponsored" onClick={() => onBuy?.(p)}>
+                          <ProductImage product={p} size="small" />
+                        </a>
+                        <div className="amz-card-body">
+                          <a className="amz-card-title" href={url} target="_blank" rel="noopener noreferrer sponsored" onClick={() => onBuy?.(p)}>
+                            {[p.brand, p.model].filter(Boolean).join(' ')}
+                          </a>
+                          {p.rating != null && (
+                            <div className="amz-card-rating">
+                              <Stars rating={p.rating} />
+                              {p.reviews != null && (
+                                <span className="amz-card-reviews">{p.reviews.toLocaleString(locale)}</span>
+                              )}
+                            </div>
                           )}
+                          {p.price != null && (
+                            <div className="amz-card-price"><AmazonPrice price={p.price} /></div>
+                          )}
+                          <div className="amz-card-added">
+                            {t('selections.added', { when: formatRelative(p.addedAt) })}
+                          </div>
+                          <a className="amz-buy-btn" href={url} target="_blank" rel="noopener noreferrer sponsored" onClick={() => onBuy?.(p)}>
+                            {t('product.viewAmazon')}
+                          </a>
                         </div>
-                      )}
-                      {p.price != null && (
-                        <div className="amz-card-price"><AmazonPrice price={p.price} /></div>
-                      )}
-                      <div className="amz-card-added">
-                        {t('selections.added', { when: formatRelative(p.addedAt) })}
-                      </div>
-                      <a className="amz-buy-btn" href={url} target="_blank" rel="noopener noreferrer sponsored" onClick={() => onBuy?.(p)}>
-                        {t('product.viewAmazon')}
-                      </a>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-            <p className="selections-note">{t('selections.priceNote')}</p>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="selections-note">{t('selections.priceNote')}</p>
+              </>
+            )}
           </>
+        )}
+
+        {tab === 'clicked' && (
+          !user ? (
+            <div className="history-empty">
+              <div className="history-empty-icon">🔗</div>
+              <div className="history-empty-text">{t('sel.clickedSignedOut')}</div>
+            </div>
+          ) : clickedLoading || clickedItems == null ? (
+            <div className="history-empty">
+              <div className="history-empty-text">…</div>
+            </div>
+          ) : clickedItems.length === 0 ? (
+            <div className="history-empty">
+              <div className="history-empty-icon">🔗</div>
+              <div className="history-empty-text">{t('sel.clickedEmptyText')}</div>
+              <div className="history-empty-sub">{t('sel.clickedEmptySub')}</div>
+            </div>
+          ) : (
+            <ul className="selections-grid">
+              {clickedItems.map((p) => (
+                <li key={p.id} className="amz-card">
+                  <button type="button" className="amz-card-img" onClick={() => onOpenProduct?.(p)}>
+                    <ProductImage product={p} size="small" />
+                  </button>
+                  <div className="amz-card-body">
+                    <button type="button" className="amz-card-title" onClick={() => onOpenProduct?.(p)}>
+                      {[p.brand, p.model].filter(Boolean).join(' ')}
+                    </button>
+                    {p.rating != null && (
+                      <div className="amz-card-rating">
+                        <Stars rating={p.rating} />
+                        {p.reviews != null && (
+                          <span className="amz-card-reviews">{p.reviews.toLocaleString(locale)}</span>
+                        )}
+                      </div>
+                    )}
+                    {p.price != null && (
+                      <div className="amz-card-price"><AmazonPrice price={p.price} /></div>
+                    )}
+                    <div className="amz-card-added">
+                      {t('selections.added', { when: formatRelative(p.clickedAt) })}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )
+        )}
+
+        {tab === 'owned' && (
+          ownedItems.length === 0 ? (
+            <div className="history-empty">
+              <div className="history-empty-icon">🛍️</div>
+              <div className="history-empty-text">{t('owned.emptyText')}</div>
+              <div className="history-empty-sub">{t('owned.emptySub')}</div>
+            </div>
+          ) : (
+            <ul className="selections-grid">
+              {ownedItems.map((p) => (
+                <li key={p.id} className="amz-card">
+                  <button
+                    type="button"
+                    className="amz-card-remove"
+                    aria-label={t('owned.remove')}
+                    title={t('owned.remove')}
+                    onClick={(e) => removeOwnedItem(p.id, e)}
+                  >
+                    ✕
+                  </button>
+                  <button type="button" className="amz-card-img" onClick={() => onOpenProduct?.(p)}>
+                    <ProductImage product={p} size="small" />
+                  </button>
+                  <div className="amz-card-body">
+                    <button type="button" className="amz-card-title" onClick={() => onOpenProduct?.(p)}>
+                      {[p.brand, p.model].filter(Boolean).join(' ')}
+                    </button>
+                    {p.price != null && (
+                      <div className="amz-card-price"><AmazonPrice price={p.price} /></div>
+                    )}
+                    <div className="amz-card-added">
+                      {t('selections.added', { when: formatRelative(p.addedAt) })}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )
         )}
       </div>
     </div>

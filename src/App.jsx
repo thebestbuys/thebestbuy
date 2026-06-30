@@ -22,19 +22,17 @@ const GuideArticle = lazy(() => import('./components/GuideArticle.jsx'));
 const GuidesPanel = lazy(() => import('./components/GuidesPanel.jsx'));
 const TutorialModal = lazy(() => import('./components/TutorialModal.jsx'));
 const GiftHub = lazy(() => import('./components/GiftHub.jsx'));
-const OwnedPanel = lazy(() => import('./components/OwnedPanel.jsx'));
 import { GUIDES, localizeGuide, getGuide } from './data/guides.js';
-import { HeroCard, PriceTag, ProductImage, ProductLinkCard, ProductSkeleton, ScoreRing, SmallCard, VerifiedBadge, VerifiedRating } from './components/ProductCard.jsx';
+import { CARD_IN_STAGGER_MS, CARD_OUT_STAGGER_MS, CARD_SWAP_DELAY_MS, HeroCard, PriceTag, ProductImage, ProductLinkCard, ProductSkeleton, ScoreRing, SmallCard, VerifiedBadge, VerifiedRating } from './components/ProductCard.jsx';
 import PanelHelpButton from './components/PanelHelpButton.jsx';
 import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './lib/i18n.jsx';
 import { getProfile, profileToPrompt } from './lib/profile.js';
 import { giftToPrompt, giftTitle, buildShareUrl, loadSharedPayload } from './lib/gift.js';
 import { getAccessToken, circleTrending, logLinkClick } from './lib/cloud.js';
-import { getOwnedNames, ownedIdSet } from './lib/owned.js';
+import { getOwnedNames, isOwned, ownedIdSet, toggleOwned } from './lib/owned.js';
 import { listSelections } from './lib/selections.js';
 import { useDismiss } from './lib/useDismiss.js';
-import { recordClick } from './lib/clicked.js';
 import { toast } from './lib/toast.js';
 import {
   deriveTitle,
@@ -754,12 +752,16 @@ function ProductQa({ product }) {
 
 function ProductDetail({ product, onClose, onBuy }) {
   const { t, lang } = useI18n();
+  const { user } = useAuth();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   const amazonUrl = product.amazon_url ||
     `https://www.amazon.fr/s?k=${encodeURIComponent(`${product.brand} ${product.model}`)}&tag=oraklia123-21`;
   // No real (verified) Amazon image → don't show a placeholder at all; let the
   // detail content take the full width.
   const hasImage = product.amazon_verified && !!product.image_url;
+  const [owned, setOwned] = useState(() => isOwned(user?.sub, product.id));
+  useEffect(() => { setOwned(isOwned(user?.sub, product.id)); }, [user?.sub, product.id]);
+  const toggleOwn = () => setOwned(toggleOwned(user?.sub, product));
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -818,6 +820,23 @@ function ProductDetail({ product, onClose, onBuy }) {
               </div>
               <div className="modal-buy">
                 <FavoriteButton product={product} variant="inline" />
+                <button
+                  type="button"
+                  className={'owned-toggle' + (owned ? ' on' : '')}
+                  onClick={toggleOwn}
+                  aria-pressed={owned}
+                >
+                  {owned ? (
+                    <>
+                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M2 8.5 6 12l8-8.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      {t('owned.marked')}
+                    </>
+                  ) : (
+                    t('owned.mark')
+                  )}
+                </button>
                 <a
                   className="btn-primary big"
                   href={amazonUrl}
@@ -862,7 +881,10 @@ export default function App() {
   const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [convoId, setConvoId] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [selectionsOpen, setSelectionsOpen] = useState(false);
+  // "Mes sélections" — null when closed, else the tab to open on
+  // ('favorites' | 'clicked' | 'owned'). Both the "Mes sélections" and "Déjà
+  // acheté" account-menu entries open the same panel on a different tab.
+  const [selectionsTab, setSelectionsTab] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [friendsOpen, setFriendsOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -872,7 +894,6 @@ export default function App() {
   const [guidesOpen, setGuidesOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [trendingOpen, setTrendingOpen] = useState(false);
-  const [ownedOpen, setOwnedOpen] = useState(false);
   const [giftPrefill, setGiftPrefill] = useState(null); // {occasion} when opened from a reminder
   const [gift, setGift] = useState(null);   // recipient payload when in gift mode
   const [shareCopied, setShareCopied] = useState(false);
@@ -902,6 +923,58 @@ export default function App() {
   const [editIndex, setEditIndex] = useState(null); // answer index being edited in place
   const [loadingProducts, setLoadingProducts] = useState(false); // a recommend() call is in flight
   const [retryAction, setRetryAction] = useState(null); // re-run the last failed AI call (set on error)
+
+  // Skeleton → real cards handoff: when a fresh batch of recommendations lands
+  // while the loading skeleton is on screen, let the skeleton play its
+  // staggered pop-out before swapping to the (staggered pop-in) real cards —
+  // same handoff as the home suggestion chips. Restoring a saved conversation
+  // or refining an already-shown set (show others / edit answer) skips this:
+  // only a genuine "products just finished loading" transition gets it.
+  const [cardsReady, setCardsReady] = useState(recommendedProducts.length > 0);
+  const [skelLeaving, setSkelLeaving] = useState(false);
+  const wasLoadingRef = useRef(false);
+  const hadProductsRef = useRef(recommendedProducts.length > 0);
+  useEffect(() => { wasLoadingRef.current = loadingProducts; }, [loadingProducts]);
+  useEffect(() => {
+    const hasProducts = recommendedProducts.length > 0;
+    if (hasProducts && !hadProductsRef.current) {
+      hadProductsRef.current = true;
+      if (wasLoadingRef.current) {
+        setCardsReady(false);
+        setSkelLeaving(true);
+        const tm = setTimeout(() => { setSkelLeaving(false); setCardsReady(true); }, CARD_SWAP_DELAY_MS);
+        return () => clearTimeout(tm);
+      }
+      setCardsReady(true);
+    } else if (!hasProducts) {
+      hadProductsRef.current = false;
+      setCardsReady(false);
+      setSkelLeaving(false);
+    }
+  }, [recommendedProducts.length]);
+
+  // Stack of past recommendation batches in this conversation, so the user can
+  // flip back to what was suggested before a refinement replaced it.
+  // `recommendedProducts` always holds the live/latest batch; pastProductBatches
+  // holds older ones (most recent first). `viewingPastIndex` is null while
+  // looking at the live batch, or an index into pastProductBatches otherwise.
+  const [pastProductBatches, setPastProductBatches] = useState([]);
+  const [viewingPastIndex, setViewingPastIndex] = useState(null);
+  // Always-current snapshot of recommendedProducts, read inside loadProducts()
+  // (which may run after an await, so a closure over the render-time value
+  // could miss enrichment updates that happened in between).
+  const recommendedProductsRef = useRef(recommendedProducts);
+  useEffect(() => { recommendedProductsRef.current = recommendedProducts; }, [recommendedProducts]);
+  const displayedProducts = viewingPastIndex != null && pastProductBatches[viewingPastIndex]
+    ? pastProductBatches[viewingPastIndex]
+    : recommendedProducts;
+  const viewPreviousSuggestions = () => {
+    setViewingPastIndex((idx) => {
+      const next = idx == null ? 0 : idx + 1;
+      return next < pastProductBatches.length ? next : idx;
+    });
+  };
+  const viewLatestSuggestions = () => setViewingPastIndex(null);
 
   // Self mode: recommend after the first 5 answers, then every 3 more (8, 11, …).
   // Gift mode: recommend immediately (the recipient form already has budget +
@@ -983,6 +1056,12 @@ export default function App() {
       .map((p) => ({ ...p, id: productKey(p), category }))
       .filter((p) => !owned.has(p.id));
     if (!base.length) return;
+    // Keep the outgoing batch reachable via the "previous suggestions" toggle.
+    const outgoing = recommendedProductsRef.current;
+    if (outgoing.length > 0) {
+      setPastProductBatches((past) => [outgoing, ...past]);
+    }
+    setViewingPastIndex(null);
     setDone(true);
     setRecommendedProducts(base);
     base.forEach((p, i) => {
@@ -1168,6 +1247,8 @@ export default function App() {
     setDone(false);
     setTurnCount(0);
     setRecommendedProducts([]);
+    setPastProductBatches([]);
+    setViewingPastIndex(null);
     setConvoId(null);
     setGift(null);
   };
@@ -1184,6 +1265,8 @@ export default function App() {
     setDone(false);
     setTurnCount(0);
     setRecommendedProducts([]);
+    setPastProductBatches([]);
+    setViewingPastIndex(null);
     setRefreshKey((k) => k + 1);
     setConvoId(newConversationId());
   };
@@ -1199,6 +1282,8 @@ export default function App() {
     setRecommendedProducts(
       Array.isArray(convo.recommendedProducts) ? convo.recommendedProducts : [],
     );
+    setPastProductBatches([]);
+    setViewingPastIndex(null);
     setDone(Boolean(convo.done));
     setCurrentQuestion(
       convo.currentQuestion && Array.isArray(convo.currentQuestion.choices)
@@ -1230,7 +1315,7 @@ export default function App() {
   const navOpenGiftHub = () => { pushHistory('/idees-cadeaux'); setGiftHubOpen(true); };
   const navOpenLegal = () => { pushHistory('/mentions-legales'); setLegalOpen(true); };
   const navOpenHistory = () => { pushHistory(); setHistoryOpen(true); };
-  const navOpenSelections = () => { pushHistory(); setSelectionsOpen(true); };
+  const navOpenSelections = () => { pushHistory(); setSelectionsTab('favorites'); };
   const navOpenProfile = () => { pushHistory(); setProfileOpen(true); };
   const navOpenFriends = () => { pushHistory(); setFriendsOpen(true); };
   const navOpenAdmin = () => { pushHistory(); setAdminOpen(true); };
@@ -1240,7 +1325,7 @@ export default function App() {
   const navOpenGuides = () => { pushHistory(); setGuidesOpen(true); };
   const navOpenTutorial = () => { pushHistory(); setTutorialOpen(true); };
   const navOpenTrending = () => { pushHistory(); setTrendingOpen(true); };
-  const navOpenOwned = () => { pushHistory(); setOwnedOpen(true); };
+  const navOpenOwned = () => { pushHistory(); setSelectionsTab('owned'); };
   // From a reminder: friend birthday → start directly; holiday/occasion → open
   // the gift form prefilled with the occasion so the user can link a recipient.
   const giftFromReminder = (payload) => {
@@ -1253,7 +1338,7 @@ export default function App() {
       setGiftOpen(true);
     }
   };
-  const navOpenProduct = (p) => { recordClick(user?.sub, p); pushHistory(); setSelected(p); };
+  const navOpenProduct = (p) => { pushHistory(); setSelected(p); };
   // Start a gift advisor session from the recipient form. Reuses the normal
   // advisor pipeline with a pseudo-category ('gift') and the recipient payload;
   // the auto-start effect (keyed on convoId) fires the first recommend + ask.
@@ -1266,6 +1351,8 @@ export default function App() {
     setAnswers([]);
     setMessages([]);
     setRecommendedProducts([]);
+    setPastProductBatches([]);
+    setViewingPastIndex(null);
     setDone(false);
     setTurnCount(0);
     setCurrentQuestion(null);
@@ -1278,6 +1365,8 @@ export default function App() {
     setAnswers([]);
     setMessages([]);
     setRecommendedProducts([]);
+    setPastProductBatches([]);
+    setViewingPastIndex(null);
     setDone(false);
     setTurnCount(0);
     setCurrentQuestion(null);
@@ -1300,11 +1389,10 @@ export default function App() {
       if (friendsOpen) { setFriendsOpen(false); return; }
       if (adminOpen) { setAdminOpen(false); return; }
       if (profileOpen) { setProfileOpen(false); return; }
-      if (selectionsOpen) { setSelectionsOpen(false); return; }
+      if (selectionsTab) { setSelectionsTab(null); return; }
       if (historyOpen) { setHistoryOpen(false); return; }
       if (guidesOpen) { setGuidesOpen(false); return; }
       if (trendingOpen) { setTrendingOpen(false); return; }
-      if (ownedOpen) { setOwnedOpen(false); return; }
       if (activeGuide) { setActiveGuide(null); return; }
       if (giftHubOpen) { setGiftHubOpen(false); return; }
       if (category) { handleHome(); return; }
@@ -1312,7 +1400,7 @@ export default function App() {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, giftOpen, askOpen, friendsOpen, adminOpen, profileOpen, selectionsOpen, guidesOpen, tutorialOpen, trendingOpen, ownedOpen, historyOpen, activeGuide, giftHubOpen, category]);
+  }, [selected, legalOpen, giftOpen, askOpen, friendsOpen, adminOpen, profileOpen, selectionsTab, guidesOpen, tutorialOpen, trendingOpen, historyOpen, activeGuide, giftHubOpen, category]);
 
   // The per-panel "?" help buttons (PanelHelpButton) open the tutorial via this
   // window event, so panels don't each need an onOpenTutorial prop.
@@ -1393,6 +1481,8 @@ export default function App() {
     setAnswers([]);
     setMessages([]);
     setRecommendedProducts([]);
+    setPastProductBatches([]);
+    setViewingPastIndex(null);
     setDone(false);
     setTurnCount(0);
     setCurrentQuestion(null);
@@ -1474,27 +1564,26 @@ export default function App() {
           {historyOpen && (
             <HistoryPanel open onClose={navBack} onLoad={loadConversation} currentId={convoId} />
           )}
-          {selectionsOpen && (
-            <SelectionsPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} onBuy={handleBuy} />
+          {selectionsTab && (
+            <SelectionsPanel open initialTab={selectionsTab} onClose={navBack} getAmazonUrl={getAmazonUrl} onBuy={handleBuy} onOpenProduct={navOpenProduct} />
           )}
           {profileOpen && <ProfilePanel open onClose={navBack} />}
           {friendsOpen && <FriendsPanel open onClose={navBack} />}
           {adminOpen && <AdminPanel open onClose={navBack} />}
-          
+
           {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
           {giftOpen && <GiftPanel open onClose={navBack} onSubmit={startGift} initial={giftPrefill} />}
           {guidesOpen && <GuidesPanel open onClose={navBack} onOpenGuide={navOpenGuide} />}
           {tutorialOpen && <TutorialModal open onClose={navBack} onOpenGuides={navOpenGuides} />}
           {trendingOpen && <TrendingPanel onClose={navBack} onOpen={navOpenProduct} />}
-          {ownedOpen && <OwnedPanel open onClose={navBack} />}
           {legalOpen && <LegalNotices open onClose={navBack} />}
         </Suspense>
       </>
     );
   }
 
-  const top = recommendedProducts[0];
-  const rest = recommendedProducts.slice(1, 3);
+  const top = displayedProducts[0];
+  const rest = displayedProducts.slice(1, 3);
   const editAnswerObj = editIndex != null ? answers[editIndex] : null;
   const editMsgIndex = editAnswerObj ? editAnswerObj._msgIndex : null;
   const editQuestion = editAnswerObj ? editAnswerObj._q : null;
@@ -1515,7 +1604,7 @@ export default function App() {
         editMsgIndex={editMsgIndex}
         editQuestion={editQuestion}
         onRetry={retryAction}
-        onShowOthers={recommendedProducts.length > 0 ? showOtherProducts : null}
+        onShowOthers={recommendedProducts.length > 0 && viewingPastIndex === null ? showOtherProducts : null}
         onRecommendNow={recommendedProducts.length === 0 && !isTyping && answers.length >= 1 && category !== 'gift' ? recommendNow : null}
         guide={resultsGuide}
         onOpenGuide={navOpenGuide}
@@ -1523,10 +1612,16 @@ export default function App() {
         isTyping={isTyping}
         layout={t.chatLayout}
         progressInfo={progressInfo}
-        products={recommendedProducts}
+        products={displayedProducts}
         onSelectProduct={navOpenProduct}
         inlineProducts={narrow}
         loadingProducts={loadingProducts}
+        cardsReady={cardsReady}
+        skelLeaving={skelLeaving}
+        pastCount={pastProductBatches.length}
+        viewingPastIndex={viewingPastIndex}
+        onViewPrevious={viewPreviousSuggestions}
+        onViewLatest={viewLatestSuggestions}
         headerExtras={narrow ? (
           <>
             {category === 'gift' && recommendedProducts.length > 0 && (
@@ -1566,41 +1661,56 @@ export default function App() {
 
         <div
           className="results-content"
-          key={recommendedProducts.length > 0 ? refreshKey : loadingProducts ? 'loading' : 'placeholder'}
+          key={cardsReady && recommendedProducts.length > 0 ? 'cards-' + refreshKey + '-' + (viewingPastIndex ?? 'live') : (loadingProducts || skelLeaving) ? 'loading' : 'placeholder'}
         >
-          {recommendedProducts.length > 0 ? (
+          {cardsReady && recommendedProducts.length > 0 ? (
             <>
               {top && (
                 <div className={'hero-wrap variant-' + t.heroVariant}>
-                  <HeroCard product={top} density={t.density} budget={budgetBounds} onSelect={navOpenProduct} />
+                  <HeroCard product={top} density={t.density} budget={budgetBounds} onSelect={navOpenProduct} delay={0} />
                 </div>
               )}
               <div className={'small-grid density-' + t.density}>
                 {rest.map((p, i) => (
-                  <SmallCard key={p.id} product={p} rank={i + 2} density={t.density} budget={budgetBounds} onSelect={navOpenProduct} />
+                  <SmallCard key={p.id} product={p} rank={i + 2} density={t.density} budget={budgetBounds} onSelect={navOpenProduct} delay={(i + 1) * CARD_IN_STAGGER_MS} />
                 ))}
               </div>
               <div className="results-actions">
-                {!isTyping && (
+                {!isTyping && viewingPastIndex === null && (
                   <button type="button" className="show-others-btn" onClick={showOtherProducts}>
                     <span aria-hidden="true">↻</span> {tr('results.showOthers')}
                   </button>
                 )}
-                {resultsGuide && (
+                {viewingPastIndex === null && pastProductBatches.length > 0 && (
+                  <button type="button" className="show-others-btn" onClick={viewPreviousSuggestions}>
+                    <span aria-hidden="true">◀</span> {tr('results.viewPrevious')}
+                  </button>
+                )}
+                {viewingPastIndex !== null && (
+                  <button type="button" className="show-others-btn" onClick={viewLatestSuggestions}>
+                    {tr('results.viewLatest')} <span aria-hidden="true">▶</span>
+                  </button>
+                )}
+                {viewingPastIndex !== null && viewingPastIndex < pastProductBatches.length - 1 && (
+                  <button type="button" className="show-others-btn" onClick={viewPreviousSuggestions}>
+                    <span aria-hidden="true">◀</span> {tr('results.viewPrevious')}
+                  </button>
+                )}
+                {resultsGuide && viewingPastIndex === null && (
                   <button type="button" className="results-guide-link" onClick={() => navOpenGuide(resultsGuide.slug)}>
                     {tr('results.guideCta', { title: resultsGuide.title })}
                   </button>
                 )}
               </div>
             </>
-          ) : loadingProducts ? (
+          ) : loadingProducts || skelLeaving ? (
             <>
               <div className={'hero-wrap variant-' + t.heroVariant}>
-                <ProductSkeleton variant="hero" />
+                <ProductSkeleton variant="hero" delay={0} leaving={skelLeaving} />
               </div>
               <div className={'small-grid density-' + t.density}>
-                <ProductSkeleton variant="small" />
-                <ProductSkeleton variant="small" />
+                <ProductSkeleton variant="small" delay={1 * (skelLeaving ? CARD_OUT_STAGGER_MS : CARD_IN_STAGGER_MS)} leaving={skelLeaving} />
+                <ProductSkeleton variant="small" delay={2 * (skelLeaving ? CARD_OUT_STAGGER_MS : CARD_IN_STAGGER_MS)} leaving={skelLeaving} />
               </div>
             </>
           ) : (
@@ -1632,16 +1742,15 @@ export default function App() {
         {historyOpen && (
           <HistoryPanel open onClose={navBack} onLoad={loadConversation} currentId={convoId} />
         )}
-        {selectionsOpen && (
-          <SelectionsPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} onBuy={handleBuy} />
+        {selectionsTab && (
+          <SelectionsPanel open initialTab={selectionsTab} onClose={navBack} getAmazonUrl={getAmazonUrl} onBuy={handleBuy} onOpenProduct={navOpenProduct} />
         )}
         {profileOpen && <ProfilePanel open onClose={navBack} />}
         {giftOpen && <GiftPanel open onClose={navBack} onSubmit={startGift} initial={giftPrefill} />}
         {friendsOpen && <FriendsPanel open onClose={navBack} />}
-        
+
         {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
         {trendingOpen && <TrendingPanel onClose={navBack} onOpen={navOpenProduct} />}
-        {ownedOpen && <OwnedPanel open onClose={navBack} />}
         {legalOpen && <LegalNotices open onClose={navBack} />}
       </Suspense>
 

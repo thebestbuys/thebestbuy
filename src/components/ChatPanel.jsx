@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../lib/i18n.jsx';
-import { ProductLinkCard, ProductSkeleton } from './ProductCard.jsx';
+import { CARD_IN_STAGGER_MS, CARD_OUT_STAGGER_MS, ProductLinkCard, ProductSkeleton } from './ProductCard.jsx';
 
 function ChatBubble({ role, children, layout, onEdit, editLabel }) {
   const { t } = useI18n();
@@ -145,12 +145,12 @@ function ChoiceControl({ question, onAnswer, onSkip }) {
   );
 }
 
-export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, onRetry = null, onShowOthers = null, onRecommendNow = null, guide = null, onOpenGuide = null, budget = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, loadingProducts = false, headerExtras = null }) {
+export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, onRetry = null, onShowOthers = null, onRecommendNow = null, guide = null, onOpenGuide = null, budget = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, loadingProducts = false, cardsReady = true, skelLeaving = false, pastCount = 0, viewingPastIndex = null, onViewPrevious = null, onViewLatest = null, headerExtras = null }) {
   const { t } = useI18n();
   const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
-  const showInline = inlineProducts && products.length > 0;
-  const showInlineSkeleton = inlineProducts && loadingProducts && products.length === 0;
+  const showInline = inlineProducts && cardsReady && products.length > 0;
+  const showInlineSkeleton = inlineProducts && (loadingProducts || skelLeaving) && !showInline;
   const ratio = progressInfo?.ratio ?? 0;
   const editing = editMsgIndex != null && editQuestion;
 
@@ -158,7 +158,7 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isTyping, currentQuestion, products, loadingProducts]);
+  }, [messages, isTyping, currentQuestion, products, loadingProducts, cardsReady, skelLeaving]);
 
   const submit = (e) => {
     e.preventDefault();
@@ -272,12 +272,27 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
             <ChatBubble role="bot" layout={layout}>{t('chat.mySelection')}</ChatBubble>
             <div className="chat-products-list">
               {products.slice(0, 3).map((p, i) => (
-                <ProductLinkCard key={p.id} product={p} rank={i + 1} budget={budget} onSelect={onSelectProduct} />
+                <ProductLinkCard key={p.id} product={p} rank={i + 1} budget={budget} onSelect={onSelectProduct} delay={i * CARD_IN_STAGGER_MS} />
               ))}
             </div>
-            {onShowOthers && !isTyping && (
+            {onShowOthers && !isTyping && viewingPastIndex === null && (
               <button type="button" className="show-others-btn show-others-chat" onClick={onShowOthers}>
                 <span aria-hidden="true">↻</span> {t('results.showOthers')}
+              </button>
+            )}
+            {viewingPastIndex === null && pastCount > 0 && onViewPrevious && (
+              <button type="button" className="show-others-btn show-others-chat" onClick={onViewPrevious}>
+                <span aria-hidden="true">◀</span> {t('results.viewPrevious')}
+              </button>
+            )}
+            {viewingPastIndex !== null && onViewLatest && (
+              <button type="button" className="show-others-btn show-others-chat" onClick={onViewLatest}>
+                {t('results.viewLatest')} <span aria-hidden="true">▶</span>
+              </button>
+            )}
+            {viewingPastIndex !== null && viewingPastIndex < pastCount - 1 && onViewPrevious && (
+              <button type="button" className="show-others-btn show-others-chat" onClick={onViewPrevious}>
+                <span aria-hidden="true">◀</span> {t('results.viewPrevious')}
               </button>
             )}
             {guide && onOpenGuide && (
@@ -295,9 +310,14 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
         {showInlineSkeleton && (
           <div className="chat-products">
             <div className="chat-products-list">
-              <ProductSkeleton variant="link" />
-              <ProductSkeleton variant="link" />
-              <ProductSkeleton variant="link" />
+              {[0, 1, 2].map((i) => (
+                <ProductSkeleton
+                  key={i}
+                  variant="link"
+                  delay={i * (skelLeaving ? CARD_OUT_STAGGER_MS : CARD_IN_STAGGER_MS)}
+                  leaving={skelLeaving}
+                />
+              ))}
             </div>
           </div>
         )}

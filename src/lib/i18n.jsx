@@ -76,6 +76,8 @@ const TRANSLATIONS = {
     "results.refining": "Affinage en cours…",
     "results.showOthers": "Voir d'autres produits",
     "results.guideCta": "📖 Pour aller plus loin : {title}",
+    "results.viewPrevious": "Suggestions précédentes",
+    "results.viewLatest": "Revenir aux suggestions actuelles",
 
     // Chat
     "chat.subtitle": "Conseiller en ligne",
@@ -172,13 +174,22 @@ const TRANSLATIONS = {
     // Déjà acheté ("owned")
     "owned.title": "Déjà acheté",
     "owned.sub": "Parmi les produits que tu as ouverts dans les propositions, indique ceux que tu possèdes déjà — on arrête de te les proposer.",
-    "owned.emptyText": "Tu n'as encore ouvert aucun produit.",
-    "owned.emptySub": "Clique sur une recommandation pour voir son détail : elle apparaîtra ici, prête à être marquée comme déjà achetée.",
+    "owned.emptyText": "Tu n'as encore rien marqué comme déjà acheté.",
+    "owned.emptySub": "Depuis la fiche d'un produit, clique sur « Je l'ai déjà acheté » : il apparaîtra ici.",
     "owned.selectPrompt": "Sélectionne un produit à gauche pour voir le détail.",
     "owned.searchPlaceholder": "Rechercher un produit…",
     "owned.mark": "Je l'ai déjà acheté",
     "owned.marked": "Déjà acheté",
+    "owned.remove": "Retirer de mes achats",
     "owned.count": "{n} marqué(s) comme déjà acheté(s)",
+
+    // Mes sélections — tabs
+    "sel.tabFavorites": "Favoris",
+    "sel.tabClicked": "Consultés",
+    "sel.tabOwned": "Achetés",
+    "sel.clickedSignedOut": "Connecte-toi pour voir les produits que tu as consultés sur Amazon.",
+    "sel.clickedEmptyText": "Tu n'as encore consulté aucun produit sur Amazon.",
+    "sel.clickedEmptySub": "Les produits sur lesquels tu cliques « Voir sur Amazon » apparaîtront ici.",
 
     // Friends (social graph)
     "friends.title": "Mes amis",
@@ -597,6 +608,8 @@ const TRANSLATIONS = {
       "Answer the questions in the chat so Oraklia can select the best products for you.",
     "results.showOthers": "Show other products",
     "results.guideCta": "📖 Go further: {title}",
+    "results.viewPrevious": "Previous suggestions",
+    "results.viewLatest": "Back to current suggestions",
     "results.eyebrow": "Top 3 selection",
     "results.finalized": "Selection finalized",
     "results.refining": "Refining…",
@@ -695,13 +708,22 @@ const TRANSLATIONS = {
     // Déjà acheté ("owned")
     "owned.title": "Already bought",
     "owned.sub": "Among the products you've opened from the suggestions, mark the ones you already own — we'll stop recommending them.",
-    "owned.emptyText": "You haven't opened any product yet.",
-    "owned.emptySub": "Click a recommendation to view its details: it'll show up here, ready to be marked as already bought.",
+    "owned.emptyText": "You haven't marked anything as already bought yet.",
+    "owned.emptySub": "From a product's detail page, click \"I already bought this\": it'll show up here.",
     "owned.selectPrompt": "Select a product on the left to see its details.",
     "owned.searchPlaceholder": "Search a product…",
     "owned.mark": "I already bought this",
     "owned.marked": "Already bought",
+    "owned.remove": "Remove from purchases",
     "owned.count": "{n} marked as already bought",
+
+    // Mes sélections — tabs
+    "sel.tabFavorites": "Favorites",
+    "sel.tabClicked": "Viewed",
+    "sel.tabOwned": "Bought",
+    "sel.clickedSignedOut": "Sign in to see the products you've viewed on Amazon.",
+    "sel.clickedEmptyText": "You haven't viewed any product on Amazon yet.",
+    "sel.clickedEmptySub": "Products you click \"View on Amazon\" for will show up here.",
 
     // Friends (social graph)
     "friends.title": "My friends",
