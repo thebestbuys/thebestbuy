@@ -3052,6 +3052,25 @@ button.chat-bubble.chat-editable {
   align-items: center;
   gap: 12px;
 }
+/* Phone: the favorite heart, "Je l'ai déjà" toggle and "Voir sur Amazon" CTA
+   no longer fit on one row once the owned-toggle was added — the CTA used to
+   get squeezed and wrap/overflow past the card edge. Stack the price row above
+   the actions, and let the CTA claim its own full-width line below the two
+   smaller buttons. */
+@media (max-width: 560px) {
+  .modal-bottom {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .modal-buy {
+    flex-wrap: wrap;
+  }
+  .modal-buy .btn-primary.big {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
 
 /* ───────────────────── Selections panel (Amazon-style cards) ────────── */
 .selections-panel {
@@ -6122,13 +6141,15 @@ select.profile-input {
   margin: 0;
   color: var(--text);
 }
-/* The frame shrink-wraps the clip: it takes the media's own width (centered),
-   so wide desktop clips fill the width and tall phone clips show without side
-   bands — the window matches the GIF's real dimensions. */
+/* The frame shrink-wraps the clip: --tuto-w/--tuto-h (set inline per tier, from
+   the real GIF pixel dimensions) give it a definite, known-ahead-of-time size —
+   so wide desktop clips fill the width, tall phone clips show without side
+   bands, and the box never has to wait for the GIF to decode to know its size
+   (which is what used to make the modal jump once a clip finished loading). */
 .tuto-stage {
   position: relative;
-  width: fit-content;
-  max-width: 100%;
+  width: min(100%, calc(58vh * var(--tuto-w) / var(--tuto-h)));
+  aspect-ratio: var(--tuto-w) / var(--tuto-h);
   margin-inline: auto;
   border-radius: var(--radius);
   overflow: hidden;
@@ -6137,13 +6158,12 @@ select.profile-input {
   line-height: 0;
   touch-action: pan-y; /* let horizontal swipes drive the carousel */
 }
-/* Media keeps its aspect ratio, bounded by the modal width and a height cap
-   (so tall portrait clips never overflow the viewport). */
+/* The stage above already reserves the right box; the media just fills it
+   (its real aspect ratio matches --tuto-w/--tuto-h, so contain never letterboxes). */
 .tuto-media {
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 58vh;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   display: block;
 }
 /* Slide + fade the clip in when the step changes, so a swipe/next clearly reads
@@ -6166,9 +6186,28 @@ select.profile-input {
 @media (prefers-reduced-motion: reduce) {
   .tuto-stage .tuto-media { animation: none; }
 }
+/* Centered spinner shown over the reserved aspect-ratio box while the clip's
+   bytes are still loading (GIFs run 0.5–2 MB, so phones see this for a beat). */
+.tuto-media-spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--accent);
+  animation: tuto-spin 0.8s linear infinite;
+}
+@keyframes tuto-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tuto-media-spinner { animation-duration: 1.6s; }
+}
 .tuto-media--placeholder {
   width: 100%;
-  aspect-ratio: 16 / 10;
+  height: 100%;
   line-height: 1.4;
   display: flex;
   flex-direction: column;

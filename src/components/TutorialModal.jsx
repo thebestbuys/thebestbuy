@@ -14,6 +14,19 @@ const MEDIA_KIND = 'gif'; // 'video' | 'gif'
 // The walkthrough, in order. Each id is also the asset basename under /tuto/.
 const STEPS = ['search', 'questions', 'compare', 'buy'];
 
+// Real pixel dimensions of the /tuto/<step>.<tier>.gif captures (same for every
+// step within a tier). Feeding these into the stage's CSS as --tuto-w/--tuto-h
+// reserves the right box the instant the step changes — before the GIF's bytes
+// have even arrived — so the modal no longer jumps in size once it loads.
+// (This has to live on .tuto-stage, not the <img>: an <img> with no natural
+// size yet sits inside a width:auto box, so an aspect-ratio on the img alone
+// has nothing definite to resolve against and collapses to 0×0.)
+const TIER_BOX = {
+  desktop: { w: 800, h: 378 },
+  tablet: { w: 800, h: 557 },
+  phone: { w: 380, h: 820 },
+};
+
 // Device tiers mirror the app's 980px narrow breakpoint, plus a 600px phone cut.
 // We resolve ONE asset per tier so a visitor never downloads the other two
 // captures (matches the matchMedia pattern in App.jsx / main.jsx).
@@ -38,46 +51,51 @@ function useDeviceTier() {
 function StepMedia({ step, tier }) {
   const { t } = useI18n();
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   // Re-probe when the step or tier changes (a new file might exist).
   const key = `${step}.${tier}`;
-  useEffect(() => { setFailed(false); }, [key]);
+  useEffect(() => { setFailed(false); setLoaded(false); }, [key]);
 
-  if (!failed) {
-    if (MEDIA_KIND === 'gif') {
-      return (
-        <img
-          className="tuto-media"
-          src={`/tuto/${step}.${tier}.gif`}
-          alt={t(`tuto.${step}.title`)}
-          onError={() => setFailed(true)}
-        />
-      );
-    }
+  if (failed) {
     return (
-      // key forces a remount on step/tier change so the right source loads.
-      <video
-        key={key}
-        className="tuto-media"
-        autoPlay
-        loop
-        muted
-        playsInline
-        onError={() => setFailed(true)}
-      >
-        <source src={`/tuto/${step}.${tier}.webm`} type="video/webm" />
-        <source src={`/tuto/${step}.${tier}.mp4`} type="video/mp4" />
-      </video>
+      <div className="tuto-media tuto-media--placeholder" aria-hidden="true">
+        <svg width="46" height="46" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M10 9.5v5l4-2.5-4-2.5Z" fill="currentColor" />
+        </svg>
+        <span>{t('tuto.placeholder')}</span>
+      </div>
     );
   }
 
   return (
-    <div className="tuto-media tuto-media--placeholder" aria-hidden="true">
-      <svg width="46" height="46" viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M10 9.5v5l4-2.5-4-2.5Z" fill="currentColor" />
-      </svg>
-      <span>{t('tuto.placeholder')}</span>
-    </div>
+    <>
+      {MEDIA_KIND === 'gif' ? (
+        <img
+          className="tuto-media"
+          src={`/tuto/${step}.${tier}.gif`}
+          alt={t(`tuto.${step}.title`)}
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        // key forces a remount on step/tier change so the right source loads.
+        <video
+          key={key}
+          className="tuto-media"
+          autoPlay
+          loop
+          muted
+          playsInline
+          onLoadedData={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+        >
+          <source src={`/tuto/${step}.${tier}.webm`} type="video/webm" />
+          <source src={`/tuto/${step}.${tier}.mp4`} type="video/mp4" />
+        </video>
+      )}
+      {!loaded && <div className="tuto-media-spinner" aria-hidden="true" />}
+    </>
   );
 }
 
@@ -148,7 +166,13 @@ export default function TutorialModal({ open, onClose, onOpenGuides }) {
           <button className="auth-modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
         </header>
 
-        <div className="tuto-stage" data-dir={dir} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div
+          className="tuto-stage"
+          data-dir={dir}
+          style={{ '--tuto-w': TIER_BOX[tier].w, '--tuto-h': TIER_BOX[tier].h }}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+        >
           {/* key={i} remounts the media each step so the slide-in animation replays */}
           <StepMedia key={i} step={step} tier={tier} />
         </div>
