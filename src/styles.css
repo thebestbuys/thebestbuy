@@ -5189,6 +5189,99 @@ select.profile-input {
   min-height: 100vh;
   background: var(--bg-soft);
 }
+
+/* ── Gift-first landing (/cadeau) ─────────────────────────────────────────── */
+.gift-landing { padding-bottom: 48px; }
+.gl-hero {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 8px;
+  text-align: center;
+}
+.gl-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.gl-title {
+  font-family: var(--display);
+  font-size: 40px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin: 0 0 12px;
+}
+.gl-sub {
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0 auto 22px;
+  max-width: 520px;
+}
+.gl-cta { margin-top: 4px; }
+.gl-section {
+  max-width: 720px;
+  margin: 28px auto 0;
+  padding: 0 24px;
+}
+.gl-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+}
+.gl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.gl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+.gl-chip:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.gl-chip:active { transform: scale(0.97); }
+.gl-chip-emoji { font-size: 17px; }
+.gl-inspiration {
+  max-width: 980px;
+  margin: 44px auto 0;
+  padding: 0 24px;
+}
+.gl-insp-head { text-align: center; margin-bottom: 18px; }
+.gl-insp-sub { color: var(--text-muted); font-size: 14px; margin: 6px 0 0; }
+.gl-hub-link {
+  display: inline-block;
+  margin-top: 18px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+.gl-hub-link:hover { text-decoration: underline; }
+@media (max-width: 560px) {
+  .gl-hero { padding: 28px 18px 4px; }
+  .gl-title { font-size: 30px; }
+  .gl-sub { font-size: 15px; }
+  .gl-section, .gl-inspiration { padding: 0 18px; }
+}
 .guide-topbar {
   position: sticky;
   top: 0;

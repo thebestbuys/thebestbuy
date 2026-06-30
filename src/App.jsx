@@ -22,6 +22,7 @@ const GuideArticle = lazy(() => import('./components/GuideArticle.jsx'));
 const GuidesPanel = lazy(() => import('./components/GuidesPanel.jsx'));
 const TutorialModal = lazy(() => import('./components/TutorialModal.jsx'));
 const GiftHub = lazy(() => import('./components/GiftHub.jsx'));
+const GiftLanding = lazy(() => import('./components/GiftLanding.jsx'));
 import { GUIDES, localizeGuide, getGuide } from './data/guides.js';
 import { CARD_IN_STAGGER_MS, CARD_OUT_STAGGER_MS, CARD_SWAP_DELAY_MS, HeroCard, PriceTag, ProductImage, ProductLinkCard, ProductSkeleton, ScoreRing, SmallCard, VerifiedBadge, VerifiedRating } from './components/ProductCard.jsx';
 import PanelHelpButton from './components/PanelHelpButton.jsx';
@@ -74,6 +75,7 @@ function viewFromPath() {
   const path = typeof location !== 'undefined' ? location.pathname : '/';
   const m = path.match(/^\/guide\/([^/]+)\/?$/);
   if (m && getGuide(decodeURIComponent(m[1]))) return { guide: decodeURIComponent(m[1]) };
+  if (/^\/cadeau\/?$/.test(path)) return { cadeau: true };
   if (/^\/idees-cadeaux\/?$/.test(path)) return { giftHub: true };
   if (/^\/mentions-legales\/?$/.test(path)) return { legal: true };
   return {};
@@ -917,6 +919,7 @@ export default function App() {
   const [legalOpen, setLegalOpen] = useState(() => !!viewFromPath().legal);
   const [activeGuide, setActiveGuide] = useState(() => viewFromPath().guide || null);
   const [giftHubOpen, setGiftHubOpen] = useState(() => !!viewFromPath().giftHub);
+  const [cadeauOpen, setCadeauOpen] = useState(() => !!viewFromPath().cadeau);
   const [objet, setObjet] = useState('');      // human search term sent to the AI
   const [answers, setAnswers] = useState([]);  // compact criteria JSON [{id,q,a,tags,min,max}]
   const [editIndex, setEditIndex] = useState(null); // answer index being edited in place
@@ -1312,6 +1315,7 @@ export default function App() {
   // from the guide returns to the hub.
   const navOpenGuide = (slug) => { pushHistory('/guide/' + slug); setActiveGuide(slug); };
   const navOpenGiftHub = () => { pushHistory('/idees-cadeaux'); setGiftHubOpen(true); };
+  const navOpenCadeau = () => { pushHistory('/cadeau'); setCadeauOpen(true); };
   const navOpenLegal = () => { pushHistory('/mentions-legales'); setLegalOpen(true); };
   const navOpenHistory = () => { pushHistory(); setHistoryOpen(true); };
   const navOpenSelections = () => { pushHistory(); setSelectionsTab('favorites'); };
@@ -1393,12 +1397,13 @@ export default function App() {
       if (trendingOpen) { setTrendingOpen(false); return; }
       if (activeGuide) { setActiveGuide(null); return; }
       if (giftHubOpen) { setGiftHubOpen(false); return; }
+      if (cadeauOpen) { setCadeauOpen(false); return; }
       if (category) { handleHome(); return; }
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, giftOpen, askOpen, friendsOpen, adminOpen, profileOpen, selectionsTab, guidesOpen, tutorialOpen, trendingOpen, historyOpen, activeGuide, giftHubOpen, category]);
+  }, [selected, legalOpen, giftOpen, askOpen, friendsOpen, adminOpen, profileOpen, selectionsTab, guidesOpen, tutorialOpen, trendingOpen, historyOpen, activeGuide, giftHubOpen, cadeauOpen, category]);
 
   // The per-panel "?" help buttons (PanelHelpButton) open the tutorial via this
   // window event, so panels don't each need an onOpenTutorial prop.
@@ -1417,9 +1422,10 @@ export default function App() {
     document.title = g
       ? `${localizeGuide(g, lang).title} — Oraklia`
       : giftHubOpen ? `${tr('giftHub.title')} — Oraklia`
+      : cadeauOpen ? `${tr('cadeau.title')} — Oraklia`
       : legalOpen ? 'Mentions légales — Oraklia' : base;
     return () => { document.title = base; };
-  }, [activeGuide, giftHubOpen, legalOpen, lang, tr]);
+  }, [activeGuide, giftHubOpen, cadeauOpen, legalOpen, lang, tr]);
 
   const getAmazonUrl = (p) => {
     if (p.amazon_url) return p.amazon_url;
@@ -1528,6 +1534,29 @@ export default function App() {
     );
   }
 
+  // Gift-first landing view (/cadeau). Chips/CTA pre-fill and open the GiftPanel
+  // over the landing; submitting it leaves the landing and starts the advisor.
+  if (cadeauOpen) {
+    return (
+      <Suspense fallback={null}>
+        <GiftLanding
+          onBack={navBack}
+          onStartGift={(prefill) => { setGiftPrefill(prefill || null); setGiftOpen(true); }}
+          onOpenGuide={navOpenGuide}
+          onOpenGiftHub={navOpenGiftHub}
+        />
+        {giftOpen && (
+          <GiftPanel
+            open
+            onClose={() => setGiftOpen(false)}
+            onSubmit={(d) => { setCadeauOpen(false); startGift(d); }}
+            initial={giftPrefill}
+          />
+        )}
+      </Suspense>
+    );
+  }
+
   if (!category) {
     return (
       <>
@@ -1544,7 +1573,7 @@ export default function App() {
           onToggleNotif={() => setNotifOpen((v) => !v)}
           onCloseNotif={() => setNotifOpen(false)}
           onGiftReminder={giftFromReminder}
-          onOpenGift={navOpenGift}
+          onOpenGift={navOpenCadeau}
           onOpenGiftHub={navOpenGiftHub}
           onOpenLegal={navOpenLegal}
           onOpenGuide={navOpenGuide}

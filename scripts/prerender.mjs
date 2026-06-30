@@ -43,6 +43,24 @@ const L = {
     "Trouver le bon cadeau peut vite tourner au casse-tête. On a réuni ici nos idées cadeaux classées par profil (homme, femme, ado…) et par occasion (Noël, anniversaire) pour vous aider à trouver l'idée juste, quel que soit votre budget. Et si vous hésitez encore, notre conseiller d'achat IA peut affiner la sélection en quelques questions.",
   read: 'Lire le guide →',
   cardEyebrow: (time) => `Idées cadeaux · ${time}`,
+  // Landing /cadeau
+  cadeauEyebrow: 'Idées cadeaux',
+  cadeauTitle: 'Trouvez le cadeau parfait',
+  cadeauSub:
+    "Décrivez la personne et l'occasion, Oraklia trouve des idées vérifiées sur Amazon.fr.",
+  cadeauByOccasion: 'Par occasion',
+  cadeauByRecipient: 'Pour qui ?',
+  cadeauInspiration: "Besoin d'inspiration ?",
+  cadeauInspirationSub: 'Parcourez nos idées cadeaux par profil et par occasion.',
+  cadeauBrowse: 'Voir toutes les idées cadeaux →',
+  cadeauOccasions: [
+    ['🎂', 'Anniversaire'], ['🎄', 'Noël'], ['❤️', 'Saint-Valentin'],
+    ['💍', 'Mariage'], ['👶', 'Naissance'], ['🏡', 'Crémaillère'], ['🙏', 'Remerciement'],
+  ],
+  cadeauRecipients: [
+    ['❤️', 'Conjoint·e'], ['👪', 'Parent'], ['🧒', 'Enfant'],
+    ['🧑‍🤝‍🧑', 'Frère / sœur'], ['🙌', 'Ami·e'], ['💼', 'Collègue'],
+  ],
   advisorTitle: 'Besoin d’un conseil personnalisé ?',
   advisorText:
     'Répondez à quelques questions et notre conseiller intelligent sélectionne les produits les plus adaptés à vos besoins.',
@@ -157,6 +175,42 @@ function giftHubBody() {
   )}</p></article></div>`;
 }
 
+function cadeauBody() {
+  const chips = (list) =>
+    list
+      .map(([e, label]) => `<span class="gl-chip"><span class="gl-chip-emoji" aria-hidden="true">${e}</span>${esc(label)}</span>`)
+      .join('');
+  const cards = giftGuides()
+    .map((guide) => {
+      const g = localizeGuide(guide, 'fr');
+      return `<a class="guide-card" href="/guide/${escAttr(g.slug)}"><div class="guide-card-eyebrow">${esc(
+        L.cardEyebrow(g.readTime),
+      )}</div><h3 class="guide-card-title">${esc(g.title)}</h3><p class="guide-card-sub">${esc(
+        g.subtitle,
+      )}</p><span class="guide-card-link">${esc(L.read)}</span></a>`;
+    })
+    .join('');
+  return `<div class="guide-page gift-landing"><div class="guide-topbar"><button type="button" class="guide-back"><span aria-hidden="true">←</span> ${esc(
+    L.back,
+  )}</button><div class="guide-topbar-right"><span class="guide-brand">Oraklia</span></div></div><div class="gl-hero"><div class="gl-eyebrow">🎁 ${esc(
+    L.cadeauEyebrow,
+  )}</div><h1 class="gl-title">${esc(L.cadeauTitle)}</h1><p class="gl-sub">${esc(
+    L.cadeauSub,
+  )}</p><a class="btn-primary big gl-cta" href="/cadeau">${esc(
+    L.cadeauCta,
+  )} <span class="btn-arrow">→</span></a></div><section class="gl-section"><h2 class="gl-section-title">${esc(
+    L.cadeauByOccasion,
+  )}</h2><div class="gl-chips">${chips(L.cadeauOccasions)}</div></section><section class="gl-section"><h2 class="gl-section-title">${esc(
+    L.cadeauByRecipient,
+  )}</h2><div class="gl-chips">${chips(L.cadeauRecipients)}</div></section><section class="gl-inspiration"><div class="gl-insp-head"><h2 class="gl-section-title">${esc(
+    L.cadeauInspiration,
+  )}</h2><p class="gl-insp-sub">${esc(
+    L.cadeauInspirationSub,
+  )}</p></div><div class="home-guides-grid">${cards}</div><a class="gl-hub-link" href="/idees-cadeaux">${esc(
+    L.cadeauBrowse,
+  )}</a></section></div>`;
+}
+
 function write(relPath, html) {
   const dir = join(DIST, relPath);
   mkdirSync(dir, { recursive: true });
@@ -225,6 +279,29 @@ for (const guide of GUIDES) {
   write('idees-cadeaux', html);
   urls.push('/idees-cadeaux');
   console.log('prerendered', '/idees-cadeaux');
+}
+
+// ── Gift-first landing (/cadeau) ─────────────────────────────────────────────
+{
+  const canonical = `${ORIGIN}/cadeau`;
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: L.cadeauTitle,
+    description: L.cadeauSub,
+    inLanguage: 'fr-FR',
+    url: canonical,
+  };
+  const html = renderPage({
+    title: `${L.cadeauTitle} — Oraklia`,
+    description: L.cadeauSub,
+    canonical,
+    headExtra: `<script type="application/ld+json">\n${JSON.stringify(jsonLd)}\n  </script>`,
+    body: cadeauBody(),
+  });
+  write('cadeau', html);
+  urls.push('/cadeau');
+  console.log('prerendered', '/cadeau');
 }
 
 // ── Legal (light: correct head + a short crawlable body; JS renders the rest) ─

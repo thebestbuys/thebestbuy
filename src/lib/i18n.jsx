@@ -433,6 +433,16 @@ const TRANSLATIONS = {
     // Gift finder
     "gift.title": "Trouver un cadeau",
     "gift.sub": "Décrivez la personne, on s'occupe des idées.",
+
+    // /cadeau landing
+    "cadeau.eyebrow": "Idées cadeaux",
+    "cadeau.title": "Trouvez le cadeau parfait",
+    "cadeau.sub": "Décrivez la personne et l'occasion, Oraklia trouve des idées vérifiées sur Amazon.fr.",
+    "cadeau.byOccasion": "Par occasion",
+    "cadeau.byRecipient": "Pour qui ?",
+    "cadeau.inspiration": "Besoin d'inspiration ?",
+    "cadeau.inspirationSub": "Parcourez nos idées cadeaux par profil et par occasion.",
+    "cadeau.browseGuides": "Voir toutes les idées cadeaux →",
     "gift.relationship": "Pour qui ?",
     "gift.relationshipPlaceholder": "Sélectionner…",
     "gift.rel.partner": "Conjoint·e",
@@ -962,6 +972,16 @@ const TRANSLATIONS = {
     // Gift finder
     "gift.title": "Find a gift",
     "gift.sub": "Describe the person, we'll handle the ideas.",
+
+    // /cadeau landing
+    "cadeau.eyebrow": "Gift ideas",
+    "cadeau.title": "Find the perfect gift",
+    "cadeau.sub": "Describe the person and the occasion — Oraklia finds ideas verified on Amazon.",
+    "cadeau.byOccasion": "By occasion",
+    "cadeau.byRecipient": "For whom?",
+    "cadeau.inspiration": "Need inspiration?",
+    "cadeau.inspirationSub": "Browse our gift ideas by profile and occasion.",
+    "cadeau.browseGuides": "See all gift ideas →",
     "gift.relationship": "For whom?",
     "gift.relationshipPlaceholder": "Select…",
     "gift.rel.partner": "Partner",
