@@ -397,7 +397,7 @@ function TrendingPanel({ onClose, onOpen }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifOpen, onToggleNotif, onCloseNotif, onGiftReminder, onOpenGift, onOpenGiftHub, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTutorial, onOpenTrending, onOpenOwned, onOpenAdmin, onLoadConvo, onOpenProduct }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifOpen, onToggleNotif, onCloseNotif, onGiftReminder, onOpenGift, onOpenGiftHub, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTutorial, onOpenTrending, onOpenAdmin, onLoadConvo, onOpenProduct }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -540,7 +540,6 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
           onOpenAsk={onOpenAsk}
           onOpenNotifications={onOpenNotifications}
           onOpenTrending={onOpenTrending}
-          onOpenOwned={onOpenOwned}
           onOpenAdmin={onOpenAdmin}
         />
       </div>
@@ -882,8 +881,8 @@ export default function App() {
   const [convoId, setConvoId] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   // "Mes sélections" — null when closed, else the tab to open on
-  // ('favorites' | 'clicked' | 'owned'). Both the "Mes sélections" and "Déjà
-  // acheté" account-menu entries open the same panel on a different tab.
+  // ('favorites' | 'clicked' | 'owned'). The account menu only links to the
+  // 'favorites' tab; 'clicked'/'owned' are reached via the in-page tab bar.
   const [selectionsTab, setSelectionsTab] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [friendsOpen, setFriendsOpen] = useState(false);
@@ -1325,7 +1324,6 @@ export default function App() {
   const navOpenGuides = () => { pushHistory(); setGuidesOpen(true); };
   const navOpenTutorial = () => { pushHistory(); setTutorialOpen(true); };
   const navOpenTrending = () => { pushHistory(); setTrendingOpen(true); };
-  const navOpenOwned = () => { pushHistory(); setSelectionsTab('owned'); };
   // From a reminder: friend birthday → start directly; holiday/occasion → open
   // the gift form prefilled with the occasion so the user can link a recipient.
   const giftFromReminder = (payload) => {
@@ -1553,7 +1551,6 @@ export default function App() {
           onOpenGuides={navOpenGuides}
           onOpenTutorial={navOpenTutorial}
           onOpenTrending={navOpenTrending}
-          onOpenOwned={navOpenOwned}
           onLoadConvo={loadConversation}
           onOpenProduct={navOpenProduct}
         />
@@ -1630,7 +1627,7 @@ export default function App() {
               </button>
             )}
             <FriendRequestsBell open={notifOpen} onToggle={() => setNotifOpen((v) => !v)} onClose={() => setNotifOpen(false)} onGift={giftFromReminder} pingKey={notifOpen} />
-            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} onOpenOwned={navOpenOwned} onOpenAdmin={navOpenAdmin} />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} onOpenAdmin={navOpenAdmin} />
           </>
         ) : null}
       />
@@ -1655,7 +1652,7 @@ export default function App() {
               </button>
             )}
             <FriendRequestsBell open={notifOpen} onToggle={() => setNotifOpen((v) => !v)} onClose={() => setNotifOpen(false)} onGift={giftFromReminder} pingKey={notifOpen} />
-            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} onOpenOwned={navOpenOwned} onOpenAdmin={navOpenAdmin} />
+            <AuthMenu variant="results" onOpenSelections={navOpenSelections} onOpenProfile={navOpenProfile} onOpenFriends={navOpenFriends} onOpenHistory={navOpenHistory} onOpenAsk={navOpenAsk} onOpenNotifications={navOpenNotifications} onOpenTrending={navOpenTrending} onOpenAdmin={navOpenAdmin} />
           </div>
         </header>
 

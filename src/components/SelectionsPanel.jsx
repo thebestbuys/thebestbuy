@@ -12,7 +12,7 @@ import {
 } from '../lib/selections.js';
 import { listLists, getListsRevision, updateList, deleteList } from '../lib/lists.js';
 import { listOwned, removeOwned } from '../lib/owned.js';
-import { cloudFetchLinkClicks } from '../lib/cloud.js';
+import { cloudDeleteLinkClicks, cloudFetchLinkClicks } from '../lib/cloud.js';
 import { buildShareUrl } from '../lib/gift.js';
 import FavoriteButton from './FavoriteButton.jsx';
 import { useDismiss } from '../lib/useDismiss.js';
@@ -23,11 +23,11 @@ import { useDismiss } from '../lib/useDismiss.js';
 //    signed-in only — see cloudFetchLinkClicks).
 //  • Achetés   — products marked "already bought" from the product detail
 //    modal; feeds the advisor's exclude list (see ownedExclude in App.jsx).
-// `initialTab` picks which tab is active on open (the account menu has two
-// entries — "Mes sélections" and "Déjà acheté" — that both open this panel,
-// just on a different tab). Clicking a Consultés/Achetés card opens the
-// shared product detail modal (`onOpenProduct`); Favoris cards still link
-// straight to Amazon, unchanged.
+// `initialTab` picks which tab is active on open (the account menu only
+// links to 'favorites'; 'clicked'/'owned' are reached via the in-page tab
+// bar). Clicking a Consultés/Achetés card opens the shared product detail
+// modal (`onOpenProduct`); Favoris cards still link straight to Amazon,
+// unchanged.
 export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, onOpenProduct, initialTab = 'favorites' }) {
   const { user } = useAuth();
   const { t, lang } = useI18n();
@@ -43,6 +43,8 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, on
   const [ownedItems, setOwnedItems] = useState([]);
   const [clickedItems, setClickedItems] = useState(null); // null = not loaded yet
   const [clickedLoading, setClickedLoading] = useState(false);
+  const [qClicked, setQClicked] = useState('');
+  const [qOwned, setQOwned] = useState('');
 
   const reload = () => {
     setItems(listSelections(user?.sub));
@@ -63,6 +65,18 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, on
   useEffect(() => {
     if (!open) return;
     reloadOwned();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user?.sub]);
+
+  // The "déjà acheté" toggle lives in the shared product detail modal, which
+  // can be open on top of this panel (e.g. opened from a Consultés card) —
+  // it has no direct reference back to us, so it broadcasts this event
+  // instead (see owned.js) and we just reload when it's open.
+  useEffect(() => {
+    if (!open) return;
+    const onChanged = () => reloadOwned();
+    window.addEventListener('oraklia:owned-changed', onChanged);
+    return () => window.removeEventListener('oraklia:owned-changed', onChanged);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user?.sub]);
 
@@ -102,12 +116,21 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, on
 
   const activeList = lists.find((l) => l.id === active) || null;
 
+  const matchesTerm = (p, term) =>
+    [p.brand, p.model].filter(Boolean).some((s) => String(s).toLowerCase().includes(term));
+
   const term = q.trim().toLowerCase();
-  const visible = term
-    ? shown.filter((p) =>
-        [p.brand, p.model].filter(Boolean).some((s) => String(s).toLowerCase().includes(term)),
-      )
-    : shown;
+  const visible = term ? shown.filter((p) => matchesTerm(p, term)) : shown;
+
+  const termClicked = qClicked.trim().toLowerCase();
+  const visibleClicked = !clickedItems
+    ? clickedItems
+    : termClicked
+    ? clickedItems.filter((p) => matchesTerm(p, termClicked))
+    : clickedItems;
+
+  const termOwned = qOwned.trim().toLowerCase();
+  const visibleOwned = termOwned ? ownedItems.filter((p) => matchesTerm(p, termOwned)) : ownedItems;
 
   const remove = (id, e) => {
     e.stopPropagation();
@@ -119,6 +142,12 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, on
     e.stopPropagation();
     removeOwned(user?.sub, id);
     reloadOwned();
+  };
+
+  const removeClickedItem = (id, e) => {
+    e.stopPropagation();
+    setClickedItems((prev) => (prev ? prev.filter((p) => p.id !== id) : prev));
+    cloudDeleteLinkClicks(id).catch(() => {});
   };
 
   const onDeleteList = () => {
@@ -345,34 +374,58 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, on
               <div className="history-empty-sub">{t('sel.clickedEmptySub')}</div>
             </div>
           ) : (
-            <ul className="selections-grid">
-              {clickedItems.map((p) => (
-                <li key={p.id} className="amz-card">
-                  <button type="button" className="amz-card-img" onClick={() => onOpenProduct?.(p)}>
-                    <ProductImage product={p} size="small" />
-                  </button>
-                  <div className="amz-card-body">
-                    <button type="button" className="amz-card-title" onClick={() => onOpenProduct?.(p)}>
-                      {[p.brand, p.model].filter(Boolean).join(' ')}
-                    </button>
-                    {p.rating != null && (
-                      <div className="amz-card-rating">
-                        <Stars rating={p.rating} />
-                        {p.reviews != null && (
-                          <span className="amz-card-reviews">{p.reviews.toLocaleString(locale)}</span>
+            <>
+              <div className="friends-search">
+                <input
+                  type="text"
+                  className="profile-input"
+                  value={qClicked}
+                  placeholder={t('selections.searchPlaceholder')}
+                  onChange={(e) => setQClicked(e.target.value)}
+                />
+              </div>
+              {visibleClicked.length === 0 ? (
+                <div className="friends-hint">{t('search.noResults')}</div>
+              ) : (
+                <ul className="selections-grid">
+                  {visibleClicked.map((p) => (
+                    <li key={p.id} className="amz-card">
+                      <button
+                        type="button"
+                        className="amz-card-remove"
+                        aria-label={t('sel.clickedRemove')}
+                        title={t('sel.clickedRemove')}
+                        onClick={(e) => removeClickedItem(p.id, e)}
+                      >
+                        ✕
+                      </button>
+                      <button type="button" className="amz-card-img" onClick={() => onOpenProduct?.(p)}>
+                        <ProductImage product={p} size="small" />
+                      </button>
+                      <div className="amz-card-body">
+                        <button type="button" className="amz-card-title" onClick={() => onOpenProduct?.(p)}>
+                          {[p.brand, p.model].filter(Boolean).join(' ')}
+                        </button>
+                        {p.rating != null && (
+                          <div className="amz-card-rating">
+                            <Stars rating={p.rating} />
+                            {p.reviews != null && (
+                              <span className="amz-card-reviews">{p.reviews.toLocaleString(locale)}</span>
+                            )}
+                          </div>
                         )}
+                        {p.price != null && (
+                          <div className="amz-card-price"><AmazonPrice price={p.price} /></div>
+                        )}
+                        <div className="amz-card-added">
+                          {t('selections.added', { when: formatRelative(p.clickedAt) })}
+                        </div>
                       </div>
-                    )}
-                    {p.price != null && (
-                      <div className="amz-card-price"><AmazonPrice price={p.price} /></div>
-                    )}
-                    <div className="amz-card-added">
-                      {t('selections.added', { when: formatRelative(p.clickedAt) })}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )
         )}
 
@@ -384,35 +437,50 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, on
               <div className="history-empty-sub">{t('owned.emptySub')}</div>
             </div>
           ) : (
-            <ul className="selections-grid">
-              {ownedItems.map((p) => (
-                <li key={p.id} className="amz-card">
-                  <button
-                    type="button"
-                    className="amz-card-remove"
-                    aria-label={t('owned.remove')}
-                    title={t('owned.remove')}
-                    onClick={(e) => removeOwnedItem(p.id, e)}
-                  >
-                    ✕
-                  </button>
-                  <button type="button" className="amz-card-img" onClick={() => onOpenProduct?.(p)}>
-                    <ProductImage product={p} size="small" />
-                  </button>
-                  <div className="amz-card-body">
-                    <button type="button" className="amz-card-title" onClick={() => onOpenProduct?.(p)}>
-                      {[p.brand, p.model].filter(Boolean).join(' ')}
-                    </button>
-                    {p.price != null && (
-                      <div className="amz-card-price"><AmazonPrice price={p.price} /></div>
-                    )}
-                    <div className="amz-card-added">
-                      {t('selections.added', { when: formatRelative(p.addedAt) })}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <>
+              <div className="friends-search">
+                <input
+                  type="text"
+                  className="profile-input"
+                  value={qOwned}
+                  placeholder={t('selections.searchPlaceholder')}
+                  onChange={(e) => setQOwned(e.target.value)}
+                />
+              </div>
+              {visibleOwned.length === 0 ? (
+                <div className="friends-hint">{t('search.noResults')}</div>
+              ) : (
+                <ul className="selections-grid">
+                  {visibleOwned.map((p) => (
+                    <li key={p.id} className="amz-card">
+                      <button
+                        type="button"
+                        className="amz-card-remove"
+                        aria-label={t('owned.remove')}
+                        title={t('owned.remove')}
+                        onClick={(e) => removeOwnedItem(p.id, e)}
+                      >
+                        ✕
+                      </button>
+                      <button type="button" className="amz-card-img" onClick={() => onOpenProduct?.(p)}>
+                        <ProductImage product={p} size="small" />
+                      </button>
+                      <div className="amz-card-body">
+                        <button type="button" className="amz-card-title" onClick={() => onOpenProduct?.(p)}>
+                          {[p.brand, p.model].filter(Boolean).join(' ')}
+                        </button>
+                        {p.price != null && (
+                          <div className="amz-card-price"><AmazonPrice price={p.price} /></div>
+                        )}
+                        <div className="amz-card-added">
+                          {t('selections.added', { when: formatRelative(p.addedAt) })}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )
         )}
       </div>

@@ -169,19 +169,13 @@ const TRANSLATIONS = {
     "auth.myFriends": "Mes amis",
     "auth.occasions": "Occasions",
     "auth.myTrends": "Tendances de mes amis",
-    "auth.owned": "Déjà acheté",
 
     // Déjà acheté ("owned")
-    "owned.title": "Déjà acheté",
-    "owned.sub": "Parmi les produits que tu as ouverts dans les propositions, indique ceux que tu possèdes déjà — on arrête de te les proposer.",
     "owned.emptyText": "Tu n'as encore rien marqué comme déjà acheté.",
-    "owned.emptySub": "Depuis la fiche d'un produit, clique sur « Je l'ai déjà acheté » : il apparaîtra ici.",
-    "owned.selectPrompt": "Sélectionne un produit à gauche pour voir le détail.",
-    "owned.searchPlaceholder": "Rechercher un produit…",
-    "owned.mark": "Je l'ai déjà acheté",
+    "owned.emptySub": "Depuis la fiche d'un produit, clique sur « Je l'ai déjà » : il apparaîtra ici.",
+    "owned.mark": "Je l'ai déjà",
     "owned.marked": "Déjà acheté",
     "owned.remove": "Retirer de mes achats",
-    "owned.count": "{n} marqué(s) comme déjà acheté(s)",
 
     // Mes sélections — tabs
     "sel.tabFavorites": "Favoris",
@@ -190,6 +184,7 @@ const TRANSLATIONS = {
     "sel.clickedSignedOut": "Connecte-toi pour voir les produits que tu as consultés sur Amazon.",
     "sel.clickedEmptyText": "Tu n'as encore consulté aucun produit sur Amazon.",
     "sel.clickedEmptySub": "Les produits sur lesquels tu cliques « Voir sur Amazon » apparaîtront ici.",
+    "sel.clickedRemove": "Retirer de mes produits consultés",
 
     // Friends (social graph)
     "friends.title": "Mes amis",
@@ -703,19 +698,13 @@ const TRANSLATIONS = {
     "auth.myFriends": "My friends",
     "auth.occasions": "Occasions",
     "auth.myTrends": "My friends' trends",
-    "auth.owned": "Already bought",
 
     // Déjà acheté ("owned")
-    "owned.title": "Already bought",
-    "owned.sub": "Among the products you've opened from the suggestions, mark the ones you already own — we'll stop recommending them.",
     "owned.emptyText": "You haven't marked anything as already bought yet.",
-    "owned.emptySub": "From a product's detail page, click \"I already bought this\": it'll show up here.",
-    "owned.selectPrompt": "Select a product on the left to see its details.",
-    "owned.searchPlaceholder": "Search a product…",
-    "owned.mark": "I already bought this",
+    "owned.emptySub": "From a product's detail page, click \"I already have this\": it'll show up here.",
+    "owned.mark": "I already have this",
     "owned.marked": "Already bought",
     "owned.remove": "Remove from purchases",
-    "owned.count": "{n} marked as already bought",
 
     // Mes sélections — tabs
     "sel.tabFavorites": "Favorites",
@@ -724,6 +713,7 @@ const TRANSLATIONS = {
     "sel.clickedSignedOut": "Sign in to see the products you've viewed on Amazon.",
     "sel.clickedEmptyText": "You haven't viewed any product on Amazon yet.",
     "sel.clickedEmptySub": "Products you click \"View on Amazon\" for will show up here.",
+    "sel.clickedRemove": "Remove from viewed products",
 
     // Friends (social graph)
     "friends.title": "My friends",

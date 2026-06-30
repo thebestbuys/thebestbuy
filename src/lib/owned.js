@@ -54,6 +54,14 @@ export function getOwnedNames(userId) {
     .filter(Boolean);
 }
 
+// Lets any open UI (e.g. the product detail modal, which has no direct
+// reference to a SelectionsPanel instance possibly open underneath it) react
+// to an owned-state change without prop-drilling — same pattern as the
+// PanelHelpButton/tutorial window event.
+function notifyOwnedChanged() {
+  try { window.dispatchEvent(new Event('oraklia:owned-changed')); } catch {}
+}
+
 function snapshot(product) {
   return {
     id: product.id,
@@ -81,6 +89,7 @@ export function toggleOwned(userId, product) {
     list.splice(idx, 1);
     write(userId, list);
     cloudDeleteOwned(product.id).catch(() => {});
+    notifyOwnedChanged();
     return false;
   }
   const item = snapshot(product);
@@ -88,12 +97,14 @@ export function toggleOwned(userId, product) {
   if (list.length > MAX_OWNED) list.length = MAX_OWNED;
   write(userId, list);
   cloudUpsertOwned(item).catch(() => {});
+  notifyOwnedChanged();
   return true;
 }
 
 export function removeOwned(userId, id) {
   write(userId, listOwned(userId).filter((p) => p.id !== id));
   cloudDeleteOwned(id).catch(() => {});
+  notifyOwnedChanged();
 }
 
 export function clearOwned(userId) {
@@ -101,6 +112,7 @@ export function clearOwned(userId) {
     localStorage.removeItem(keyFor(userId));
   } catch {}
   cloudClearOwned().catch(() => {});
+  notifyOwnedChanged();
 }
 
 // Local-only overwrite used by cloudSync after pulling the server state.

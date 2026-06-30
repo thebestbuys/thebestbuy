@@ -127,6 +127,17 @@ export async function cloudFetchLinkClicks(limit = 200) {
   return out;
 }
 
+// User-initiated "remove from Consultés" — deletes every row for that
+// product (there can be several, one per click) so it doesn't reappear.
+export async function cloudDeleteLinkClicks(productId) {
+  if (!hasCloudSession() || productId == null) return;
+  await supabase
+    .from('link_clicks')
+    .delete()
+    .eq('user_id', uid())
+    .eq('product_id', String(productId));
+}
+
 // ─── Recipients (saved gift profiles) ──────────────────────────────────────
 export async function cloudUpsertRecipient(item) {
   if (!hasCloudSession() || item?.id == null) return;
