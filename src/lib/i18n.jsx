@@ -78,6 +78,7 @@ const TRANSLATIONS = {
     "results.guideCta": "📖 Pour aller plus loin : {title}",
     "results.viewPrevious": "Suggestions précédentes",
     "results.viewLatest": "Revenir aux suggestions actuelles",
+    "results.viewFirst": "Premières suggestions",
 
     // Chat
     "chat.subtitle": "Conseiller en ligne",
@@ -615,6 +616,7 @@ const TRANSLATIONS = {
     "results.guideCta": "📖 Go further: {title}",
     "results.viewPrevious": "Previous suggestions",
     "results.viewLatest": "Back to current suggestions",
+    "results.viewFirst": "First suggestions",
     "results.eyebrow": "Top 3 selection",
     "results.finalized": "Selection finalized",
     "results.refining": "Refining…",

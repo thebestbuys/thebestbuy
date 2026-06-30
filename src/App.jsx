@@ -977,6 +977,12 @@ export default function App() {
     });
   };
   const viewLatestSuggestions = () => setViewingPastIndex(null);
+  // Jump straight to the very first batch ever shown, instead of stepping back
+  // one "Précédent" click at a time. pastProductBatches is most-recent-first,
+  // so the oldest (= first shown) sits at the last index.
+  const viewFirstSuggestions = () => {
+    if (pastProductBatches.length > 0) setViewingPastIndex(pastProductBatches.length - 1);
+  };
 
   // Self mode: recommend after the first 5 answers, then every 3 more (8, 11, …).
   // Gift mode: recommend immediately (the recipient form already has budget +
@@ -1648,6 +1654,7 @@ export default function App() {
         viewingPastIndex={viewingPastIndex}
         onViewPrevious={viewPreviousSuggestions}
         onViewLatest={viewLatestSuggestions}
+        onViewFirst={viewFirstSuggestions}
         headerExtras={narrow ? (
           <>
             {category === 'gift' && recommendedProducts.length > 0 && (
@@ -1720,6 +1727,11 @@ export default function App() {
                 {viewingPastIndex !== null && viewingPastIndex < pastProductBatches.length - 1 && (
                   <button type="button" className="show-others-btn" onClick={viewPreviousSuggestions}>
                     <span aria-hidden="true">◀</span> {tr('results.viewPrevious')}
+                  </button>
+                )}
+                {pastProductBatches.length > 1 && viewingPastIndex !== pastProductBatches.length - 1 && (
+                  <button type="button" className="show-others-btn" onClick={viewFirstSuggestions}>
+                    <span aria-hidden="true">⏮</span> {tr('results.viewFirst')}
                   </button>
                 )}
                 {resultsGuide && viewingPastIndex === null && (

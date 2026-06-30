@@ -145,7 +145,7 @@ function ChoiceControl({ question, onAnswer, onSkip }) {
   );
 }
 
-export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, onRetry = null, onShowOthers = null, onRecommendNow = null, guide = null, onOpenGuide = null, budget = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, loadingProducts = false, cardsReady = true, skelLeaving = false, pastCount = 0, viewingPastIndex = null, onViewPrevious = null, onViewLatest = null, headerExtras = null }) {
+export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, onRetry = null, onShowOthers = null, onRecommendNow = null, guide = null, onOpenGuide = null, budget = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, loadingProducts = false, cardsReady = true, skelLeaving = false, pastCount = 0, viewingPastIndex = null, onViewPrevious = null, onViewLatest = null, onViewFirst = null, headerExtras = null }) {
   const { t } = useI18n();
   const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
@@ -293,6 +293,11 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
             {viewingPastIndex !== null && viewingPastIndex < pastCount - 1 && onViewPrevious && (
               <button type="button" className="show-others-btn show-others-chat" onClick={onViewPrevious}>
                 <span aria-hidden="true">◀</span> {t('results.viewPrevious')}
+              </button>
+            )}
+            {pastCount > 1 && viewingPastIndex !== pastCount - 1 && onViewFirst && (
+              <button type="button" className="show-others-btn show-others-chat" onClick={onViewFirst}>
+                <span aria-hidden="true">⏮</span> {t('results.viewFirst')}
               </button>
             )}
             {guide && onOpenGuide && (
