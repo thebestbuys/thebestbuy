@@ -281,28 +281,7 @@ for (const guide of GUIDES) {
   console.log('prerendered', '/idees-cadeaux');
 }
 
-// ── Gift-first landing (/cadeau) ─────────────────────────────────────────────
-{
-  const canonical = `${ORIGIN}/cadeau`;
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'WebPage',
-    name: L.cadeauTitle,
-    description: L.cadeauSub,
-    inLanguage: 'fr-FR',
-    url: canonical,
-  };
-  const html = renderPage({
-    title: `${L.cadeauTitle} — Oraklia`,
-    description: L.cadeauSub,
-    canonical,
-    headExtra: `<script type="application/ld+json">\n${JSON.stringify(jsonLd)}\n  </script>`,
-    body: cadeauBody(),
-  });
-  write('cadeau', html);
-  urls.push('/cadeau');
-  console.log('prerendered', '/cadeau');
-}
+// /cadeau (GiftLanding) is WIP and not yet linked or accessible — prerender disabled.
 
 // ── Legal (light: correct head + a short crawlable body; JS renders the rest) ─
 {

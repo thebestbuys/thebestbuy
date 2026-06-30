@@ -75,7 +75,7 @@ function viewFromPath() {
   const path = typeof location !== 'undefined' ? location.pathname : '/';
   const m = path.match(/^\/guide\/([^/]+)\/?$/);
   if (m && getGuide(decodeURIComponent(m[1]))) return { guide: decodeURIComponent(m[1]) };
-  if (/^\/cadeau\/?$/.test(path)) return { cadeau: true };
+  // /cadeau (GiftLanding) is WIP and not yet linked or accessible — route disabled.
   if (/^\/idees-cadeaux\/?$/.test(path)) return { giftHub: true };
   if (/^\/mentions-legales\/?$/.test(path)) return { legal: true };
   return {};
@@ -1573,7 +1573,7 @@ export default function App() {
           onToggleNotif={() => setNotifOpen((v) => !v)}
           onCloseNotif={() => setNotifOpen(false)}
           onGiftReminder={giftFromReminder}
-          onOpenGift={navOpenCadeau}
+          onOpenGift={navOpenGift}
           onOpenGiftHub={navOpenGiftHub}
           onOpenLegal={navOpenLegal}
           onOpenGuide={navOpenGuide}
