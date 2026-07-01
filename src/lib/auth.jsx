@@ -156,8 +156,17 @@ export function AuthProvider({ children }) {
       }
       pullOnly(storedSub).catch(() => {});
     });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, sess) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, sess) => {
       applyCloudSession(sess);
+      // Keep the app's user state in sync with the Supabase session. If Supabase
+      // fires SIGNED_OUT (expired session, another tab signing out, refresh failure
+      // after retries) while the app's own localStorage user entry still exists,
+      // the user would appear logged in but all cloud calls would silently return
+      // empty. Clearing here ensures the two states stay consistent.
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        try { localStorage.removeItem(STORAGE_KEY); } catch {}
+      }
     });
     return () => {
       active = false;

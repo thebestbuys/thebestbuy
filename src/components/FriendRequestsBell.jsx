@@ -19,13 +19,13 @@ import NotificationsPanel from './NotificationsPanel.jsx';
 // outside click or Escape. Count refreshes on mount, focus, every 60s, and
 // whenever `pingKey` changes (e.g. the popover closing).
 export default function FriendRequestsBell({ open = false, onToggle, onClose, onGift, pingKey }) {
-  const { user } = useAuth();
+  const { user, cloudReady } = useAuth();
   const { t } = useI18n();
   const [count, setCount] = useState(0);
   const wrapRef = useRef(null);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !cloudReady) {
       setCount(0);
       return;
     }
@@ -61,7 +61,7 @@ export default function FriendRequestsBell({ open = false, onToggle, onClose, on
       window.removeEventListener('focus', onFocus);
       clearInterval(id);
     };
-  }, [user, pingKey]);
+  }, [user, cloudReady, pingKey]);
 
   // Close on outside click / Escape while open.
   useEffect(() => {
