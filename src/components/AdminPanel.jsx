@@ -135,6 +135,11 @@ export default function AdminPanel({ open, onClose, onOpenProduct }) {
   const [includeTesters, setIncludeTesters] = useState(false);
   // Which user's row is expanded inline (accordion), and that user's profile.
   const [expandedId, setExpandedId] = useState(null);
+  // Row playing its collapse animation: kept rendered (with its now-stale data)
+  // until the height transition finishes, so closing looks as smooth as opening.
+  const [closingId, setClosingId] = useState(null);
+  const closeTimer = useRef(null);
+  useEffect(() => () => clearTimeout(closeTimer.current), []);
   const [profile, setProfile] = useState(null);
   const [tab, setTab] = useState('lists');
   const [listsSubTab, setListsSubTab] = useState('lists'); // 'lists' | 'favs'
@@ -185,10 +190,14 @@ export default function AdminPanel({ open, onClose, onOpenProduct }) {
   // Toggle a user's inline detail (accordion). Opening one resets the per-user
   // data and loads their profile + first tab; clicking the open one collapses it.
   const toggleUser = (u) => {
+    clearTimeout(closeTimer.current);
     if (expandedId === u.user_id) {
       setExpandedId(null);
+      setClosingId(u.user_id);
+      closeTimer.current = setTimeout(() => setClosingId((id) => (id === u.user_id ? null : id)), 220);
       return;
     }
+    setClosingId(null);
     setExpandedId(u.user_id);
     setTab('profile');
     setListsSubTab('lists');
@@ -478,6 +487,7 @@ export default function AdminPanel({ open, onClose, onOpenProduct }) {
                   <ul className="friends-list">
                     {filtered.map((u) => {
                       const isOpen = expandedId === u.user_id;
+                      const isClosing = closingId === u.user_id;
                       return (
                         <li key={u.user_id} className={'admin-user' + (isOpen ? ' is-open' : '') + (u.is_tester ? ' is-tester' : '')}>
                           <div className="friend-row">
@@ -506,7 +516,9 @@ export default function AdminPanel({ open, onClose, onOpenProduct }) {
                               {isOpen ? t('admin.hideProfile') : t('admin.viewProfile')}
                             </button>
                           </div>
-                          {isOpen && userDetail()}
+                          <div className={'admin-user-detail-wrap' + (isOpen ? ' is-open' : '')}>
+                            {(isOpen || isClosing) && userDetail()}
+                          </div>
                         </li>
                       );
                     })}

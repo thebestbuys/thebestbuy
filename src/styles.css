@@ -3820,6 +3820,7 @@ button.chat-bubble.chat-editable {
   border: 0.5px solid var(--border);
   border-radius: 12px;
   background: var(--bg-elev);
+  transition: border-color 220ms ease, border-radius 220ms ease;
 }
 .friend-avatar-fallback {
   display: inline-flex;
@@ -4227,6 +4228,21 @@ button.chat-bubble.chat-editable {
   border-color: var(--accent);
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
+}
+/* Smooth expand/collapse: the wrap animates its grid row from 0fr to 1fr
+   (no fixed max-height guess needed), while its only child is clipped so the
+   in-flow content never pokes out mid-transition. */
+.admin-user-detail-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 220ms ease;
+}
+.admin-user-detail-wrap.is-open {
+  grid-template-rows: 1fr;
+}
+.admin-user-detail-wrap > .admin-user-detail {
+  min-height: 0;
+  overflow: hidden;
 }
 .admin-user-detail {
   border: 0.5px solid var(--accent);
