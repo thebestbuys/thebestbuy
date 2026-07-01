@@ -121,7 +121,7 @@ function ProfileCard({ profile, t }) {
 // every fetch goes through a SECURITY DEFINER RPC that re-checks the identity
 // server-side (see is_superuser() in supabase/schema.sql), so this panel is inert
 // for anyone else even if rendered.
-export default function AdminPanel({ open, onClose }) {
+export default function AdminPanel({ open, onClose, onOpenProduct }) {
   const { user, cloudReady } = useAuth();
   const { t } = useI18n();
   const { closing, close } = useDismiss(onClose);
@@ -449,6 +449,7 @@ export default function AdminPanel({ open, onClose }) {
                 dailySeries={dailySeries}
                 includeTesters={includeTesters}
                 onIncludeTesters={setIncludeTesters}
+                onOpenProduct={onOpenProduct}
               />
             )}
           </div>

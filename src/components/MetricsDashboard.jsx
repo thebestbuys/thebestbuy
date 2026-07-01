@@ -85,7 +85,7 @@ function normalizeProducts(topProducts) {
       const brand = d.brand || '', model = d.model || d.title || '';
       const cat = d.category || d.cat || '—';
       const saves = Number(p.saves ?? d.saves ?? 0), clicks = Number(p.clicks ?? d.clicks ?? 0);
-      return { brand, model, cat, saves, clicks, total: saves + clicks, trend: Number(p.trend ?? d.trend ?? 0) };
+      return { brand, model, cat, saves, clicks, total: saves + clicks, trend: Number(p.trend ?? d.trend ?? 0), _product: d };
     });
   }
   // No real data → nothing (no demo/placeholder rows).
@@ -127,7 +127,7 @@ const Tile = ({ value, label }) => (
   </div>
 );
 
-export default function MetricsDashboard({ metrics, topProducts, dailySeries, includeTesters = false, onIncludeTesters }) {
+export default function MetricsDashboard({ metrics, topProducts, dailySeries, includeTesters = false, onIncludeTesters, onOpenProduct }) {
   const [range, setRange] = useState('1m');
   const [customFrom, setCustomFrom] = useState(''); // 'YYYY-MM-DD'
   const [customTo, setCustomTo] = useState('');
@@ -135,6 +135,7 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries, in
   const [sortKey, setSortKey] = useState('total');
   const [sortDir, setSortDir] = useState('desc');
   const [query, setQuery] = useState('');
+  const [hoveredRow, setHoveredRow] = useState(null);
 
   const m = metrics || {};
   // Real daily series when available (admin_daily_series); mock as a fallback.
@@ -460,8 +461,25 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries, in
 
         {rows.map((p, i) => {
           const part = p.total / sumTotal * 100;
+          const clickable = Boolean(onOpenProduct && p._product);
           return (
-            <div key={`${p.brand}-${p.model}-${i}`} style={{ display: 'grid', gridTemplateColumns: COLS, alignItems: 'center', padding: '11px 12px', borderBottom: '1px solid rgba(26,24,20,.05)' }}>
+            <div
+              key={`${p.brand}-${p.model}-${i}`}
+              role={clickable ? 'button' : undefined}
+              tabIndex={clickable ? 0 : undefined}
+              onClick={clickable ? () => onOpenProduct(p._product) : undefined}
+              onKeyDown={clickable ? (e) => e.key === 'Enter' && onOpenProduct(p._product) : undefined}
+              onMouseEnter={clickable ? () => setHoveredRow(i) : undefined}
+              onMouseLeave={clickable ? () => setHoveredRow(null) : undefined}
+              style={{
+                display: 'grid', gridTemplateColumns: COLS, alignItems: 'center',
+                padding: '11px 12px', borderBottom: '1px solid rgba(26,24,20,.05)',
+                cursor: clickable ? 'pointer' : 'default',
+                background: hoveredRow === i && clickable ? 'rgba(191,94,58,.05)' : 'transparent',
+                borderRadius: 6,
+                transition: 'background .12s',
+              }}
+            >
               <div style={{ font: "700 13px 'Instrument Serif',serif", color: '#c9c0ae' }}>{i + 1}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
                 <span style={{ flex: '0 0 auto', width: 34, height: 34, borderRadius: 9, background: C.softer, display: 'flex', alignItems: 'center', justifyContent: 'center', font: "600 12px 'Instrument Serif',serif", color: '#9b7d5f' }}>{((p.brand[0] || '') + (p.model[0] || '')).toUpperCase()}</span>
