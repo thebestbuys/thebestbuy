@@ -626,6 +626,18 @@ language sql security definer set search_path = public as $$
 $$;
 grant execute on function public.admin_user_owned(uuid) to authenticated;
 
+-- A user's "Consultés" (link clicks) products, most recent click first
+-- (superuser only). Dedup by product_id happens client-side, same as
+-- cloudFetchLinkClicks — this is an append-only log so a product can repeat.
+create or replace function public.admin_user_clicks(target uuid)
+returns table (product_id text, data jsonb, clicked_at timestamptz)
+language sql security definer set search_path = public as $$
+  select lc.product_id, lc.data, lc.clicked_at from public.link_clicks lc
+  where public.is_superuser() and lc.user_id = target
+  order by lc.clicked_at desc;
+$$;
+grant execute on function public.admin_user_clicks(uuid) to authenticated;
+
 -- A user's conversation history (superuser only).
 create or replace function public.admin_user_conversations(target uuid)
 returns table (id text, data jsonb, updated_at timestamptz)

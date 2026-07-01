@@ -7,6 +7,7 @@ import {
   adminUserLists,
   adminListItems,
   adminUserSelections,
+  adminUserClicks,
   adminUserOwned,
   adminUserConversations,
   adminMetrics,
@@ -136,13 +137,15 @@ export default function AdminPanel({ open, onClose, onOpenProduct }) {
   const [expandedId, setExpandedId] = useState(null);
   const [profile, setProfile] = useState(null);
   const [tab, setTab] = useState('lists');
-  const [selSubTab, setSelSubTab] = useState('favs'); // 'favs' | 'owned' — sub-tab of the merged "selections" tab
+  const [listsSubTab, setListsSubTab] = useState('lists'); // 'lists' | 'favs'
+  const [activitySubTab, setActivitySubTab] = useState('clicked'); // 'clicked' | 'owned'
 
   // Per-user data (loaded lazily when a tab is first opened).
   const [lists, setLists] = useState(null);
   const [openListId, setOpenListId] = useState(null);
   const [listItems, setListItems] = useState([]);
   const [favs, setFavs] = useState(null);
+  const [clicks, setClicks] = useState(null);
   const [owned, setOwned] = useState(null);
   const [convos, setConvos] = useState(null);
   const [openConvoId, setOpenConvoId] = useState(null);
@@ -188,12 +191,14 @@ export default function AdminPanel({ open, onClose, onOpenProduct }) {
     }
     setExpandedId(u.user_id);
     setTab('profile');
-    setSelSubTab('favs');
+    setListsSubTab('lists');
+    setActivitySubTab('clicked');
     setProfile(null);
     setLists(null);
     setOpenListId(null);
     setListItems([]);
     setFavs(null);
+    setClicks(null);
     setOwned(null);
     setConvos(null);
     setOpenConvoId(null);
@@ -213,16 +218,24 @@ export default function AdminPanel({ open, onClose, onOpenProduct }) {
 
   const selectTab = (next) => {
     setTab(next);
-    if (next === 'selections' && favs === null) adminUserSelections(expandedId).then(setFavs);
+    if (next === 'lists' && listsSubTab === 'lists' && lists === null) adminUserLists(expandedId).then(setLists);
+    if (next === 'lists' && listsSubTab === 'favs' && favs === null) adminUserSelections(expandedId).then(setFavs);
+    if (next === 'activity' && activitySubTab === 'clicked' && clicks === null) adminUserClicks(expandedId).then(setClicks);
+    if (next === 'activity' && activitySubTab === 'owned' && owned === null) adminUserOwned(expandedId).then(setOwned);
     if (next === 'history' && convos === null) adminUserConversations(expandedId).then(setConvos);
-    if (next === 'lists' && lists === null) adminUserLists(expandedId).then(setLists);
   };
 
-  // Sub-tab of the merged "selections" tab, mirroring the app's SelectionsPanel
-  // (Favoris/Achetés were merged into one page there — see SelectionsPanel.jsx).
-  const selectSelSubTab = (next) => {
-    setSelSubTab(next);
+  // Sub-tab of the "Listes & Favoris" tab.
+  const selectListsSubTab = (next) => {
+    setListsSubTab(next);
+    if (next === 'lists' && lists === null) adminUserLists(expandedId).then(setLists);
     if (next === 'favs' && favs === null) adminUserSelections(expandedId).then(setFavs);
+  };
+
+  // Sub-tab of the "Consultés & Achetés" tab.
+  const selectActivitySubTab = (next) => {
+    setActivitySubTab(next);
+    if (next === 'clicked' && clicks === null) adminUserClicks(expandedId).then(setClicks);
     if (next === 'owned' && owned === null) adminUserOwned(expandedId).then(setOwned);
   };
 
@@ -247,8 +260,8 @@ export default function AdminPanel({ open, onClose, onOpenProduct }) {
 
   const TABS = [
     ['profile', t('admin.tab.profile')],
-    ['lists', t('admin.tab.lists')],
-    ['selections', t('admin.tab.selections')],
+    ['lists', t('admin.tab.listsFavs')],
+    ['activity', t('admin.tab.activity')],
     ['history', t('admin.tab.history')],
   ];
 
@@ -273,53 +286,83 @@ export default function AdminPanel({ open, onClose, onOpenProduct }) {
       {tab === 'profile' && <ProfileCard profile={profile} t={t} />}
 
       {tab === 'lists' && (
-        lists === null ? (
-          <div className="friends-hint">…</div>
-        ) : lists.length === 0 ? (
-          <div className="friends-hint">{t('admin.empty.lists')}</div>
-        ) : (
-          lists.map((l) => (
-            <div key={l.id} className="pub-list">
-              <button type="button" className="pub-list-head" onClick={() => openList(l)}>
-                <span className="pub-list-name">{l.visibility === 'public' ? '🌐' : '🔒'} {l.name}</span>
-                <span className="sel-list-n">{t('lists.count', { n: l.item_count })}</span>
-                <span className="pub-list-caret">{openListId === l.id ? '▾' : '▸'}</span>
-              </button>
-              {openListId === l.id && <ProductRows items={listItems} />}
-            </div>
-          ))
-        )
-      )}
-
-      {tab === 'selections' && (
         <div className="admin-sel-sub">
           <div className="auth-seg admin-tabs" role="tablist">
             <button
               type="button"
               role="tab"
-              aria-selected={selSubTab === 'favs'}
-              className={'auth-seg-btn' + (selSubTab === 'favs' ? ' is-active' : '')}
-              onClick={() => selectSelSubTab('favs')}
+              aria-selected={listsSubTab === 'lists'}
+              className={'auth-seg-btn' + (listsSubTab === 'lists' ? ' is-active' : '')}
+              onClick={() => selectListsSubTab('lists')}
             >
-              {t('sel.tabFavorites')}
+              {t('admin.tab.lists')}
             </button>
             <button
               type="button"
               role="tab"
-              aria-selected={selSubTab === 'owned'}
-              className={'auth-seg-btn' + (selSubTab === 'owned' ? ' is-active' : '')}
-              onClick={() => selectSelSubTab('owned')}
+              aria-selected={listsSubTab === 'favs'}
+              className={'auth-seg-btn' + (listsSubTab === 'favs' ? ' is-active' : '')}
+              onClick={() => selectListsSubTab('favs')}
+            >
+              {t('sel.tabFavorites')}
+            </button>
+          </div>
+          {listsSubTab === 'lists' ? (
+            lists === null ? (
+              <div className="friends-hint">…</div>
+            ) : lists.length === 0 ? (
+              <div className="friends-hint">{t('admin.empty.lists')}</div>
+            ) : (
+              lists.map((l) => (
+                <div key={l.id} className="pub-list">
+                  <button type="button" className="pub-list-head" onClick={() => openList(l)}>
+                    <span className="pub-list-name">{l.visibility === 'public' ? '🌐' : '🔒'} {l.name}</span>
+                    <span className="sel-list-n">{t('lists.count', { n: l.item_count })}</span>
+                    <span className="pub-list-caret">{openListId === l.id ? '▾' : '▸'}</span>
+                  </button>
+                  {openListId === l.id && <ProductRows items={listItems} />}
+                </div>
+              ))
+            )
+          ) : favs === null ? (
+            <div className="friends-hint">…</div>
+          ) : favs.length === 0 ? (
+            <div className="friends-hint">{t('admin.empty.favs')}</div>
+          ) : (
+            <ProductRows items={favs} />
+          )}
+        </div>
+      )}
+
+      {tab === 'activity' && (
+        <div className="admin-sel-sub">
+          <div className="auth-seg admin-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activitySubTab === 'clicked'}
+              className={'auth-seg-btn' + (activitySubTab === 'clicked' ? ' is-active' : '')}
+              onClick={() => selectActivitySubTab('clicked')}
+            >
+              {t('sel.tabClicked')}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activitySubTab === 'owned'}
+              className={'auth-seg-btn' + (activitySubTab === 'owned' ? ' is-active' : '')}
+              onClick={() => selectActivitySubTab('owned')}
             >
               {t('sel.tabOwned')}
             </button>
           </div>
-          {selSubTab === 'favs' ? (
-            favs === null ? (
+          {activitySubTab === 'clicked' ? (
+            clicks === null ? (
               <div className="friends-hint">…</div>
-            ) : favs.length === 0 ? (
-              <div className="friends-hint">{t('admin.empty.favs')}</div>
+            ) : clicks.length === 0 ? (
+              <div className="friends-hint">{t('admin.empty.clicked')}</div>
             ) : (
-              <ProductRows items={favs} />
+              <ProductRows items={clicks} />
             )
           ) : owned === null ? (
             <div className="friends-hint">…</div>

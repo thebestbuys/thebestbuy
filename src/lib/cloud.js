@@ -487,6 +487,21 @@ export async function adminUserOwned(targetId) {
   return (data || []).map((r) => r.data).filter(Boolean);
 }
 
+// A user's "Consultés" (link clicks), deduped to the most recent click per product.
+export async function adminUserClicks(targetId) {
+  if (!hasCloudSession() || !targetId) return [];
+  const { data, error } = await supabase.rpc('admin_user_clicks', { target: targetId });
+  if (error) return [];
+  const seen = new Set();
+  const out = [];
+  for (const r of data || []) {
+    if (!r?.data || seen.has(r.product_id)) continue;
+    seen.add(r.product_id);
+    out.push({ ...r.data, clickedAt: r.clicked_at });
+  }
+  return out;
+}
+
 // A user's profile (public identity + private profile data). {} when none.
 export async function adminUserProfile(targetId) {
   if (!hasCloudSession() || !targetId) return {};
