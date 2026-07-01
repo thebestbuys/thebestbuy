@@ -48,13 +48,21 @@ function useDeviceTier() {
   return tier;
 }
 
+// Keys (`${step}.${tier}`) whose media has already finished loading once —
+// module-level so it survives the per-step remount (key={i} on StepMedia,
+// needed to replay the slide-in animation) and the modal being reopened.
+// Without this, flipping back to an already-seen step re-showed the spinner
+// even though the browser serves the GIF from cache instantly.
+const loadedMedia = new Set();
+
 function StepMedia({ step, tier }) {
   const { t } = useI18n();
   const [failed, setFailed] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  // Re-probe when the step or tier changes (a new file might exist).
   const key = `${step}.${tier}`;
-  useEffect(() => { setFailed(false); setLoaded(false); }, [key]);
+  const [loaded, setLoaded] = useState(() => loadedMedia.has(key));
+  // Re-probe when the step or tier changes (a new file might exist).
+  useEffect(() => { setFailed(false); setLoaded(loadedMedia.has(key)); }, [key]);
+  const onLoad = () => { loadedMedia.add(key); setLoaded(true); };
 
   if (failed) {
     return (
@@ -75,7 +83,7 @@ function StepMedia({ step, tier }) {
           className="tuto-media"
           src={`/tuto/${step}.${tier}.gif`}
           alt={t(`tuto.${step}.title`)}
-          onLoad={() => setLoaded(true)}
+          onLoad={onLoad}
           onError={() => setFailed(true)}
         />
       ) : (
@@ -87,7 +95,7 @@ function StepMedia({ step, tier }) {
           loop
           muted
           playsInline
-          onLoadedData={() => setLoaded(true)}
+          onLoadedData={onLoad}
           onError={() => setFailed(true)}
         >
           <source src={`/tuto/${step}.${tier}.webm`} type="video/webm" />
