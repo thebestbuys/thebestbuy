@@ -34,7 +34,7 @@ function initials(name = '') {
 // Bell hub: pending friend requests + upcoming occasions (friends' birthdays +
 // manual occasions), each with a "find a gift" shortcut.
 export default function NotificationsPanel({ open = true, onClose, onGift }) {
-  const { user } = useAuth();
+  const { user, cloudReady } = useAuth();
   const { t, lang } = useI18n();
   const [incoming, setIncoming] = useState([]);
   const [friends, setFriends] = useState([]);
@@ -90,14 +90,18 @@ export default function NotificationsPanel({ open = true, onClose, onGift }) {
 
   useEffect(() => {
     if (!open) return;
-    refresh();
     setLabel('');
     setDate('');
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user?.sub]);
+
+  useEffect(() => {
+    if (!open || !cloudReady) return;
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user?.sub, cloudReady]);
 
   if (!open) return null;
 

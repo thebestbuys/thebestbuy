@@ -122,7 +122,7 @@ function ProfileCard({ profile, t }) {
 // server-side (see is_superuser() in supabase/schema.sql), so this panel is inert
 // for anyone else even if rendered.
 export default function AdminPanel({ open, onClose }) {
-  const { user } = useAuth();
+  const { user, cloudReady } = useAuth();
   const { t } = useI18n();
   const { closing, close } = useDismiss(onClose);
   const [q, setQ] = useState('');
@@ -152,13 +152,18 @@ export default function AdminPanel({ open, onClose }) {
     setMainTab('users');
     setExpandedId(null);
     setUsers(null);
-    adminListUsers().then(setUsers);
     const onKey = (e) => {
       if (e.key === 'Escape') close();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, user?.sub]);
+
+  useEffect(() => {
+    if (!open || !cloudReady) return;
+    adminListUsers().then(setUsers);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user?.sub, cloudReady]);
 
   if (!open) return null;
 
@@ -167,11 +172,11 @@ export default function AdminPanel({ open, onClose }) {
   // (Re)load the dashboard whenever it's shown or the "include testers" toggle
   // changes, so the stats reflect the current choice.
   useEffect(() => {
-    if (!open || mainTab !== 'metrics') return;
+    if (!open || mainTab !== 'metrics' || !cloudReady) return;
     adminMetrics(includeTesters).then(setMetrics);
     adminTopProducts(12, null, null, includeTesters).then(setTopProducts);
     adminDailySeries(365, includeTesters).then(setDailySeries);
-  }, [open, mainTab, includeTesters]);
+  }, [open, mainTab, includeTesters, cloudReady]);
 
   // Toggle a user's inline detail (accordion). Opening one resets the per-user
   // data and loads their profile + first tab; clicking the open one collapses it.

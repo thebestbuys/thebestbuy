@@ -44,7 +44,7 @@ function Avatar({ name, url, size = 36 }) {
 // "Mes amis": search registered users by name, send/accept friend requests, see
 // the friends list. Friend profiles stay private (used server-side for gifts).
 export default function FriendsPanel({ open, onClose }) {
-  const { user } = useAuth();
+  const { user, cloudReady } = useAuth();
   const { t } = useI18n();
   const { closing, close } = useDismiss(onClose);
   const [q, setQ] = useState('');
@@ -68,13 +68,18 @@ export default function FriendsPanel({ open, onClose }) {
     setResults([]);
     setSearched(false);
     setViewing(null);
-    refresh();
     const onKey = (e) => {
       if (e.key === 'Escape') close();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, user?.sub]);
+
+  useEffect(() => {
+    if (!open || !cloudReady) return;
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user?.sub, cloudReady]);
 
   // Debounced search.
   const qRef = useRef(q);
