@@ -136,6 +136,7 @@ export default function AdminPanel({ open, onClose, onOpenProduct }) {
   const [expandedId, setExpandedId] = useState(null);
   const [profile, setProfile] = useState(null);
   const [tab, setTab] = useState('lists');
+  const [selSubTab, setSelSubTab] = useState('favs'); // 'favs' | 'owned' — sub-tab of the merged "selections" tab
 
   // Per-user data (loaded lazily when a tab is first opened).
   const [lists, setLists] = useState(null);
@@ -187,6 +188,7 @@ export default function AdminPanel({ open, onClose, onOpenProduct }) {
     }
     setExpandedId(u.user_id);
     setTab('profile');
+    setSelSubTab('favs');
     setProfile(null);
     setLists(null);
     setOpenListId(null);
@@ -211,10 +213,17 @@ export default function AdminPanel({ open, onClose, onOpenProduct }) {
 
   const selectTab = (next) => {
     setTab(next);
-    if (next === 'favs' && favs === null) adminUserSelections(expandedId).then(setFavs);
-    if (next === 'owned' && owned === null) adminUserOwned(expandedId).then(setOwned);
+    if (next === 'selections' && favs === null) adminUserSelections(expandedId).then(setFavs);
     if (next === 'history' && convos === null) adminUserConversations(expandedId).then(setConvos);
     if (next === 'lists' && lists === null) adminUserLists(expandedId).then(setLists);
+  };
+
+  // Sub-tab of the merged "selections" tab, mirroring the app's SelectionsPanel
+  // (Favoris/Achetés were merged into one page there — see SelectionsPanel.jsx).
+  const selectSelSubTab = (next) => {
+    setSelSubTab(next);
+    if (next === 'favs' && favs === null) adminUserSelections(expandedId).then(setFavs);
+    if (next === 'owned' && owned === null) adminUserOwned(expandedId).then(setOwned);
   };
 
   const openList = (l) => {
@@ -239,8 +248,7 @@ export default function AdminPanel({ open, onClose, onOpenProduct }) {
   const TABS = [
     ['profile', t('admin.tab.profile')],
     ['lists', t('admin.tab.lists')],
-    ['favs', t('admin.tab.favs')],
-    ['owned', t('admin.tab.owned')],
+    ['selections', t('admin.tab.selections')],
     ['history', t('admin.tab.history')],
   ];
 
@@ -283,24 +291,44 @@ export default function AdminPanel({ open, onClose, onOpenProduct }) {
         )
       )}
 
-      {tab === 'favs' && (
-        favs === null ? (
-          <div className="friends-hint">…</div>
-        ) : favs.length === 0 ? (
-          <div className="friends-hint">{t('admin.empty.favs')}</div>
-        ) : (
-          <ProductRows items={favs} />
-        )
-      )}
-
-      {tab === 'owned' && (
-        owned === null ? (
-          <div className="friends-hint">…</div>
-        ) : owned.length === 0 ? (
-          <div className="friends-hint">{t('admin.empty.owned')}</div>
-        ) : (
-          <ProductRows items={owned} />
-        )
+      {tab === 'selections' && (
+        <div className="admin-sel-sub">
+          <div className="auth-seg admin-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={selSubTab === 'favs'}
+              className={'auth-seg-btn' + (selSubTab === 'favs' ? ' is-active' : '')}
+              onClick={() => selectSelSubTab('favs')}
+            >
+              {t('sel.tabFavorites')}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={selSubTab === 'owned'}
+              className={'auth-seg-btn' + (selSubTab === 'owned' ? ' is-active' : '')}
+              onClick={() => selectSelSubTab('owned')}
+            >
+              {t('sel.tabOwned')}
+            </button>
+          </div>
+          {selSubTab === 'favs' ? (
+            favs === null ? (
+              <div className="friends-hint">…</div>
+            ) : favs.length === 0 ? (
+              <div className="friends-hint">{t('admin.empty.favs')}</div>
+            ) : (
+              <ProductRows items={favs} />
+            )
+          ) : owned === null ? (
+            <div className="friends-hint">…</div>
+          ) : owned.length === 0 ? (
+            <div className="friends-hint">{t('admin.empty.owned')}</div>
+          ) : (
+            <ProductRows items={owned} />
+          )}
+        </div>
       )}
 
       {tab === 'history' && (
