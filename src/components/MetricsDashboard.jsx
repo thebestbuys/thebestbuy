@@ -128,7 +128,7 @@ const Tile = ({ value, label }) => (
 );
 
 export default function MetricsDashboard({ metrics, topProducts, dailySeries, includeTesters = false, onIncludeTesters, onOpenProduct }) {
-  const [range, setRange] = useState('1m');
+  const [range, setRange] = useState('24h');
   const [customFrom, setCustomFrom] = useState(''); // 'YYYY-MM-DD'
   const [customTo, setCustomTo] = useState('');
   const [localTop, setLocalTop] = useState(null); // products counted over the period
