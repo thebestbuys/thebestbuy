@@ -432,7 +432,7 @@ ul {
 .home-footer-inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 14px 28px;
+  padding: 14px 28px calc(14px + env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -606,7 +606,7 @@ ul {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 13px 20px;
+  padding: calc(13px + env(safe-area-inset-top)) 20px 13px;
   border-bottom: 0.5px solid var(--border-soft);
   background: var(--bg-elev);
 }
@@ -633,6 +633,7 @@ ul {
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 .legal-page .legal-content {
   max-width: 720px;
@@ -652,7 +653,7 @@ ul {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px 16px;
+  padding: calc(20px + env(safe-area-inset-top)) 24px 16px;
   border-bottom: 0.5px solid var(--border-soft);
 }
 .chat-header-left {
@@ -1189,7 +1190,7 @@ button.chat-bubble.chat-editable {
 .chat-input {
   display: flex;
   gap: 8px;
-  padding: 14px 24px 18px;
+  padding: 14px 24px calc(18px + env(safe-area-inset-bottom));
   border-top: 0.5px solid var(--border-soft);
   background: var(--bg-soft);
 }
@@ -2433,7 +2434,13 @@ button.chat-bubble.chat-editable {
 }
 @media (max-width: 560px) {
   .modal-bg { padding: 0; }
-  .modal { max-height: 100dvh; border-radius: 0; }
+  .modal {
+    max-height: 100dvh;
+    border-radius: 0;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .modal-close { top: calc(16px + env(safe-area-inset-top)); }
   .modal-grid { padding: 14px 16px 18px; }
   .modal-left { max-width: 116px; margin: 34px 0 8px 12px; }
   .modal-title { font-size: 21px; margin-bottom: 8px; }
@@ -2500,7 +2507,7 @@ button.chat-bubble.chat-editable {
 /* Phone polish */
 @media (max-width: 560px) {
   .chat-header {
-    padding: 14px 14px 12px;
+    padding: calc(14px + env(safe-area-inset-top)) 14px 12px;
   }
   .chat-header-actions {
     gap: 4px;
@@ -2611,8 +2618,8 @@ button.chat-bubble.chat-editable {
 /* ───────────────────────── Auth (Web) ─────────────────────────── */
 .home-topbar {
   position: absolute;
-  top: 18px;
-  right: 24px;
+  top: calc(18px + env(safe-area-inset-top));
+  right: calc(24px + env(safe-area-inset-right));
   z-index: 5;
   display: flex;
   align-items: center;
@@ -2625,7 +2632,7 @@ button.chat-bubble.chat-editable {
    the content is tall — reserve clearance and shrink the wordmark a touch. */
 @media (max-width: 920px) {
   .home-main {
-    padding-top: 92px;
+    padding-top: calc(92px + env(safe-area-inset-top));
     justify-content: flex-start;
   }
   .home-logo {
@@ -3355,6 +3362,7 @@ button.chat-bubble.chat-editable {
   display: flex;
   flex-direction: column;
   animation: bb-rise 0.18s ease-out;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 /* These variant classes used to cap the modal width — neutralize full-page. */
 .sheet-page.selections-panel,
@@ -3369,7 +3377,7 @@ button.chat-bubble.chat-editable {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px 28px;
+  padding: calc(20px + env(safe-area-inset-top)) 28px 20px;
   border-bottom: 0.5px solid var(--border);
   background: var(--bg-elev);
   margin: 0;
@@ -3426,7 +3434,7 @@ button.chat-bubble.chat-editable {
 }
 @media (max-width: 560px) {
   .sheet-head {
-    padding: 15px 16px;
+    padding: calc(15px + env(safe-area-inset-top)) 16px 15px;
   }
   .sheet-body {
     padding: 18px 16px 56px;
@@ -5407,7 +5415,7 @@ select.profile-input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 28px;
+  padding: calc(14px + env(safe-area-inset-top)) 28px 14px;
   background: rgba(255, 252, 248, 0.85);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -5603,7 +5611,7 @@ select.profile-input {
 }
 @media (max-width: 560px) {
   .guide-title { font-size: 32px; }
-  .guide-article { padding: 32px 20px 64px; }
+  .guide-article { padding: 32px 20px calc(64px + env(safe-area-inset-bottom)); }
 }
 
 /* ───────────────── Trends in my circle (home carousel) ───────────────── */
