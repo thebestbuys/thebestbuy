@@ -195,7 +195,7 @@ const TXT = {
 };
 
 export default function PrivacyPolicy({ open, onClose }) {
-  const { lang, t } = useI18n();
+  const { lang } = useI18n();
   if (!open) return null;
   const x = TXT[lang] || TXT.fr;
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
