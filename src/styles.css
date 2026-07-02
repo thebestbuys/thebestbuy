@@ -2045,6 +2045,8 @@ button.chat-bubble.chat-editable {
   letter-spacing: -0.02em;
   line-height: 1;
   margin: 0 0 14px;
+  /* Keep long titles clear of the close button (top-right, 36px @ 16px inset). */
+  padding-right: 44px;
 }
 .modal-rating {
   display: flex;
@@ -2398,10 +2400,14 @@ button.chat-bubble.chat-editable {
     float: right;
     width: 38%;
     max-width: 140px;
-    margin: 0 0 10px 14px;
+    /* Start below the close button so it doesn't overlap the photo. */
+    margin: 34px 0 10px 14px;
     padding: 0;
     background: transparent;
   }
+  /* With an image, the title wraps to its left and already clears the close;
+     drop the reserved gap. (No-image grids keep it — title is full-width.) */
+  .modal-grid:not(.no-image) .modal-title { padding-right: 0; }
   .modal-left .prod-img-wrap[data-size="modal"] {
     aspect-ratio: 1;
     min-height: 0;
@@ -2429,7 +2435,7 @@ button.chat-bubble.chat-editable {
   .modal-bg { padding: 0; }
   .modal { max-height: 100dvh; border-radius: 0; }
   .modal-grid { padding: 14px 16px 18px; }
-  .modal-left { max-width: 116px; margin: 0 0 8px 12px; }
+  .modal-left { max-width: 116px; margin: 34px 0 8px 12px; }
   .modal-title { font-size: 21px; margin-bottom: 8px; }
   .modal-price { font-size: 26px; }
   .modal-specs li { font-size: 13px; }
@@ -5712,6 +5718,7 @@ select.profile-input {
 
 /* Leader row (#1) — highlighted. */
 .tc-lead {
+  position: relative;
   display: flex;
   align-items: stretch;
   gap: 16px;
@@ -5748,8 +5755,9 @@ select.profile-input {
 }
 .tc-lead-rank {
   position: absolute;
-  top: -9px;
-  left: -9px;
+  top: 7px;
+  left: 7px;
+  z-index: 2;
   width: 32px;
   height: 32px;
   border-radius: 50%;
