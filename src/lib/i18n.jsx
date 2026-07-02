@@ -65,6 +65,7 @@ const TRANSLATIONS = {
       "En tant que Partenaire Amazon, Oraklia réalise un bénéfice sur les achats remplissant les conditions requises.",
     "footer.rights": "© {year} Oraklia. Tous droits réservés.",
     "footer.legal": "Mentions légales",
+    "footer.privacy": "Confidentialité",
     "footer.copyrightShort": "© {year} Oraklia",
 
     // Results
@@ -607,6 +608,7 @@ const TRANSLATIONS = {
       "As an Amazon Associate, Oraklia earns from qualifying purchases.",
     "footer.rights": "© {year} Oraklia. All rights reserved.",
     "footer.legal": "Legal notices",
+    "footer.privacy": "Privacy policy",
     "footer.copyrightShort": "© {year} Oraklia",
 
     // Results

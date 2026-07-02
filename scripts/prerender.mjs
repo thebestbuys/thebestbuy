@@ -300,6 +300,32 @@ for (const guide of GUIDES) {
   console.log('prerendered', '/mentions-legales');
 }
 
+// ── Privacy policy (public URL required by Play Console + Amazon Associates) ──
+// Two routes point at the same in-app view: /confidentialite (FR) + /privacy (EN).
+for (const [path, title, description, intro] of [
+  [
+    '/confidentialite',
+    'Politique de confidentialité — Oraklia',
+    'Politique de confidentialité d’Oraklia : données collectées, finalités, sous-traitants et vos droits (RGPD).',
+    "Cette page explique quelles données personnelles Oraklia collecte, pourquoi, et quels sont vos droits au titre du RGPD.",
+  ],
+  [
+    '/privacy',
+    'Privacy policy — Oraklia',
+    'Oraklia privacy policy: data collected, purposes, processors and your rights (GDPR).',
+    'This page explains what personal data Oraklia collects, why, and what your rights are under the GDPR.',
+  ],
+]) {
+  const canonical = `${ORIGIN}${path}`;
+  const body = `<main style="max-width:680px;margin:40px auto;padding:0 20px"><h1>${esc(
+    title.replace(' — Oraklia', ''),
+  )}</h1><p>${esc(intro)}</p><p>${esc(L.affiliate)}</p></main>`;
+  const html = renderPage({ title, description, canonical, body });
+  write(path.replace(/^\//, ''), html);
+  urls.push(path);
+  console.log('prerendered', path);
+}
+
 // ── Sitemap (kept in sync with the real URLs) ────────────────────────────────
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

@@ -18,6 +18,7 @@ const FriendsPanel = lazy(() => import('./components/FriendsPanel.jsx'));
 const AdminPanel = lazy(() => import('./components/AdminPanel.jsx'));
 const AskOpinionPanel = lazy(() => import('./components/AskOpinionPanel.jsx'));
 const LegalNotices = lazy(() => import('./components/LegalNotices.jsx'));
+const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy.jsx'));
 const GuideArticle = lazy(() => import('./components/GuideArticle.jsx'));
 const GuidesPanel = lazy(() => import('./components/GuidesPanel.jsx'));
 const TutorialModal = lazy(() => import('./components/TutorialModal.jsx'));
@@ -78,6 +79,7 @@ function viewFromPath() {
   // /cadeau (GiftLanding) is WIP and not yet linked or accessible — route disabled.
   if (/^\/idees-cadeaux\/?$/.test(path)) return { giftHub: true };
   if (/^\/mentions-legales\/?$/.test(path)) return { legal: true };
+  if (/^\/(confidentialite|privacy)\/?$/.test(path)) return { privacy: true };
   return {};
 }
 
@@ -306,9 +308,9 @@ function TrendingCircle({ onOpen, hideHeader }) {
         <div className="tc-rank">
           {/* Leader — the single most-popular pick, highlighted. */}
           <button type="button" className="tc-lead" onClick={() => onOpen(leader)}>
+            <span className="tc-lead-rank">1</span>
             <span className="tc-lead-thumb">
               <ProductImage product={leader} size="large" />
-              <span className="tc-lead-rank">1</span>
             </span>
             <span className="tc-lead-info">
               <span className="tc-row-brand">{leader.brand}</span>
@@ -399,7 +401,7 @@ function TrendingPanel({ onClose, onOpen }) {
   );
 }
 
-function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifOpen, onToggleNotif, onCloseNotif, onGiftReminder, onOpenGift, onOpenGiftHub, onOpenLegal, onOpenGuide, onOpenGuides, onOpenTutorial, onOpenTrending, onOpenAdmin, onLoadConvo, onOpenProduct }) {
+function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile, onOpenFriends, onOpenAsk, onOpenNotifications, notifOpen, onToggleNotif, onCloseNotif, onGiftReminder, onOpenGift, onOpenGiftHub, onOpenLegal, onOpenPrivacy, onOpenGuide, onOpenGuides, onOpenTutorial, onOpenTrending, onOpenAdmin, onLoadConvo, onOpenProduct }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const firstName = user?.given_name || user?.name?.split(/\s+/)[0] || '';
@@ -661,6 +663,9 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
               <button type="button" className="home-footer-link" onClick={onOpenLegal}>
                 {t('footer.legal')}
               </button>
+              <button type="button" className="home-footer-link" onClick={onOpenPrivacy}>
+                {t('footer.privacy')}
+              </button>
             </div>
           </div>
         </footer>
@@ -917,6 +922,7 @@ export default function App() {
   // Open the guide / legal view directly when landing on its URL (deep link,
   // refresh, or the prerendered page handing off to the app).
   const [legalOpen, setLegalOpen] = useState(() => !!viewFromPath().legal);
+  const [privacyOpen, setPrivacyOpen] = useState(() => !!viewFromPath().privacy);
   const [activeGuide, setActiveGuide] = useState(() => viewFromPath().guide || null);
   const [giftHubOpen, setGiftHubOpen] = useState(() => !!viewFromPath().giftHub);
   const [cadeauOpen, setCadeauOpen] = useState(() => !!viewFromPath().cadeau);
@@ -1323,6 +1329,7 @@ export default function App() {
   const navOpenGiftHub = () => { pushHistory('/idees-cadeaux'); setGiftHubOpen(true); };
   const navOpenCadeau = () => { pushHistory('/cadeau'); setCadeauOpen(true); };
   const navOpenLegal = () => { pushHistory('/mentions-legales'); setLegalOpen(true); };
+  const navOpenPrivacy = () => { pushHistory('/confidentialite'); setPrivacyOpen(true); };
   const navOpenHistory = () => { pushHistory(); setHistoryOpen(true); };
   const navOpenSelections = () => { pushHistory(); setSelectionsTab('favorites'); };
   const navOpenProfile = () => { pushHistory(); setProfileOpen(true); };
@@ -1392,6 +1399,7 @@ export default function App() {
       if (tutorialOpen) { setTutorialOpen(false); return; }
       if (selected) { setSelected(null); return; }
       if (legalOpen) { setLegalOpen(false); return; }
+      if (privacyOpen) { setPrivacyOpen(false); return; }
       if (giftOpen) { setGiftOpen(false); return; }
       if (askOpen) { setAskOpen(false); return; }
       if (friendsOpen) { setFriendsOpen(false); return; }
@@ -1409,7 +1417,7 @@ export default function App() {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, legalOpen, giftOpen, askOpen, friendsOpen, adminOpen, profileOpen, selectionsTab, guidesOpen, tutorialOpen, trendingOpen, historyOpen, activeGuide, giftHubOpen, cadeauOpen, category]);
+  }, [selected, legalOpen, privacyOpen, giftOpen, askOpen, friendsOpen, adminOpen, profileOpen, selectionsTab, guidesOpen, tutorialOpen, trendingOpen, historyOpen, activeGuide, giftHubOpen, cadeauOpen, category]);
 
   // The per-panel "?" help buttons (PanelHelpButton) open the tutorial via this
   // window event, so panels don't each need an onOpenTutorial prop.
@@ -1429,9 +1437,10 @@ export default function App() {
       ? `${localizeGuide(g, lang).title} — Oraklia`
       : giftHubOpen ? `${tr('giftHub.title')} — Oraklia`
       : cadeauOpen ? `${tr('cadeau.title')} — Oraklia`
-      : legalOpen ? 'Mentions légales — Oraklia' : base;
+      : legalOpen ? 'Mentions légales — Oraklia'
+      : privacyOpen ? `${tr('footer.privacy')} — Oraklia` : base;
     return () => { document.title = base; };
-  }, [activeGuide, giftHubOpen, cadeauOpen, legalOpen, lang, tr]);
+  }, [activeGuide, giftHubOpen, cadeauOpen, legalOpen, privacyOpen, lang, tr]);
 
   const getAmazonUrl = (p) => {
     if (p.amazon_url) return p.amazon_url;
@@ -1523,6 +1532,7 @@ export default function App() {
           onStartAdvisor={startAdvisorFromGuide}
         />
         {legalOpen && <LegalNotices open onClose={navBack} />}
+          {privacyOpen && <PrivacyPolicy open onClose={navBack} />}
       </Suspense>
     );
   }
@@ -1582,6 +1592,7 @@ export default function App() {
           onOpenGift={navOpenGift}
           onOpenGiftHub={navOpenGiftHub}
           onOpenLegal={navOpenLegal}
+          onOpenPrivacy={navOpenPrivacy}
           onOpenGuide={navOpenGuide}
           onOpenGuides={navOpenGuides}
           onOpenTutorial={navOpenTutorial}
@@ -1609,6 +1620,7 @@ export default function App() {
           {tutorialOpen && <TutorialModal open onClose={navBack} onOpenGuides={navOpenGuides} />}
           {trendingOpen && <TrendingPanel onClose={navBack} onOpen={navOpenProduct} />}
           {legalOpen && <LegalNotices open onClose={navBack} />}
+          {privacyOpen && <PrivacyPolicy open onClose={navBack} />}
         </Suspense>
       </>
     );
@@ -1762,6 +1774,9 @@ export default function App() {
             {tr('footer.copyrightShort', { year: new Date().getFullYear() })} ·{' '}
             <button type="button" className="home-footer-link" onClick={navOpenLegal}>
               {tr('footer.legal')}
+            </button>{' · '}
+            <button type="button" className="home-footer-link" onClick={navOpenPrivacy}>
+              {tr('footer.privacy')}
             </button>
           </span>
         </footer>
@@ -1790,6 +1805,7 @@ export default function App() {
         {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
         {trendingOpen && <TrendingPanel onClose={navBack} onOpen={navOpenProduct} />}
         {legalOpen && <LegalNotices open onClose={navBack} />}
+          {privacyOpen && <PrivacyPolicy open onClose={navBack} />}
       </Suspense>
 
       <TweaksPanel title="Tweaks">
