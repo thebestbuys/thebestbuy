@@ -86,6 +86,11 @@ ul {
 #root,
 .app {
   height: 100vh;
+  /* Match the dynamic viewport on mobile: the advisor column uses 100dvh, so if
+     #root/.app stayed at 100vh they'd be taller than it when the browser toolbar
+     is shown, leaving an empty scrollable strip (a "white block") below the chat.
+     dvh keeps them in sync; falls back to the 100vh above where dvh is missing. */
+  height: 100dvh;
 }
 .app {
   display: grid;
@@ -98,6 +103,7 @@ ul {
 .home {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background: var(--bg);
