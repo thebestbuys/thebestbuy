@@ -148,6 +148,7 @@ const TRANSLATIONS = {
 
     // Auth
     "auth.signIn": "Se connecter",
+    "auth.signInGoogle": "Se connecter avec Google",
     "auth.welcome": "Bienvenue sur Oraklia",
     "auth.sub":
       "Connectez-vous ou créez un compte pour sauvegarder vos sélections.",
@@ -691,6 +692,7 @@ const TRANSLATIONS = {
 
     // Auth
     "auth.signIn": "Sign in",
+    "auth.signInGoogle": "Sign in with Google",
     "auth.welcome": "Welcome to Oraklia",
     "auth.sub": "Sign in or create an account to save your selections.",
     "auth.notConfigured": "Google sign-in is not configured.",

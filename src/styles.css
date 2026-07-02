@@ -2851,6 +2851,28 @@ button.chat-bubble.chat-editable {
   justify-content: center;
   min-height: 44px;
 }
+/* Native (Capacitor) Google button — GIS can't render on native, so we draw
+   our own that calls signInNative(). Follows Google's light-button guidance. */
+.auth-google-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 280px;
+  max-width: 100%;
+  margin: 0 auto;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: #1f1f1f;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.auth-google-btn:hover { background: #f7f7f7; }
+.auth-google-btn:active { background: #efefef; }
 .auth-modal-loading {
   color: var(--text-muted);
   font-size: 13px;
