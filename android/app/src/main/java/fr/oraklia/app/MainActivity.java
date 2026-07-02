@@ -1,4 +1,4 @@
-package com.bestbuys.app;
+package fr.oraklia.app;
 
 import android.os.Bundle;
 

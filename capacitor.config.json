@@ -1,5 +1,5 @@
 {
-  "appId": "com.bestbuys.app",
+  "appId": "fr.oraklia.app",
   "appName": "BestBuys",
   "webDir": "dist",
   "server": {
