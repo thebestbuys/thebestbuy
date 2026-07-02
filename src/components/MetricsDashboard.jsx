@@ -104,7 +104,7 @@ const KPI = ({ label, value, sub, delta, canvasRef }) => (
     </div>
     <div style={{ font: '700 30px/1.1 Inter,sans-serif', color: C.ink, margin: '8px 0 2px' }}>{value}</div>
     <div style={{ fontSize: 11, color: C.faint, marginBottom: 6 }}>{sub}</div>
-    <div style={{ position: 'relative', height: 38 }}><canvas ref={canvasRef} /></div>
+    {canvasRef && <div style={{ position: 'relative', height: 38 }}><canvas ref={canvasRef} /></div>}
   </div>
 );
 
@@ -362,6 +362,16 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries, in
         <KPI label="Actifs · 7 j" value={fmt(m.active_users_7d)} sub={`${m.users ? dec(m.active_users_7d / m.users * 100) : '—'} % de la base`} delta={winDelta(series.dau)} canvasRef={spkActive} />
         <KPI label="Conversations" value={fmt(winSum(series.convos))} sub={`${fmt(m.conversations)} au total`} delta={winDelta(series.convos)} canvasRef={spkConvos} />
         <KPI label="Clics Amazon" value={fmt(winSum(series.clicks))} sub={`${fmt(m.link_clicks)} au total · sortants affiliés`} delta={winDelta(series.clicks)} canvasRef={spkClicks} />
+      </div>
+
+      {/* Anonymous (not signed-in) visitors */}
+      <div style={{ margin: '4px 0 8px' }}>
+        <h3 style={{ font: '600 14px Inter,sans-serif', margin: '0 0 2px' }}>Visiteurs anonymes</h3>
+        <p style={{ fontSize: 11.5, color: C.faint, margin: 0 }}>Usage du conseiller par des personnes non connectées (sans compte)</p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 14, marginBottom: 16 }}>
+        <KPI label="Sessions anonymes · 7 j" value={fmt(m.anon_sessions_7d ?? 0)} sub={`${fmt(m.anon_sessions ?? 0)} au total · conversations sans compte`} />
+        <KPI label="Appels IA anonymes" value={fmt(m.anon_ai_calls ?? 0)} sub="génération IA par des visiteurs non connectés" />
       </div>
 
       {/* Backend API call volume */}

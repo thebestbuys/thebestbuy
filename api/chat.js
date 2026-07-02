@@ -1,5 +1,5 @@
 import { searchItems, creatorsConfigured } from './_creators.js';
-import { logApiCalls, setRequestUser } from './_metrics.js';
+import { logApiCalls, setRequestUser, setRequestConversation } from './_metrics.js';
 
 // Primary + backup models are env-overridable. On the free tier each model has
 // its OWN quota bucket, so a backup from a different line (default 2.5 Flash-Lite)
@@ -565,6 +565,9 @@ export default async function handler(req, res) {
   const t1_ms = ms(t1);
 
   const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', conversationId = '', requestId = '', exclude = [], product = null, question = '', history = [] } = body;
+  // Tag logged API calls with the conversation so the dashboard can count
+  // distinct anonymous advisor sessions (anon users have no user_id).
+  setRequestConversation(conversationId);
 
   // Home-page suggestion chips: a light, self-contained path (no Amazon
   // verification). Gemini picks ~8 product categories for the current season /

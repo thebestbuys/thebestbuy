@@ -676,6 +676,10 @@ create table if not exists public.api_call_logs (
 -- Nullable: server-side calls with no signed-in user (e.g. anonymous suggestions)
 -- still log, just unattributed. No FK so a row survives an account deletion.
 alter table public.api_call_logs add column if not exists user_id uuid;
+-- Conversation id of the advisor session that made the call (nullable: null for
+-- suggestions / non-advisor calls). Lets the dashboard count DISTINCT anonymous
+-- advisor sessions (anon rows have user_id null), not just raw call volume.
+alter table public.api_call_logs add column if not exists conversation_id text;
 alter table public.api_call_logs enable row level security;
 create index if not exists api_call_logs_service_day_idx
   on public.api_call_logs (service, created_at);
@@ -709,7 +713,13 @@ language sql stable security definer set search_path = public, auth as $$
     'occasions',        (select count(*) from public.occasions where (p_include_testers or user_id not in (select user_id from public.tester_ids()))),
     'gemini_calls',     (select coalesce(sum(count), 0)::int from public.api_call_logs where service = 'gemini'   and (p_include_testers or user_id is null or user_id not in (select user_id from public.tester_ids()))),
     'amazon_calls',     (select coalesce(sum(count), 0)::int from public.api_call_logs where service = 'amazon'   and (p_include_testers or user_id is null or user_id not in (select user_id from public.tester_ids()))),
-    'supabase_calls',   (select coalesce(sum(count), 0)::int from public.api_call_logs where service = 'supabase' and (p_include_testers or user_id is null or user_id not in (select user_id from public.tester_ids())))
+    'supabase_calls',   (select coalesce(sum(count), 0)::int from public.api_call_logs where service = 'supabase' and (p_include_testers or user_id is null or user_id not in (select user_id from public.tester_ids()))),
+    -- Anonymous (not signed-in) usage: rows with user_id null. Sessions are
+    -- distinct advisor conversation ids; ai_calls is the raw Gemini call volume.
+    -- Independent of p_include_testers (anonymous users are never testers).
+    'anon_ai_calls',    (select coalesce(sum(count), 0)::int from public.api_call_logs where service = 'gemini' and user_id is null),
+    'anon_sessions',    (select count(distinct conversation_id)::int from public.api_call_logs where service = 'gemini' and user_id is null and conversation_id is not null),
+    'anon_sessions_7d', (select count(distinct conversation_id)::int from public.api_call_logs where service = 'gemini' and user_id is null and conversation_id is not null and created_at > now() - interval '7 days')
   ) end;
 $$;
 grant execute on function public.admin_metrics(boolean) to authenticated;

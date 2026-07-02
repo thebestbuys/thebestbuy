@@ -13,7 +13,15 @@ const SUPA_SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 // when unset (anonymous / suggestions), calls log with user_id = null.
 export const userContext = new AsyncLocalStorage();
 export function setRequestUser(userId) {
-  userContext.enterWith({ userId: userId || null });
+  const cur = userContext.getStore() || {};
+  userContext.enterWith({ ...cur, userId: userId || null });
+}
+// Anonymous-usage tracking: the conversation id groups a visitor's advisor
+// session, so counting distinct anon conversation ids ≈ distinct anonymous
+// sessions in the dashboard. Best-effort; null for suggestions / non-advisor.
+export function setRequestConversation(conversationId) {
+  const cur = userContext.getStore() || {};
+  userContext.enterWith({ ...cur, conversationId: conversationId || null });
 }
 
 let _client; // undefined = not yet resolved, null = unavailable
@@ -34,7 +42,12 @@ export async function logApiCalls(service, count = 1) {
   try {
     const c = await adminClient();
     if (!c) return;
-    const userId = userContext.getStore()?.userId ?? null;
-    await c.from('api_call_logs').insert({ service, count, user_id: userId });
+    const store = userContext.getStore() || {};
+    await c.from('api_call_logs').insert({
+      service,
+      count,
+      user_id: store.userId ?? null,
+      conversation_id: store.conversationId ?? null,
+    });
   } catch { /* analytics is best-effort */ }
 }
