@@ -199,12 +199,18 @@ export default function PrivacyPolicy({ open, onClose }) {
   if (!open) return null;
   const x = TXT[lang] || TXT.fr;
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
+  const back = lang === 'en' ? 'Back' : 'Retour';
 
   return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal legal-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+    <div className="legal-page">
+      <div className="legal-page-topbar">
+        <button type="button" className="legal-page-back" onClick={onClose}>
+          <span aria-hidden="true">←</span> {back}
+        </button>
+        <span className="legal-page-brand">Oraklia</span>
+      </div>
 
+      <div className="legal-page-scroll">
         <div className="legal-content">
           <h1 className="legal-title">{x.title}</h1>
           <p className="legal-intro">{x.intro}</p>

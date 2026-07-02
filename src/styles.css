@@ -590,6 +590,55 @@ ul {
   .legal-row-label { flex-basis: auto; }
 }
 
+/* Full-page legal / privacy view (scrolls; used by the privacy policy) */
+.legal-page {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  animation: bgFade 0.2s ease;
+}
+.legal-page-topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 20px;
+  border-bottom: 0.5px solid var(--border-soft);
+  background: var(--bg-elev);
+}
+.legal-page-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.legal-page-back:hover { color: var(--accent); }
+.legal-page-brand {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 22px;
+  color: var(--accent);
+}
+.legal-page-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.legal-page .legal-content {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
 /* ───────────────────────── Chat panel ─────────────────────────── */
 .chat-panel {
   display: flex;
