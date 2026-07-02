@@ -217,6 +217,151 @@ function answersJson(answers) {
   return JSON.stringify(answers.map((a) => ({ q: a.q || '', r: a.a ?? a.label ?? '' })));
 }
 
+// ── Robustness helpers: bound user input & tolerate Gemini's output slips ────
+// Gemini is asked for pure JSON (responseMimeType) and clean shapes, but a model
+// occasionally wraps JSON in ```fences```, adds a stray sentence, leaves a
+// trailing comma, or emits a wrong type / missing field. These coerce every
+// value into the exact shape the client + Amazon-verify step expect, so a slip
+// degrades gracefully instead of 502-ing the exchange or crashing a render.
+
+function clampStr(v, max) {
+  return String(v ?? '').trim().slice(0, max);
+}
+
+function slugify(s, fallback) {
+  const out = String(s ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+  return out || fallback;
+}
+
+// A positive number, or null. Used for budget bounds ("min"/"max").
+function coerceBound(v) {
+  if (v == null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+// Pull a price out of Gemini's field, tolerating 999, "999", "999 €",
+// "1 299,90€", "999-1200" (takes the lower bound). null when nothing usable.
+function coercePrice(v) {
+  if (typeof v === 'number') return Number.isFinite(v) && v > 0 ? Math.round(v) : null;
+  const m = String(v ?? '').replace(/\s/g, '').match(/\d+(?:[.,]\d+)?/);
+  if (!m) return null;
+  const n = Number(m[0].replace(',', '.'));
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+}
+
+// Parse Gemini's JSON defensively: strip a code fence, fall back to the outermost
+// {...} (drops prose before/after), then remove trailing commas as a last repair.
+// Returns { data, repaired }; throws only when nothing parseable remains.
+function extractJson(raw) {
+  if (typeof raw !== 'string') throw new Error('non-string content');
+  let s = raw.trim();
+  if (s.startsWith('```')) {
+    s = s.replace(/^```[a-zA-Z]*\s*/, '').replace(/```\s*$/, '').trim();
+  }
+  try { return { data: JSON.parse(s), repaired: false }; } catch { /* try harder */ }
+  const first = s.indexOf('{');
+  const last = s.lastIndexOf('}');
+  if (first !== -1 && last > first) {
+    const core = s.slice(first, last + 1);
+    try { return { data: JSON.parse(core), repaired: true }; } catch { /* one repair left */ }
+    const repaired = core.replace(/,\s*([}\]])/g, '$1');
+    return { data: JSON.parse(repaired), repaired: true };
+  }
+  throw new Error('no JSON object found');
+}
+
+// Normalize a "next question". Returns null when it can't be salvaged into
+// something renderable (needs ≥2 labelled choices) so the caller falls back
+// rather than handing the client a broken question.
+function normalizeQuestion(q) {
+  if (!q || typeof q !== 'object') return null;
+  const rawChoices = Array.isArray(q.choices) ? q.choices : [];
+  const choices = [];
+  const seen = new Set();
+  for (const c of rawChoices) {
+    if (choices.length >= 8) break;
+    if (!c || typeof c !== 'object') continue;
+    const label = clampStr(c.label, 60);
+    if (!label) continue;
+    let id = slugify(c.id || label, `c${choices.length + 1}`);
+    while (seen.has(id)) id += `-${choices.length + 1}`;
+    seen.add(id);
+    const tags = Array.isArray(c.tags)
+      ? c.tags.map((t) => clampStr(t, 24)).filter(Boolean).slice(0, 8)
+      : [];
+    choices.push({ id, label, tags, min: coerceBound(c.min), max: coerceBound(c.max) });
+  }
+  if (choices.length < 2) return null;
+  const text = clampStr(q.text, 200);
+  return { id: slugify(q.id || text, 'q'), text, multi: q.multi === true, choices };
+}
+
+// Normalize the product list. Drops entries with no brand AND no model (nothing
+// to search Amazon with), coerces price/score/specs, bounds every length.
+function normalizeProducts(arr) {
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  for (const p of arr) {
+    if (out.length >= 12) break;
+    if (!p || typeof p !== 'object') continue;
+    const brand = clampStr(p.brand, 60);
+    const model = clampStr(p.model, 120);
+    if (!brand && !model) continue;
+    let score = Number(p.score);
+    score = Number.isFinite(score) ? Math.max(0, Math.min(99, Math.round(score))) : null;
+    const specs = Array.isArray(p.specs)
+      ? p.specs.map((s) => clampStr(s, 80)).filter(Boolean).slice(0, 6)
+      : [];
+    out.push({
+      id: clampStr(p.id, 20) || `p${out.length + 1}`,
+      brand, model,
+      price: coercePrice(p.price),
+      score, specs,
+      why: clampStr(p.why, 200),
+    });
+  }
+  return out;
+}
+
+// Bound the compact criteria array (answered questions) before it reaches the
+// prompt and budget-bounds logic: caps count, clamps text, coerces min/max.
+function sanitizeAnswers(answers) {
+  if (!Array.isArray(answers)) return [];
+  return answers.slice(0, 30).map((a) => {
+    if (!a || typeof a !== 'object') return { q: '', a: '', min: null, max: null };
+    return {
+      ...a,
+      q: clampStr(a.q, 200),
+      a: clampStr(a.a ?? a.label ?? '', 200),
+      min: coerceBound(a.min),
+      max: coerceBound(a.max),
+    };
+  });
+}
+
+// Bound the legacy transcript: keep the last 20 turns, clamp each message.
+function sanitizeMessages(messages) {
+  if (!Array.isArray(messages)) return [];
+  return messages.slice(-20).map((m) => ({
+    role: m?.role === 'assistant' || m?.role === 'model' ? 'assistant' : 'user',
+    content: clampStr(m?.content, 2000),
+  }));
+}
+
+// A friendly, localized reply used when the model returns nothing usable — so an
+// occasional empty/blocked/garbled response degrades to a soft message the chat
+// can show, not a hard error toast.
+function softReply(lang) {
+  return lang === 'en'
+    ? "Sorry, I couldn't process that request. Could you rephrase or try again?"
+    : "Désolé, je n'ai pas pu traiter cette demande. Peux-tu reformuler ou réessayer ?";
+}
+
 // The budget question (always the first one) carries €-bounds on the chosen
 // choice. Turn them into Creators API minPrice/maxPrice (in CENTS), with a 10%
 // tolerance so a near-budget deal isn't filtered out, and so the lowest/highest
@@ -564,7 +709,13 @@ export default async function handler(req, res) {
   }
   const t1_ms = ms(t1);
 
-  const { mode = 'ask', objet = '', answers = [], messages = [], category, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', conversationId = '', requestId = '', exclude = [], product = null, question = '', history = [] } = body;
+  const { mode = 'ask', objet: objetRaw = '', answers: answersRaw = [], messages: messagesRaw = [], category, lang = 'fr', profile = '', gift: giftRaw = '', surprise = false, friendId = '', conversationId = '', requestId = '', exclude = [], product = null, question = '', history = [] } = body;
+  // Bound user-supplied free text before it reaches the prompt / criteria:
+  // caps token spend, blocks abuse, and coerces malformed shapes to safe defaults.
+  const objet = clampStr(objetRaw, 120);
+  const answers = sanitizeAnswers(answersRaw);
+  const messages = sanitizeMessages(messagesRaw);
+  const gift = clampStr(giftRaw, 400);
   // Tag logged API calls with the conversation so the dashboard can count
   // distinct anonymous advisor sessions (anon users have no user_id).
   setRequestConversation(conversationId);
@@ -590,7 +741,7 @@ export default async function handler(req, res) {
       }
       const j = await up.json();
       const c = j.candidates?.[0]?.content?.parts?.[0]?.text;
-      const parsedS = JSON.parse(c);
+      const parsedS = extractJson(c).data;
       const suggestions = (Array.isArray(parsedS.suggestions) ? parsedS.suggestions : [])
         .map((s) => ({
           label: String(s?.label ?? '').trim().slice(0, 40),
@@ -735,21 +886,46 @@ export default async function handler(req, res) {
 
   const content = json.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!content) {
-    return send(res, 502, {
-      error: 'No content in Gemini response',
-      gemini_model: GEMINI_MODEL,
-      finish_reason: json.candidates?.[0]?.finishReason,
-      prompt_feedback: json.promptFeedback,
-      full_response: json,
+    // An OK response with no text = safety/recitation block or an empty
+    // candidate. Degrade to a soft, localized reply (no question, no products)
+    // instead of a hard error toast, so the chat stays usable.
+    return send(res, 200, {
+      reply: softReply(lang),
+      question: null,
+      products: null,
+      _debug: {
+        model: upstream.modelUsed || GEMINI_MODEL,
+        empty_candidate: true,
+        finish_reason: json.candidates?.[0]?.finishReason || null,
+        prompt_feedback: json.promptFeedback || null,
+      },
     });
   }
 
-  // 5. Parse model JSON output
+  // 5. Parse model JSON output (tolerant: fences / prose / trailing commas)
   const t5 = performance.now();
   let parsed;
-  try { parsed = JSON.parse(content); } catch {
-    return send(res, 502, { error: 'Model returned invalid JSON', gemini_model: GEMINI_MODEL, raw: content });
+  let jsonRepaired = false;
+  try {
+    const ex = extractJson(content);
+    parsed = ex.data;
+    jsonRepaired = ex.repaired;
+  } catch {
+    // Unrecoverable JSON (e.g. truncated on MAX_TOKENS). Degrade to a soft reply
+    // instead of 502 so the exchange isn't lost; raw + reason kept for debugging.
+    return send(res, 200, {
+      reply: softReply(lang),
+      question: null,
+      products: null,
+      _debug: {
+        model: upstream.modelUsed || GEMINI_MODEL,
+        invalid_json: true,
+        finish_reason: json.candidates?.[0]?.finishReason || null,
+        raw: String(content).slice(0, 2000),
+      },
+    });
   }
+  if (!parsed || typeof parsed !== 'object') parsed = {};
   const t5_ms = ms(t5);
 
   // Token usage — accumulated across calls so a retry's cost is visible too
@@ -765,6 +941,13 @@ export default async function handler(req, res) {
 
   // New path: recommend decided by mode. Legacy path: decided by parsed.action.
   const doRecommend = legacy ? (parsed.action === 'recommend') : isRecommend;
+
+  // Normalize the model's output into the exact shapes the client + Amazon-verify
+  // step expect. A garbled question becomes null (caller falls back); products get
+  // price/score/specs coerced and unsearchable entries dropped.
+  if (parsed.reply != null) parsed.reply = clampStr(parsed.reply, 1000);
+  if (parsed.question != null) parsed.question = normalizeQuestion(parsed.question);
+  if (parsed.products != null) parsed.products = normalizeProducts(parsed.products);
 
   // 6. If recommend: verify sequentially (avoids Amazon bot detection from parallel requests)
   if (doRecommend && Array.isArray(parsed.products) && parsed.products.length) {
@@ -839,9 +1022,10 @@ export default async function handler(req, res) {
           outputTokens = (outputTokens || 0) + (repJson.usageMetadata?.candidatesTokenCount || 0);
           const repText = repJson.candidates?.[0]?.content?.parts?.[0]?.text;
           if (repText) {
-            const repParsed = JSON.parse(repText);
-            if (Array.isArray(repParsed.products)) {
-              const fresh = repParsed.products.filter((p) => !triedNames.has(`${p.brand} ${p.model}`));
+            const repParsed = extractJson(repText).data;
+            const repProducts = normalizeProducts(repParsed?.products);
+            if (repProducts.length) {
+              const fresh = repProducts.filter((p) => !triedNames.has(`${p.brand} ${p.model}`));
               await verifyCandidates(fresh);
             }
           }
@@ -884,6 +1068,8 @@ export default async function handler(req, res) {
     request_id: requestId || null,
     model: upstream.modelUsed || GEMINI_MODEL,
     gemini_fell_back: !!upstream.fellBack,
+    json_repaired: jsonRepaired,
+    finish_reason: json.candidates?.[0]?.finishReason || null,
     timings_ms: {
       parse_body:        t1_ms,
       build_prompt:      t2_ms,

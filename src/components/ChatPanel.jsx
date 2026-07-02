@@ -120,22 +120,34 @@ function MultiChoice({ question, onAnswer, onSkip }) {
 // question at the bottom and the in-place answer editor.
 function ChoiceControl({ question, onAnswer, onSkip }) {
   const { t } = useI18n();
-  if (isBudgetQuestion(question)) {
+  // Defence in depth: drop any malformed/label-less choice (server normalizes,
+  // but old cached questions in history may predate it). With nothing left to
+  // show, offer just the "No preference" escape hatch instead of an empty grid.
+  const choices = Array.isArray(question?.choices) ? question.choices.filter((c) => c && c.label) : [];
+  if (!choices.length) {
+    return (
+      <div className="chat-choices">
+        <button type="button" className="choice-chip choice-skip" onClick={onSkip}>{t('chat.skip')}</button>
+      </div>
+    );
+  }
+  const q = { ...question, choices };
+  if (isBudgetQuestion(q)) {
     return (
       <>
-        <BudgetBrackets question={question} onAnswer={onAnswer} />
+        <BudgetBrackets question={q} onAnswer={onAnswer} />
         <div className="chat-choices chat-skip-row">
           <button type="button" className="choice-chip choice-skip" onClick={onSkip}>{t('chat.skip')}</button>
         </div>
       </>
     );
   }
-  if (question.multi) {
-    return <MultiChoice question={question} onAnswer={onAnswer} onSkip={onSkip} />;
+  if (q.multi) {
+    return <MultiChoice question={q} onAnswer={onAnswer} onSkip={onSkip} />;
   }
   return (
     <div className="chat-choices">
-      {question.choices.map((c) => (
+      {q.choices.map((c) => (
         <button key={c.id} className="choice-chip" onClick={() => onAnswer(question.id, c)}>
           {c.label}
         </button>
