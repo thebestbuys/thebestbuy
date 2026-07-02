@@ -1,6 +1,6 @@
 {
   "appId": "fr.oraklia.app",
-  "appName": "BestBuys",
+  "appName": "Oraklia",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"
