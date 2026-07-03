@@ -76,7 +76,7 @@ function viewFromPath() {
   const path = typeof location !== 'undefined' ? location.pathname : '/';
   const m = path.match(/^\/guide\/([^/]+)\/?$/);
   if (m && getGuide(decodeURIComponent(m[1]))) return { guide: decodeURIComponent(m[1]) };
-  // /cadeau (GiftLanding) is WIP and not yet linked or accessible — route disabled.
+  if (/^\/cadeau\/?$/.test(path)) return { cadeau: true };
   if (/^\/idees-cadeaux\/?$/.test(path)) return { giftHub: true };
   if (/^\/mentions-legales\/?$/.test(path)) return { legal: true };
   if (/^\/(confidentialite|privacy)\/?$/.test(path)) return { privacy: true };
@@ -994,7 +994,14 @@ export default function App() {
   // Gift mode: recommend immediately (the recipient form already has budget +
   // occasion), then every 3 refinement answers (0, 3, 6, …).
   const FIRST_RECO = 5;
-  const shouldRecommendAt = (n) => (gift ? n % 3 === 0 : n >= 5 && (n - 5) % 3 === 0);
+  // Recommend cadence. Gift-with-known-recipient (form) recommends right away
+  // (n=0) since the profile is complete. Gift DISCOVERY (/cadeau chat) must first
+  // gather the basics (relationship, age, gender) → recommend from n=3, then
+  // every 3rd. Plain product advisor recommends from the 5th answer.
+  const shouldRecommendAt = (n) =>
+    gift?.discover ? n >= 3 && (n - 3) % 3 === 0
+      : gift ? n % 3 === 0
+      : n >= 5 && (n - 5) % 3 === 0;
 
   // Honest progress tied to the recommendation milestone (FIRST_RECO answers in
   // self mode) rather than an arbitrary turnCount*22. Drives both the bar width
@@ -1109,12 +1116,12 @@ export default function App() {
     if (willRecommend) setLoadingProducts(true);
     try {
       if (willRecommend) {
-        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId, exclude: ownedExclude() });
+        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, giftMode: !!gift, surprise, friendId, token, conversationId: convoId, exclude: ownedExclude() });
         if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
         loadProducts(rec?.products);
       }
       // Always queue the next refinement question.
-      const q = await askQuestion({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId });
+      const q = await askQuestion({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, giftMode: !!gift, surprise, friendId, token, conversationId: convoId });
       if (q?.reply) setMessages((m) => [...m, { role: 'bot', text: q.reply }]);
       setCurrentQuestion(q?.question?.choices ? q.question : null);
       setRefreshKey((k) => k + 1);
@@ -1193,7 +1200,7 @@ export default function App() {
     // friend-profile lookup (friendId) AND to meter this account's daily AI quota.
     const token = getAccessToken() || '';
     try {
-      const rec = await recommend({ objet, answers: answersForApi, lang, profile, gift: giftStr, surprise, friendId, token, conversationId: convoId, exclude: [...ownedExclude(), ...exclude] });
+      const rec = await recommend({ objet, answers: answersForApi, lang, profile, gift: giftStr, giftMode: !!gift, surprise, friendId, token, conversationId: convoId, exclude: [...ownedExclude(), ...exclude] });
       if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
       loadProducts(rec?.products);
     } catch (e) {
@@ -1373,6 +1380,9 @@ export default function App() {
     setCurrentQuestion(null);
     setCategory('gift');
   };
+  // /cadeau "Trouver un cadeau": start a gift session with NO pre-known recipient.
+  // The advisor (discovery mode) asks who it's for, age, gender, interests… itself.
+  const startGiftDiscovery = () => { setCadeauOpen(false); startGift({ discover: true }); };
   const navPickCategory = (cat, q) => {
     pushHistory();
     setConvoId(newConversationId());
@@ -1572,25 +1582,17 @@ export default function App() {
     );
   }
 
-  // Gift-first landing view (/cadeau). Chips/CTA pre-fill and open the GiftPanel
-  // over the landing; submitting it leaves the landing and starts the advisor.
+  // Gift-first landing view (/cadeau). The central CTA starts the gift advisor in
+  // discovery mode (the chat asks who it's for, age, gender, interests…).
   if (cadeauOpen) {
     return (
       <Suspense fallback={null}>
         <GiftLanding
+          onStartDiscover={startGiftDiscovery}
           onBack={navBack}
-          onStartGift={(prefill) => { setGiftPrefill(prefill || null); setGiftOpen(true); }}
           onOpenGuide={navOpenGuide}
           onOpenGiftHub={navOpenGiftHub}
         />
-        {giftOpen && (
-          <GiftPanel
-            open
-            onClose={() => setGiftOpen(false)}
-            onSubmit={(d) => { setCadeauOpen(false); startGift(d); }}
-            initial={giftPrefill}
-          />
-        )}
       </Suspense>
     );
   }
@@ -1611,7 +1613,7 @@ export default function App() {
           onToggleNotif={() => setNotifOpen((v) => !v)}
           onCloseNotif={() => setNotifOpen(false)}
           onGiftReminder={giftFromReminder}
-          onOpenGift={navOpenGift}
+          onOpenGift={navOpenCadeau}
           onOpenGiftHub={navOpenGiftHub}
           onOpenLegal={navOpenLegal}
           onOpenPrivacy={navOpenPrivacy}

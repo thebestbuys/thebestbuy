@@ -5440,6 +5440,43 @@ select.profile-input {
 }
 .gl-chip:active { transform: scale(0.97); }
 .gl-chip-emoji { font-size: 17px; }
+.gl-how {
+  max-width: 720px;
+  margin: 30px auto 0;
+  padding: 0 24px;
+}
+.gl-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gl-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 15px 17px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+}
+.gl-step-emoji {
+  font-size: 24px;
+  line-height: 1.1;
+  flex-shrink: 0;
+}
+.gl-step-body { min-width: 0; }
+.gl-step-title {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.gl-step-sub {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
 .gl-inspiration {
   max-width: 980px;
   margin: 44px auto 0;
@@ -5460,7 +5497,7 @@ select.profile-input {
   .gl-hero { padding: 28px 18px 4px; }
   .gl-title { font-size: 30px; }
   .gl-sub { font-size: 15px; }
-  .gl-section, .gl-inspiration { padding: 0 18px; }
+  .gl-section, .gl-how, .gl-inspiration { padding: 0 18px; }
 }
 .guide-topbar {
   position: sticky;

@@ -47,20 +47,17 @@ const L = {
   cadeauEyebrow: 'Idées cadeaux',
   cadeauTitle: 'Trouvez le cadeau parfait',
   cadeauSub:
-    "Décrivez la personne et l'occasion, Oraklia trouve des idées vérifiées sur Amazon.fr.",
-  cadeauByOccasion: 'Par occasion',
-  cadeauByRecipient: 'Pour qui ?',
+    'Laissez-vous guider : Oraklia vous pose quelques questions sur la personne, puis trouve des idées vérifiées sur Amazon.fr.',
+  cadeauCta: 'Trouver un cadeau',
+  cadeauHow: 'Comment ça marche',
+  cadeauSteps: [
+    ['💬', 'Décrivez la personne', 'Quelques questions : pour qui, son âge, homme ou femme, ses passions…'],
+    ['🧠', "L'IA cerne ses goûts", 'Oraklia analyse le profil pour cibler les idées qui lui correspondent.'],
+    ['🎁', 'Recevez vos idées cadeaux', 'Des produits réels, vérifiés sur Amazon.fr et dans votre budget.'],
+  ],
   cadeauInspiration: "Besoin d'inspiration ?",
   cadeauInspirationSub: 'Parcourez nos idées cadeaux par profil et par occasion.',
   cadeauBrowse: 'Voir toutes les idées cadeaux →',
-  cadeauOccasions: [
-    ['🎂', 'Anniversaire'], ['🎄', 'Noël'], ['❤️', 'Saint-Valentin'],
-    ['💍', 'Mariage'], ['👶', 'Naissance'], ['🏡', 'Crémaillère'], ['🙏', 'Remerciement'],
-  ],
-  cadeauRecipients: [
-    ['❤️', 'Conjoint·e'], ['👪', 'Parent'], ['🧒', 'Enfant'],
-    ['🧑‍🤝‍🧑', 'Frère / sœur'], ['🙌', 'Ami·e'], ['💼', 'Collègue'],
-  ],
   advisorTitle: 'Besoin d’un conseil personnalisé ?',
   advisorText:
     'Répondez à quelques questions et notre conseiller intelligent sélectionne les produits les plus adaptés à vos besoins.',
@@ -176,10 +173,9 @@ function giftHubBody() {
 }
 
 function cadeauBody() {
-  const chips = (list) =>
-    list
-      .map(([e, label]) => `<span class="gl-chip"><span class="gl-chip-emoji" aria-hidden="true">${e}</span>${esc(label)}</span>`)
-      .join('');
+  const steps = L.cadeauSteps
+    .map(([e, title, sub]) => `<div class="gl-step"><span class="gl-step-emoji" aria-hidden="true">${e}</span><div class="gl-step-body"><h3 class="gl-step-title">${esc(title)}</h3><p class="gl-step-sub">${esc(sub)}</p></div></div>`)
+    .join('');
   const cards = giftGuides()
     .map((guide) => {
       const g = localizeGuide(guide, 'fr');
@@ -198,11 +194,9 @@ function cadeauBody() {
     L.cadeauSub,
   )}</p><a class="btn-primary big gl-cta" href="/cadeau">${esc(
     L.cadeauCta,
-  )} <span class="btn-arrow">→</span></a></div><section class="gl-section"><h2 class="gl-section-title">${esc(
-    L.cadeauByOccasion,
-  )}</h2><div class="gl-chips">${chips(L.cadeauOccasions)}</div></section><section class="gl-section"><h2 class="gl-section-title">${esc(
-    L.cadeauByRecipient,
-  )}</h2><div class="gl-chips">${chips(L.cadeauRecipients)}</div></section><section class="gl-inspiration"><div class="gl-insp-head"><h2 class="gl-section-title">${esc(
+  )} <span class="btn-arrow">→</span></a></div><section class="gl-how"><h2 class="gl-section-title">${esc(
+    L.cadeauHow,
+  )}</h2><div class="gl-steps">${steps}</div></section><section class="gl-inspiration"><div class="gl-insp-head"><h2 class="gl-section-title">${esc(
     L.cadeauInspiration,
   )}</h2><p class="gl-insp-sub">${esc(
     L.cadeauInspirationSub,
@@ -281,7 +275,27 @@ for (const guide of GUIDES) {
   console.log('prerendered', '/idees-cadeaux');
 }
 
-// /cadeau (GiftLanding) is WIP and not yet linked or accessible — prerender disabled.
+// ── Gift finder landing (/cadeau) ────────────────────────────────────────────
+{
+  const canonical = `${ORIGIN}/cadeau`;
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: L.cadeauTitle,
+    description: L.cadeauSub,
+    url: canonical,
+  };
+  const html = renderPage({
+    title: `${L.cadeauTitle} — Oraklia`,
+    description: L.cadeauSub,
+    canonical,
+    headExtra: `<script type="application/ld+json">\n${JSON.stringify(jsonLd)}\n  </script>`,
+    body: cadeauBody(),
+  });
+  write('cadeau', html);
+  urls.push('/cadeau');
+  console.log('prerendered', '/cadeau');
+}
 
 // ── Legal (light: correct head + a short crawlable body; JS renders the rest) ─
 {

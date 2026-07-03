@@ -88,14 +88,14 @@ export function askAI({ messages, category, lang = 'fr', profile = '', gift = ''
 // Ask for the next question, given the compact criteria gathered so far.
 // `profile` is an optional free-form user self-description for personalization.
 // `gift` (when set) switches to gift mode: a compact recipient description.
-export function askQuestion({ objet, answers, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', token = '', conversationId = '' }) {
-  return postChat({ mode: 'ask', objet, answers, lang, profile, gift, surprise, friendId, conversationId }, token);
+export function askQuestion({ objet, answers, lang = 'fr', profile = '', gift = '', giftMode = false, surprise = false, friendId = '', token = '', conversationId = '' }) {
+  return postChat({ mode: 'ask', objet, answers, lang, profile, gift, giftMode, surprise, friendId, conversationId }, token);
 }
 
 // Ask for product recommendations from the accumulated criteria.
 // `surprise` (gift mode) asks for bolder, more unexpected ideas.
-export function recommend({ objet, answers, lang = 'fr', profile = '', gift = '', surprise = false, friendId = '', token = '', conversationId = '', exclude = [] }) {
-  return postChat({ mode: 'recommend', objet, answers, lang, profile, gift, surprise, friendId, conversationId, exclude }, token);
+export function recommend({ objet, answers, lang = 'fr', profile = '', gift = '', giftMode = false, surprise = false, friendId = '', token = '', conversationId = '', exclude = [] }) {
+  return postChat({ mode: 'recommend', objet, answers, lang, profile, gift, giftMode, surprise, friendId, conversationId, exclude }, token);
 }
 
 // Home-page suggestion chips chosen by the AI for the current season / events,

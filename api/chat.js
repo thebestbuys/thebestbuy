@@ -468,8 +468,29 @@ Réponds UNIQUEMENT par un objet JSON valide de cette forme:
 }
 
 // ── Gift mode ──────────────────────────────────────────────────────────────
-// One next question to refine gift ideas for the described recipient.
-function buildGiftAskPrompt(giftStr, answers, lang) {
+// One next question. Two flavours:
+//  - discover=true (/cadeau chat): the recipient is UNKNOWN, so the chat builds
+//    the profile itself — relationship → age → gender first (in that priority,
+//    skipping any already answered), then freely (interests, occasion, budget…).
+//  - discover=false (recipient form): the profile is already known via giftStr,
+//    so we only ask refinement questions.
+function buildGiftAskPrompt(giftStr, answers, lang, discover = false) {
+  if (discover) {
+    return `Tu es Oraklia, un conseiller en idées cadeaux. ${langLineFor(lang)}
+On cherche un CADEAU mais on ne connaît PAS encore la personne : tu dois d'abord cerner son PROFIL, une question à la fois.
+Profil déjà recueilli (JSON — ne repose JAMAIS une dimension déjà couverte): ${answersJson(answers)}
+
+ORDRE PRIORITAIRE : pose la PREMIÈRE de ces dimensions encore inconnue —
+1) la RELATION avec la personne ("Pour qui cherchez-vous un cadeau ?") — choix concrets : mon/ma partenaire, un parent, un enfant, mon frère/ma sœur, un(e) ami(e), un(e) collègue, autre.
+2) son ÂGE — choix en tranches : 0-12 ans, 13-17 ans, 18-25 ans, 26-40 ans, 41-60 ans, 60 ans et +.
+3) son GENRE ("C'est pour un homme ou une femme ?") — choix : Un homme, Une femme, Peu importe.
+Quand la relation, l'âge ET le genre sont connus, tu es LIBRE de poser les questions les plus utiles (centres d'intérêt/passions, occasion, style, puis le BUDGET). Pour les passions/centres d'intérêt, mets "multi":true (3 à 6 choix). Pour le budget, propose 4 tranches avec bornes "min"/"max" en euros (1re "min":null, dernière "max":null).
+
+Pose UNE SEULE question courte, 2 à 6 choix concrets. ${langLineFor(lang)}
+
+Réponds UNIQUEMENT par un objet JSON valide de cette forme:
+{"reply":"<la question à afficher>","question":{"id":"slug-court","text":"<la question>","multi":false,"choices":[{"id":"slug","label":"Libellé court","tags":[],"min":null,"max":null}]}}`;
+  }
   return `Tu es Oraklia, un conseiller en idées cadeaux. ${langLineFor(lang)}
 On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".
 Préférences de raffinement déjà recueillies (JSON): ${answersJson(answers)}
@@ -491,8 +512,14 @@ function buildGiftRecommendPrompt(giftStr, answers, lang, exclude = [], surprise
   const wishlistLine = wishlist
     ? `\nLISTE DE SOUHAITS de la personne (produits qu'elle a elle-même sauvegardés) : ${wishlist}. Si un ou plusieurs RENTRENT DANS LE BUDGET, propose-les EN PRIORITÉ (inclus-en 1 à 3 parmi les ${count}) — ce sont des choses qu'elle veut déjà.`
     : '';
+  // In the /cadeau chat flow the recipient isn't described up front (giftStr is
+  // empty): the whole profile — relationship, age, gender, interests — lives in
+  // the criteria JSON below, so point the model there instead of an empty quote.
+  const whoLine = giftStr
+    ? `On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".`
+    : `On cherche un CADEAU pour une personne dont le profil (relation, âge, genre, centres d'intérêt…) ressort des critères ci-dessous.`;
   return `Tu es Oraklia, un conseiller en idées cadeaux. ${langLineFor(lang)}
-On cherche un CADEAU pour une personne décrite ainsi : "${giftStr}".${wishlistLine}
+${whoLine}${wishlistLine}
 Préférences de raffinement (JSON): ${answersJson(answers)}
 
 Propose EXACTEMENT ${count} idées de cadeaux : des produits RÉELS, populaires et récents, réellement vendus sur Amazon.fr, qui feraient de bons cadeaux pour CETTE personne, pour cette occasion et DANS le budget indiqué. VARIE les catégories (pas ${count} produits du même type). Donne des marques et modèles PRÉCIS. "why" explique en une phrase pourquoi ça correspond à la personne. Score 0-99 = à quel point l'idée lui correspond. La phrase d'introduction ("reply") ne doit JAMAIS indiquer le nombre de produits (écris "Voici des idées de cadeaux…", jamais "Voici 6 idées…").${surpriseLine}${excludeLine}
@@ -709,7 +736,7 @@ export default async function handler(req, res) {
   }
   const t1_ms = ms(t1);
 
-  const { mode = 'ask', objet: objetRaw = '', answers: answersRaw = [], messages: messagesRaw = [], category, lang = 'fr', profile = '', gift: giftRaw = '', surprise = false, friendId = '', conversationId = '', requestId = '', exclude = [], product = null, question = '', history = [] } = body;
+  const { mode = 'ask', objet: objetRaw = '', answers: answersRaw = [], messages: messagesRaw = [], category, lang = 'fr', profile = '', gift: giftRaw = '', giftMode = false, surprise = false, friendId = '', conversationId = '', requestId = '', exclude = [], product = null, question = '', history = [] } = body;
   // Bound user-supplied free text before it reaches the prompt / criteria:
   // caps token spend, blocks abuse, and coerces malformed shapes to safe defaults.
   const objet = clampStr(objetRaw, 120);
@@ -804,8 +831,13 @@ export default async function handler(req, res) {
   const friendProfile = friendRes.text;
   const friendWishlist = friendRes.wishlist || '';
   const giftStr = [gift, friendProfile].map((s) => String(s || '').trim()).filter(Boolean).join('; ');
-  // Supported on both the new (desktop) and legacy (mobile) paths.
-  const isGift = giftStr.length > 0 || !!friendId;
+  // Supported on both the new (desktop) and legacy (mobile) paths. `giftMode` lets
+  // the client flag a gift session even before any profile text exists — the
+  // /cadeau chat that builds the recipient profile question by question.
+  const isGift = giftMode || giftStr.length > 0 || !!friendId;
+  // Discovery = gift mode with NO pre-known recipient (no form text, no friend):
+  // the chat itself asks relationship/age/gender first, then refines.
+  const discovery = isGift && !giftStr && !friendId;
   // Amazon verification searches by brand+model; in gift mode there is no single
   // product context, so don't prepend one.
   const searchTerm = isGift ? '' : (objet || category || (legacy ? (messages[0]?.content || '') : ''));
@@ -829,7 +861,7 @@ export default async function handler(req, res) {
   } else if (isGift) {
     systemPrompt = isRecommend
       ? buildGiftRecommendPrompt(giftStr, answers, lang, excludeNames, surprise, friendWishlist)
-      : buildGiftAskPrompt(giftStr, answers, lang);
+      : buildGiftAskPrompt(giftStr, answers, lang, discovery);
     contents = [{ role: 'user', parts: [{ text: isRecommend ? 'Donne les idées de cadeaux.' : 'Pose la prochaine question.' }] }];
     temperature = isRecommend ? (surprise ? 0.95 : 0.7) : 0.5;
   } else {
