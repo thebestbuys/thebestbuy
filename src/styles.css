@@ -119,6 +119,12 @@ ul {
 }
 .home-main {
   flex: 1;
+  /* Fill at least the first screenful so the footer (legal / affiliate
+     disclosure) sits below the fold and only shows on scroll — every viewport
+     (desktop / tablet / phone / native app). */
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
