@@ -1419,6 +1419,28 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, legalOpen, privacyOpen, giftOpen, askOpen, friendsOpen, adminOpen, profileOpen, selectionsTab, guidesOpen, tutorialOpen, trendingOpen, historyOpen, activeGuide, giftHubOpen, cadeauOpen, category]);
 
+  // Android hardware/gesture back. Capacitor doesn't drive the WebView history
+  // itself, and Android 15's predictive back bypasses it — so without this the
+  // back gesture just closes the app. Each in-app view pushes a history entry
+  // tagged {oraklia:true}; pop it (→ popstate → onPop closes the view), and only
+  // exit the app at the root entry (no tag).
+  useEffect(() => {
+    let remove;
+    import('@capacitor/app')
+      .then(({ App: CapApp }) =>
+        CapApp.addListener('backButton', () => {
+          if (window.history.state && window.history.state.oraklia) {
+            window.history.back();
+          } else {
+            CapApp.exitApp();
+          }
+        }),
+      )
+      .then((handle) => { remove = () => handle.remove(); })
+      .catch(() => {});
+    return () => { if (remove) remove(); };
+  }, []);
+
   // The per-panel "?" help buttons (PanelHelpButton) open the tutorial via this
   // window event, so panels don't each need an onOpenTutorial prop.
   useEffect(() => {
