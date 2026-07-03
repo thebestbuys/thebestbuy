@@ -13,7 +13,20 @@
 // Theme editor (Alt+Shift+T) which switches/edits both palettes, persists to
 // localStorage and exports a CSS snippet.
 
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
+
 const STORAGE_KEY = 'oraklia_theme';
+
+// Native status bar: the WebView is edge-to-edge, so the OS draws the status
+// bar icons over the app's top area. Match their color to the theme, otherwise
+// light mode keeps white icons on a light background (invisible).
+// Capacitor semantics: Style.Light = dark icons (for light bg), Style.Dark =
+// light icons (for dark bg).
+function applyNativeStatusBar(dark) {
+  if (!Capacitor.isNativePlatform()) return;
+  StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light }).catch(() => {});
+}
 
 export const FONT_OPTIONS = [
   { value: '"Inter", ui-sans-serif, system-ui, -apple-system, sans-serif', label: 'Inter' },
@@ -135,6 +148,7 @@ export function applyTheme(state) {
   const dark = resolveMode(state.mode) === 'dark';
   root.dataset.theme = dark ? 'dark' : 'light';
   root.style.colorScheme = dark ? 'dark' : 'light';
+  applyNativeStatusBar(dark);
 
   // Color tokens (per-mode).
   for (const s of COLOR_TOKENS) {
