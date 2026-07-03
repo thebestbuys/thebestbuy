@@ -2010,14 +2010,17 @@ button.chat-bubble.chat-editable {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 0.5px solid var(--border);
-  background: var(--bg-elev);
-  color: var(--text-muted);
-  font-size: 14px;
+  border: 1.5px solid var(--accent);
+  background: #fff;
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 700;
   z-index: 2;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 .modal-close:hover {
-  color: var(--text);
+  background: var(--accent);
+  color: #fff;
 }
 .modal-grid {
   display: grid;
@@ -2840,16 +2843,24 @@ button.chat-bubble.chat-editable {
   top: 10px;
   right: 12px;
   appearance: none;
-  border: 0;
-  background: transparent;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  background: #fff;
   font-size: 16px;
-  color: var(--text-muted);
+  font-weight: 700;
+  color: var(--accent);
   cursor: pointer;
-  padding: 6px 8px;
+  padding: 0;
   line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 .auth-modal-close:hover {
-  color: var(--text);
+  background: var(--accent);
+  color: #fff;
 }
 .auth-modal-title {
   font-family: var(--display);
@@ -3400,17 +3411,18 @@ button.chat-bubble.chat-editable {
   height: 38px;
   display: grid;
   place-items: center;
-  border: 0.5px solid var(--border);
+  border: 1.5px solid var(--accent);
   border-radius: 50%;
-  background: var(--bg);
-  color: var(--text-muted);
+  background: #fff;
+  color: var(--accent);
   font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
 .sheet-close:hover {
-  background: var(--accent-light);
-  color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 .sheet-body {
   flex: 1;
@@ -3888,6 +3900,42 @@ button.chat-bubble.chat-editable {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+}
+.friends-quicknav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.friends-quicknav-btn {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 15px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.friends-quicknav-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+.friends-quicknav-ico {
+  font-size: 20px;
+  line-height: 1;
+}
+.friends-quicknav-arrow {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
 }
 .friends-search {
   margin-bottom: 6px;
@@ -6460,18 +6508,12 @@ select.profile-input {
   background: var(--accent-light);
   color: var(--accent);
 }
-/* Flat variant matching .auth-modal-close (Gift / Guides), placed left of it. */
+/* Sits left of the circular .auth-modal-close (Gift / Guides), matching its size
+   with the neutral circular base style so the close (✕) reads as the accent. */
 .panel-help-btn--flat {
   position: absolute;
   top: 10px;
-  right: 46px;
-  width: auto;
-  height: auto;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  padding: 6px 8px;
-  line-height: 1;
+  right: 58px;
 }
 /* Tutorial overlay stacks above any open panel regardless of DOM order. */
 .auth-modal-bg--top {

@@ -1633,7 +1633,7 @@ export default function App() {
             <SelectionsPanel open initialTab={selectionsTab} onClose={navBack} getAmazonUrl={getAmazonUrl} onBuy={handleBuy} onOpenProduct={navOpenProduct} />
           )}
           {profileOpen && <ProfilePanel open onClose={navBack} />}
-          {friendsOpen && <FriendsPanel open onClose={navBack} />}
+          {friendsOpen && <FriendsPanel open onClose={navBack} onOpenAsk={navOpenAsk} onOpenTrending={navOpenTrending} />}
           {adminOpen && <AdminPanel open onClose={navBack} onOpenProduct={navOpenProduct} />}
 
           {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
@@ -1822,7 +1822,7 @@ export default function App() {
         )}
         {profileOpen && <ProfilePanel open onClose={navBack} />}
         {giftOpen && <GiftPanel open onClose={navBack} onSubmit={startGift} initial={giftPrefill} />}
-        {friendsOpen && <FriendsPanel open onClose={navBack} />}
+        {friendsOpen && <FriendsPanel open onClose={navBack} onOpenAsk={navOpenAsk} onOpenTrending={navOpenTrending} />}
 
         {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
         {trendingOpen && <TrendingPanel onClose={navBack} onOpen={navOpenProduct} />}
