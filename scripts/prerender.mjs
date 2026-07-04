@@ -49,6 +49,7 @@ const L = {
   cadeauSub:
     'Laissez-vous guider : Oraklia vous pose quelques questions sur la personne, puis trouve des idées vérifiées sur Amazon.fr.',
   cadeauCta: 'Trouver un cadeau',
+  cadeauHome: 'Accueil',
   cadeauHow: 'Comment ça marche',
   cadeauSteps: [
     ['💬', 'Décrivez la personne', 'Quelques questions : pour qui, son âge, homme ou femme, ses passions…'],
@@ -186,8 +187,8 @@ function cadeauBody() {
       )}</p><span class="guide-card-link">${esc(L.read)}</span></a>`;
     })
     .join('');
-  return `<div class="guide-page gift-landing"><div class="guide-topbar"><button type="button" class="guide-back"><span aria-hidden="true">←</span> ${esc(
-    L.back,
+  return `<div class="guide-page gift-landing"><div class="guide-topbar"><button type="button" class="guide-back guide-home" aria-label="${escAttr(L.cadeauHome)}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10v9.5h13V10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> ${esc(
+    L.cadeauHome,
   )}</button><div class="guide-topbar-right"><span class="guide-brand">Oraklia</span></div></div><div class="gl-hero"><div class="gl-eyebrow">🎁 ${esc(
     L.cadeauEyebrow,
   )}</div><h1 class="gl-title">${esc(L.cadeauTitle)}</h1><p class="gl-sub">${esc(

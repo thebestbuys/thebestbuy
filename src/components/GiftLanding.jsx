@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useI18n } from '../lib/i18n.jsx';
 import { giftGuides, localizeGuide } from '../data/guides.js';
 
@@ -15,15 +16,22 @@ const STEPS = [
   { k: '3', e: '🎁' },
 ];
 
-export default function GiftLanding({ onStartDiscover, onBack, onOpenGuide, onOpenGiftHub }) {
+export default function GiftLanding({ onStartDiscover, onHome, onOpenGuide, onOpenGiftHub }) {
   const { t, lang } = useI18n();
   const guides = giftGuides().map((g) => localizeGuide(g, lang));
+  // Inspiration is collapsed by default to keep the page compact — the CTA is
+  // the focus; guides are a "peek if you want" secondary path.
+  const [inspOpen, setInspOpen] = useState(false);
 
   return (
     <div className="guide-page gift-landing">
       <div className="guide-topbar">
-        <button type="button" className="guide-back" onClick={onBack}>
-          <span aria-hidden="true">←</span> {t('guide.back')}
+        <button type="button" className="guide-back guide-home" onClick={onHome} aria-label={t('cadeau.home')}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M3 11.5 12 4l9 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M5.5 10v9.5h13V10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {t('cadeau.home')}
         </button>
         <div className="guide-topbar-right">
           <span className="guide-brand">Oraklia</span>
@@ -56,32 +64,44 @@ export default function GiftLanding({ onStartDiscover, onBack, onOpenGuide, onOp
       </section>
 
       <section className="gl-inspiration">
-        <div className="gl-insp-head">
-          <h2 className="gl-section-title">{t('cadeau.inspiration')}</h2>
-          <p className="gl-insp-sub">{t('cadeau.inspirationSub')}</p>
-        </div>
-        <div className="home-guides-grid">
-          {guides.map((g) => (
-            <a
-              key={g.slug}
-              className="guide-card"
-              href={'/guide/' + g.slug}
-              onClick={(e) => { e.preventDefault(); onOpenGuide(g.slug); }}
-            >
-              <div className="guide-card-eyebrow">{t('guides.cardEyebrow', { time: g.readTime })}</div>
-              <h3 className="guide-card-title">{g.title}</h3>
-              <p className="guide-card-sub">{g.subtitle}</p>
-              <span className="guide-card-link">{t('guides.read')}</span>
-            </a>
-          ))}
-        </div>
-        <a
-          className="gl-hub-link"
-          href="/idees-cadeaux"
-          onClick={(e) => { e.preventDefault(); onOpenGiftHub(); }}
+        <button
+          type="button"
+          className={'gl-insp-toggle' + (inspOpen ? ' is-open' : '')}
+          aria-expanded={inspOpen}
+          onClick={() => setInspOpen((v) => !v)}
         >
-          {t('cadeau.browseGuides')}
-        </a>
+          <span className="gl-insp-toggle-text">
+            <span className="gl-section-title">{t('cadeau.inspiration')}</span>
+            <span className="gl-insp-sub">{t('cadeau.inspirationSub')}</span>
+          </span>
+          <span className="gl-insp-caret" aria-hidden="true">⌄</span>
+        </button>
+        {inspOpen && (
+          <div className="gl-insp-panel">
+            <div className="home-guides-grid">
+              {guides.map((g) => (
+                <a
+                  key={g.slug}
+                  className="guide-card"
+                  href={'/guide/' + g.slug}
+                  onClick={(e) => { e.preventDefault(); onOpenGuide(g.slug); }}
+                >
+                  <div className="guide-card-eyebrow">{t('guides.cardEyebrow', { time: g.readTime })}</div>
+                  <h3 className="guide-card-title">{g.title}</h3>
+                  <p className="guide-card-sub">{g.subtitle}</p>
+                  <span className="guide-card-link">{t('guides.read')}</span>
+                </a>
+              ))}
+            </div>
+            <a
+              className="gl-hub-link"
+              href="/idees-cadeaux"
+              onClick={(e) => { e.preventDefault(); onOpenGiftHub(); }}
+            >
+              {t('cadeau.browseGuides')}
+            </a>
+          </div>
+        )}
       </section>
     </div>
   );

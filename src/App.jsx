@@ -1401,6 +1401,12 @@ export default function App() {
   const navBack = () => {
     try { window.history.back(); } catch { /* noop */ }
   };
+  // Jump straight to the home screen (used by the /cadeau home button): close the
+  // landing and reset the URL to root, regardless of how the user got here.
+  const navHome = () => {
+    setCadeauOpen(false);
+    try { window.history.replaceState({}, '', '/'); } catch { /* noop */ }
+  };
 
   useEffect(() => {
     const onPop = () => {
@@ -1589,7 +1595,7 @@ export default function App() {
       <Suspense fallback={null}>
         <GiftLanding
           onStartDiscover={startGiftDiscovery}
-          onBack={navBack}
+          onHome={navHome}
           onOpenGuide={navOpenGuide}
           onOpenGiftHub={navOpenGiftHub}
         />
