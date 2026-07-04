@@ -1619,7 +1619,7 @@ export default function App() {
           onToggleNotif={() => setNotifOpen((v) => !v)}
           onCloseNotif={() => setNotifOpen(false)}
           onGiftReminder={giftFromReminder}
-          onOpenGift={navOpenCadeau}
+          onOpenGift={navOpenGift}
           onOpenGiftHub={navOpenGiftHub}
           onOpenLegal={navOpenLegal}
           onOpenPrivacy={navOpenPrivacy}
