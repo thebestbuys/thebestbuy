@@ -161,8 +161,17 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
   const { t } = useI18n();
   const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
+  // Narrow (mobile) shows recommendations in a bottom-sheet drawer instead of
+  // inline in the conversation — so the chat stays a clean Q&A thread and the
+  // products don't shove the questions around on every update.
   const showInline = inlineProducts && cardsReady && products.length > 0;
   const showInlineSkeleton = inlineProducts && (loadingProducts || skelLeaving) && !showInline;
+  const resultsLoading = inlineProducts && (loadingProducts || skelLeaving) && products.length === 0;
+  const showResultsBar = inlineProducts && (showInline || resultsLoading);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [barPulse, setBarPulse] = useState(false);
+  const autoOpenedRef = useRef(false); // sheet auto-opens once, on the first batch
+  const batchReadyRef = useRef(false); // de-dupes the ready→pulse transition
   const ratio = progressInfo?.ratio ?? 0;
   const editing = editMsgIndex != null && editQuestion;
 
@@ -171,6 +180,31 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isTyping, currentQuestion, products, loadingProducts, cardsReady, skelLeaving]);
+
+  // When a fresh batch of picks becomes ready: open the drawer the FIRST time
+  // (so the user sees the reveal), and pulse the handle bar on later updates so a
+  // change is noticed without dumping cards back into the conversation.
+  useEffect(() => {
+    if (!showInline) { batchReadyRef.current = false; return; }
+    if (batchReadyRef.current) return;
+    batchReadyRef.current = true;
+    if (!autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      setSheetOpen(true);
+    } else {
+      setBarPulse(true);
+      const id = setTimeout(() => setBarPulse(false), 1500);
+      return () => clearTimeout(id);
+    }
+  }, [showInline, products]);
+
+  // Close the drawer on Escape.
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const onKey = (e) => { if (e.key === 'Escape') setSheetOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [sheetOpen]);
 
   const submit = (e) => {
     e.preventDefault();
@@ -277,68 +311,6 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
           </div>
         ))}
 
-        {/* On narrow viewports the recommendations live inside the conversation,
-            as Amazon "shared link" cards rather than a separate results panel. */}
-        {showInline && (
-          <div className="chat-products">
-            <ChatBubble role="bot" layout={layout}>{t('chat.mySelection')}</ChatBubble>
-            <div className="chat-products-list">
-              {products.slice(0, 3).map((p, i) => (
-                <ProductLinkCard key={p.id} product={p} rank={i + 1} budget={budget} onSelect={onSelectProduct} delay={i * CARD_IN_STAGGER_MS} />
-              ))}
-            </div>
-            {onShowOthers && !isTyping && viewingPastIndex === null && (
-              <button type="button" className="show-others-btn show-others-chat" onClick={onShowOthers}>
-                <span aria-hidden="true">↻</span> {t('results.showOthers')}
-              </button>
-            )}
-            {viewingPastIndex === null && pastCount > 0 && onViewPrevious && (
-              <button type="button" className="show-others-btn show-others-chat" onClick={onViewPrevious}>
-                <span aria-hidden="true">◀</span> {t('results.viewPrevious')}
-              </button>
-            )}
-            {viewingPastIndex !== null && onViewLatest && (
-              <button type="button" className="show-others-btn show-others-chat" onClick={onViewLatest}>
-                {t('results.viewLatest')} <span aria-hidden="true">▶</span>
-              </button>
-            )}
-            {viewingPastIndex !== null && viewingPastIndex < pastCount - 1 && onViewPrevious && (
-              <button type="button" className="show-others-btn show-others-chat" onClick={onViewPrevious}>
-                <span aria-hidden="true">◀</span> {t('results.viewPrevious')}
-              </button>
-            )}
-            {pastCount > 1 && viewingPastIndex !== pastCount - 1 && onViewFirst && (
-              <button type="button" className="show-others-btn show-others-chat" onClick={onViewFirst}>
-                <span aria-hidden="true">⏮</span> {t('results.viewFirst')}
-              </button>
-            )}
-            {guide && onOpenGuide && (
-              <button type="button" className="results-guide-link results-guide-chat" onClick={() => onOpenGuide(guide.slug)}>
-                {t('results.guideCta', { title: guide.title })}
-              </button>
-            )}
-            {currentQuestion && (
-              <div className="chat-products-hint">{t('chat.refineHint')}</div>
-            )}
-          </div>
-        )}
-
-        {/* Loading state for the first set of inline picks (narrow viewports). */}
-        {showInlineSkeleton && (
-          <div className="chat-products">
-            <div className="chat-products-list">
-              {[0, 1, 2].map((i) => (
-                <ProductSkeleton
-                  key={i}
-                  variant="link"
-                  delay={i * (skelLeaving ? CARD_OUT_STAGGER_MS : CARD_IN_STAGGER_MS)}
-                  leaving={skelLeaving}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
         {isTyping && !showInlineSkeleton && <TypingDots layout={layout} />}
 
         {!isTyping && onRetry && (
@@ -353,6 +325,86 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
           <ChoiceControl question={currentQuestion} onAnswer={onAnswer} onSkip={skip} />
         )}
       </div>
+
+      {/* Mobile: results live in a bottom-sheet drawer. A handle bar above the
+          input opens it; the conversation stream stays clean. */}
+      {showResultsBar && (
+        <button
+          type="button"
+          className={'chat-results-bar' + (barPulse ? ' is-pulse' : '') + (sheetOpen ? ' is-open' : '')}
+          onClick={() => setSheetOpen((v) => !v)}
+          aria-expanded={sheetOpen}
+        >
+          <span className="chat-results-bar-ico" aria-hidden="true">🎁</span>
+          <span className="chat-results-bar-text">
+            {resultsLoading
+              ? t('chat.resultsLoading')
+              : t('chat.resultsReady', { n: Math.min(3, products.length) })}
+          </span>
+          <span className="chat-results-bar-caret" aria-hidden="true">⌃</span>
+        </button>
+      )}
+
+      {showResultsBar && sheetOpen && (
+        <div className="chat-sheet" role="dialog" aria-modal="true" aria-label={t('chat.mySelection')}>
+          <div className="chat-sheet-backdrop" onClick={() => setSheetOpen(false)} />
+          <div className="chat-sheet-panel">
+            <button type="button" className="chat-sheet-grip" onClick={() => setSheetOpen(false)} aria-label={t('auth.close')} />
+            <div className="chat-sheet-head">
+              <h3 className="chat-sheet-title">{t('chat.mySelection')}</h3>
+              <button type="button" className="chat-sheet-close" onClick={() => setSheetOpen(false)} aria-label={t('auth.close')}>✕</button>
+            </div>
+            <div className="chat-sheet-body">
+              {resultsLoading ? (
+                <div className="chat-products-list">
+                  {[0, 1, 2].map((i) => (
+                    <ProductSkeleton key={i} variant="link" delay={i * (skelLeaving ? CARD_OUT_STAGGER_MS : CARD_IN_STAGGER_MS)} leaving={skelLeaving} />
+                  ))}
+                </div>
+              ) : (
+                <div className="chat-products-list">
+                  {products.slice(0, 3).map((p, i) => (
+                    <ProductLinkCard key={p.id} product={p} rank={i + 1} budget={budget} onSelect={onSelectProduct} delay={i * CARD_IN_STAGGER_MS} />
+                  ))}
+                </div>
+              )}
+              {onShowOthers && !isTyping && viewingPastIndex === null && (
+                <button type="button" className="show-others-btn show-others-chat" onClick={onShowOthers}>
+                  <span aria-hidden="true">↻</span> {t('results.showOthers')}
+                </button>
+              )}
+              {viewingPastIndex === null && pastCount > 0 && onViewPrevious && (
+                <button type="button" className="show-others-btn show-others-chat" onClick={onViewPrevious}>
+                  <span aria-hidden="true">◀</span> {t('results.viewPrevious')}
+                </button>
+              )}
+              {viewingPastIndex !== null && onViewLatest && (
+                <button type="button" className="show-others-btn show-others-chat" onClick={onViewLatest}>
+                  {t('results.viewLatest')} <span aria-hidden="true">▶</span>
+                </button>
+              )}
+              {viewingPastIndex !== null && viewingPastIndex < pastCount - 1 && onViewPrevious && (
+                <button type="button" className="show-others-btn show-others-chat" onClick={onViewPrevious}>
+                  <span aria-hidden="true">◀</span> {t('results.viewPrevious')}
+                </button>
+              )}
+              {pastCount > 1 && viewingPastIndex !== pastCount - 1 && onViewFirst && (
+                <button type="button" className="show-others-btn show-others-chat" onClick={onViewFirst}>
+                  <span aria-hidden="true">⏮</span> {t('results.viewFirst')}
+                </button>
+              )}
+              {guide && onOpenGuide && (
+                <button type="button" className="results-guide-link results-guide-chat" onClick={() => onOpenGuide(guide.slug)}>
+                  {t('results.guideCta', { title: guide.title })}
+                </button>
+              )}
+              {currentQuestion && (
+                <div className="chat-products-hint">{t('chat.refineHint')}</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <form className="chat-input" onSubmit={submit}>
         {!isTyping && onRecommendNow && !showInline && (
