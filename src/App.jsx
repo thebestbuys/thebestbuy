@@ -1117,7 +1117,8 @@ export default function App() {
     try {
       if (willRecommend) {
         const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, giftMode: !!gift, surprise, friendId, token, conversationId: convoId, exclude: ownedExclude() });
-        if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
+        // The recommend intro ("Voici des idées…") is intentionally NOT added to
+        // the chat: picks show in the results panel (desktop) / drawer (mobile).
         loadProducts(rec?.products);
       }
       // Always queue the next refinement question.
@@ -1201,7 +1202,7 @@ export default function App() {
     const token = getAccessToken() || '';
     try {
       const rec = await recommend({ objet, answers: answersForApi, lang, profile, gift: giftStr, giftMode: !!gift, surprise, friendId, token, conversationId: convoId, exclude: [...ownedExclude(), ...exclude] });
-      if (rec?.reply) setMessages((m) => [...m, { role: 'bot', text: rec.reply }]);
+      // No chat intro line — picks show in the results panel / mobile drawer.
       loadProducts(rec?.products);
     } catch (e) {
       setMessages((m) => [...m, { role: 'bot', text: tr('chat.error', { msg: e.message }) }]);
