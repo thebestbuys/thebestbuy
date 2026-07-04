@@ -1095,8 +1095,15 @@ export default function App() {
     });
   };
 
-  // Advance from the current criteria: fetch recommendations (every 5 then +3
-  // answers) and/or ask the next question. Sends only the compact criteria JSON.
+  // Monotonic token for product searches. Every recommend (background or explicit
+  // refresh) claims the next value; a resolved response only applies if it's still
+  // the latest — so a slow in-flight search can't overwrite fresher picks.
+  const recommendSeqRef = useRef(0);
+
+  // Advance from the current criteria: ask the next question AND (when due) fetch
+  // recommendations. The recommend runs in the BACKGROUND so it never blocks the
+  // conversation — the question shows as soon as it's back, products stream into
+  // the results panel / mobile drawer whenever the (slower) search resolves.
   const advance = async (currentAnswers, searchObjet = objet) => {
     setIsTyping(true);
     setCurrentQuestion(null);
@@ -1112,15 +1119,20 @@ export default function App() {
     // friend-profile lookup (friendId) AND to meter this account's daily AI quota.
     const token = getAccessToken() || '';
     const willRecommend = shouldRecommendAt(currentAnswers.length);
-    if (willRecommend) setLoadingProducts(true);
+
+    // Kick the (slow) recommendation off in parallel, non-blocking. The picks show
+    // in the results panel / drawer when ready; a newer search invalidates this one.
+    if (willRecommend) {
+      const seq = ++recommendSeqRef.current;
+      setLoadingProducts(true);
+      recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, giftMode: !!gift, surprise, friendId, token, conversationId: convoId, exclude: ownedExclude() })
+        .then((rec) => { if (seq === recommendSeqRef.current) loadProducts(rec?.products); })
+        .catch(() => { /* keep prior picks; the next answer re-triggers a search */ })
+        .finally(() => { if (seq === recommendSeqRef.current) setLoadingProducts(false); });
+    }
+
+    // Ask the next question and show it immediately — not gated on the recommend.
     try {
-      if (willRecommend) {
-        const rec = await recommend({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, giftMode: !!gift, surprise, friendId, token, conversationId: convoId, exclude: ownedExclude() });
-        // The recommend intro ("Voici des idées…") is intentionally NOT added to
-        // the chat: picks show in the results panel (desktop) / drawer (mobile).
-        loadProducts(rec?.products);
-      }
-      // Always queue the next refinement question.
       const q = await askQuestion({ objet: searchObjet, answers: currentAnswers, lang, profile, gift: giftStr, giftMode: !!gift, surprise, friendId, token, conversationId: convoId });
       if (q?.reply) setMessages((m) => [...m, { role: 'bot', text: q.reply }]);
       setCurrentQuestion(q?.question?.choices ? q.question : null);
@@ -1130,7 +1142,6 @@ export default function App() {
       setRetryAction(() => () => advance(currentAnswers, searchObjet));
     } finally {
       setIsTyping(false);
-      setLoadingProducts(false);
     }
   };
 
@@ -1188,6 +1199,9 @@ export default function App() {
   // in-place answer edit so the picks reflect the change but the rest of the
   // conversation (later answers, the pending question) is preserved.
   const refreshRecommendations = async (currentAnswers, exclude = []) => {
+    // Claim the latest search token so this explicit refresh wins over any
+    // background recommend still in flight (and isn't overwritten by it).
+    const seq = ++recommendSeqRef.current;
     setIsTyping(true);
     setLoadingProducts(true);
     setRetryAction(null);
@@ -1202,13 +1216,13 @@ export default function App() {
     try {
       const rec = await recommend({ objet, answers: answersForApi, lang, profile, gift: giftStr, giftMode: !!gift, surprise, friendId, token, conversationId: convoId, exclude: [...ownedExclude(), ...exclude] });
       // No chat intro line — picks show in the results panel / mobile drawer.
-      loadProducts(rec?.products);
+      if (seq === recommendSeqRef.current) loadProducts(rec?.products);
     } catch (e) {
       setMessages((m) => [...m, { role: 'bot', text: tr('chat.error', { msg: e.message }) }]);
       setRetryAction(() => () => refreshRecommendations(currentAnswers, exclude));
     } finally {
       setIsTyping(false);
-      setLoadingProducts(false);
+      if (seq === recommendSeqRef.current) setLoadingProducts(false);
     }
   };
 
