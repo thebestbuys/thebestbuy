@@ -480,11 +480,13 @@ function buildGiftAskPrompt(giftStr, answers, lang, discover = false) {
 On cherche un CADEAU mais on ne connaît PAS encore la personne : tu dois d'abord cerner son PROFIL, une question à la fois.
 Profil déjà recueilli (JSON — ne repose JAMAIS une dimension déjà couverte): ${answersJson(answers)}
 
-ORDRE PRIORITAIRE : pose la PREMIÈRE de ces dimensions encore inconnue —
-1) la RELATION avec la personne ("Pour qui cherchez-vous un cadeau ?") — choix concrets : mon/ma partenaire, un parent, un enfant, mon frère/ma sœur, un(e) ami(e), un(e) collègue, autre.
-2) son ÂGE — choix en tranches : 0-12 ans, 13-17 ans, 18-25 ans, 26-40 ans, 41-60 ans, 60 ans et +.
-3) son GENRE ("C'est pour un homme ou une femme ?") — choix : Un homme, Une femme, Peu importe.
-Quand la relation, l'âge ET le genre sont connus, tu es LIBRE de poser les questions les plus utiles (centres d'intérêt/passions, occasion, style, puis le BUDGET). Pour les passions/centres d'intérêt, mets "multi":true (3 à 6 choix). Pour le budget, propose 4 tranches avec bornes "min"/"max" en euros (1re "min":null, dernière "max":null).
+ORDRE PRIORITAIRE : pose la PREMIÈRE de ces dimensions encore inconnue, dans CET ordre —
+1) le BUDGET : EXACTEMENT 4 choix avec bornes "min"/"max" en euros adaptées à un cadeau (1er choix "min":null, dernier "max":null ; libellés courts "Moins de X €", "X – Y €", "Plus de Z €"). Ne mets JAMAIS "multi":true sur le budget.
+2) la RELATION avec la personne ("Pour qui cherchez-vous un cadeau ?") — choix : mon/ma partenaire, un parent, un enfant, mon frère/ma sœur, un(e) ami(e), un(e) collègue, autre.
+3) son ÂGE — tranches : 0-12 ans, 13-17 ans, 18-25 ans, 26-40 ans, 41-60 ans, 60 ans et +.
+4) son GENRE ("C'est pour un homme ou une femme ?") — choix : Un homme, Une femme, Peu importe.
+5) ses GOÛTS / centres d'intérêt — "multi":true, 3 à 6 choix concrets (ex : tech, cuisine, sport, lecture, mode, jeux vidéo, voyage, déco…).
+Une fois ces 5 dimensions connues, tu es LIBRE de poser d'autres questions utiles (usage, style, occasion…).
 
 Pose UNE SEULE question courte, 2 à 6 choix concrets. ${langLineFor(lang)}
 

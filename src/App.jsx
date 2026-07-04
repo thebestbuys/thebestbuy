@@ -995,12 +995,11 @@ export default function App() {
   // occasion), then every 3 refinement answers (0, 3, 6, …).
   const FIRST_RECO = 5;
   // Recommend cadence. Gift-with-known-recipient (form) recommends right away
-  // (n=0) since the profile is complete. Gift DISCOVERY (/cadeau chat) must first
-  // gather the basics (relationship, age, gender) → recommend from n=3, then
-  // every 3rd. Plain product advisor recommends from the 5th answer.
+  // (n=0) since the profile is complete. Gift DISCOVERY (/cadeau chat) gathers the
+  // profile via chat (budget, relationship, age, gender, tastes) so it behaves
+  // like the plain advisor: first picks after the 5th answer, then every 3rd.
   const shouldRecommendAt = (n) =>
-    gift?.discover ? n >= 3 && (n - 3) % 3 === 0
-      : gift ? n % 3 === 0
+    gift && !gift.discover ? n % 3 === 0
       : n >= 5 && (n - 5) % 3 === 0;
 
   // Honest progress tied to the recommendation milestone (FIRST_RECO answers in
