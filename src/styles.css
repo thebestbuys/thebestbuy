@@ -5483,37 +5483,33 @@ select.profile-input {
   max-width: 980px;
   margin: 36px auto 0;
   padding: 0 24px;
+  text-align: center;
 }
+.gl-insp-panel { text-align: left; }
 .gl-insp-head { text-align: center; margin-bottom: 18px; }
 .gl-insp-sub { color: var(--text-muted); font-size: 13.5px; margin: 0; }
-/* Collapsible "Besoin d'inspiration ?" — closed by default to save space. */
-.gl-insp-toggle {
-  width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
-  display: flex;
+/* Collapsible "Besoin d'inspiration ?" — a plain clickable label, closed by
+   default, so it takes almost no space until the user opens it. */
+.gl-insp-link {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--bg-elev);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 0.15s ease;
-}
-.gl-insp-toggle:hover { border-color: var(--accent); }
-.gl-insp-toggle-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.gl-insp-toggle .gl-section-title { margin: 0; }
-.gl-insp-caret {
-  flex-shrink: 0;
-  font-size: 20px;
-  line-height: 1;
+  gap: 6px;
+  margin: 0 auto;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
   color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.gl-insp-link:hover { text-decoration: underline; }
+.gl-insp-caret {
+  font-size: 16px;
+  line-height: 1;
   transition: transform 0.2s ease;
 }
-.gl-insp-toggle.is-open .gl-insp-caret { transform: rotate(180deg); }
+.gl-insp-link.is-open .gl-insp-caret { transform: rotate(180deg); }
 .gl-insp-panel { margin-top: 18px; }
 .gl-hub-link {
   display: inline-block;

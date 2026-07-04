@@ -66,14 +66,11 @@ export default function GiftLanding({ onStartDiscover, onHome, onOpenGuide, onOp
       <section className="gl-inspiration">
         <button
           type="button"
-          className={'gl-insp-toggle' + (inspOpen ? ' is-open' : '')}
+          className={'gl-insp-link' + (inspOpen ? ' is-open' : '')}
           aria-expanded={inspOpen}
           onClick={() => setInspOpen((v) => !v)}
         >
-          <span className="gl-insp-toggle-text">
-            <span className="gl-section-title">{t('cadeau.inspiration')}</span>
-            <span className="gl-insp-sub">{t('cadeau.inspirationSub')}</span>
-          </span>
+          {t('cadeau.inspiration')}
           <span className="gl-insp-caret" aria-hidden="true">⌄</span>
         </button>
         {inspOpen && (
