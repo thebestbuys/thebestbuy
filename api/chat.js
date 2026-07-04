@@ -37,6 +37,8 @@ const SUPA_SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 // the advisor keeps working (graceful degradation, like the Amazon verify path).
 const AI_DAILY_REQUEST_CAP = Number(process.env.AI_DAILY_REQUEST_CAP || 50);
 const AI_DAILY_TOKEN_CAP = Number(process.env.AI_DAILY_TOKEN_CAP || 200000);
+// The superuser (admin) account is exempt from the daily AI quota entirely.
+const SUPERUSER_EMAIL = (process.env.SUPERUSER_EMAIL || 'thebestbuyersclub@gmail.com').toLowerCase();
 
 const PROFILE_LABELS = {
   gender: { fr: 'Genre', en: 'Gender' },
@@ -72,7 +74,7 @@ async function resolveFriendProfile(requesterId, friendId, lang, supaCalls) {
     error: null,
   };
   try {
-    // requesterId is already verified once at the top of the handler (getRequesterId).
+    // requesterId is already verified once at the top of the handler (getRequester).
     // Reuse it instead of re-calling auth.getUser — one fewer Supabase round-trip
     // per friend-gift request.
     if (!friendId || !requesterId || requesterId === friendId || !SUPA_URL || !SUPA_SERVICE) {
@@ -134,22 +136,23 @@ async function resolveFriendProfile(requesterId, friendId, lang, supaCalls) {
   }
 }
 
-// Resolve the signed-in user's id from the bearer token, verified via Supabase
-// auth. Returns null when not signed in, no token, or anything is misconfigured
-// (so quota metering simply doesn't apply rather than blocking the request).
-async function getRequesterId(req, supaCalls) {
+// Resolve the signed-in user (id + email) from the bearer token, verified via
+// Supabase auth. Returns { id:null, email:null } when not signed in, no token, or
+// anything is misconfigured (so quota metering simply doesn't apply rather than
+// blocking the request). The email lets the handler exempt the superuser.
+async function getRequester(req, supaCalls) {
   try {
     const auth = req.headers?.authorization || req.headers?.Authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    if (!token || !SUPA_URL || !SUPA_ANON) return null;
+    if (!token || !SUPA_URL || !SUPA_ANON) return { id: null, email: null };
     const { createClient } = await import('@supabase/supabase-js');
     const anon = createClient(SUPA_URL, SUPA_ANON);
     const { data, error } = await anon.auth.getUser(token);
     if (supaCalls) supaCalls.n++;
-    if (error) return null;
-    return data?.user?.id || null;
+    if (error) return { id: null, email: null };
+    return { id: data?.user?.id || null, email: data?.user?.email || null };
   } catch {
-    return null;
+    return { id: null, email: null };
   }
 }
 
@@ -783,13 +786,17 @@ export default async function handler(req, res) {
   // usage read/write, friend profile lookups) — flushed once at the end as a
   // single row so the call-volume admin panel doesn't cost one insert per call.
   const supaCalls = { n: 0 };
-  const requesterId = await getRequesterId(req, supaCalls);
+  const requester = await getRequester(req, supaCalls);
+  const requesterId = requester.id;
+  // The superuser (admin) account is exempt from the daily AI quota — skip the
+  // pre-check AND the post-increment, and report no usage to the client.
+  const isSuperuser = !!requester.email && requester.email.toLowerCase() === SUPERUSER_EMAIL;
   // Attribute every API call logged for the rest of this request to the user,
   // so the dashboard can exclude tester accounts from the call-volume stats.
   setRequestUser(requesterId);
   let usageAdmin = null;
   let usageBefore = null;
-  if (requesterId && SUPA_URL && SUPA_SERVICE) {
+  if (requesterId && SUPA_URL && SUPA_SERVICE && !isSuperuser) {
     try {
       const { createClient } = await import('@supabase/supabase-js');
       usageAdmin = createClient(SUPA_URL, SUPA_SERVICE, { auth: { persistSession: false } });
