@@ -62,34 +62,25 @@ function profileDataToString(data, lang = 'fr') {
 // verifying (a) the bearer token is valid and (b) an accepted friendship exists.
 // Returns { text, debug } — text is the compact profile string ('' if anything
 // is missing/unverified); debug carries only booleans/lengths (never the data).
-async function resolveFriendProfile(req, friendId, lang, supaCalls) {
+async function resolveFriendProfile(requesterId, friendId, lang, supaCalls) {
   const debug = {
     env: { url: !!SUPA_URL, anon: !!SUPA_ANON, service: !!SUPA_SERVICE },
-    hasToken: false,
-    userOk: false,
+    userOk: !!requesterId,
     verified: false,
     profileLen: 0,
     wishlistCount: 0,
     error: null,
   };
   try {
-    const auth = req.headers?.authorization || req.headers?.Authorization || '';
-    const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    debug.hasToken = !!token;
-    if (!friendId || !SUPA_URL || !SUPA_SERVICE || !SUPA_ANON || !token) return { text: '', debug };
-
-    const { createClient } = await import('@supabase/supabase-js');
-
-    const anon = createClient(SUPA_URL, SUPA_ANON);
-    const { data: userData, error: userErr } = await anon.auth.getUser(token);
-    if (supaCalls) supaCalls.n++;
-    const requesterId = userData?.user?.id;
-    debug.userOk = !!requesterId;
-    if (userErr || !requesterId || requesterId === friendId) {
-      debug.error = userErr ? 'getUser: ' + (userErr.message || 'failed') : 'no requester';
+    // requesterId is already verified once at the top of the handler (getRequesterId).
+    // Reuse it instead of re-calling auth.getUser — one fewer Supabase round-trip
+    // per friend-gift request.
+    if (!friendId || !requesterId || requesterId === friendId || !SUPA_URL || !SUPA_SERVICE) {
+      if (requesterId && requesterId === friendId) debug.error = 'self';
       return { text: '', wishlist: '', debug };
     }
 
+    const { createClient } = await import('@supabase/supabase-js');
     const admin = createClient(SUPA_URL, SUPA_SERVICE, { auth: { persistSession: false } });
     const { data: link, error: linkErr } = await admin
       .from('friend_requests')
@@ -829,7 +820,7 @@ export default async function handler(req, res) {
   // Gift mode: a recipient description is sent instead of a product "objet".
   // For a friend, resolve their PRIVATE profile server-side (verified friendship)
   // and fold it into the recipient description — it never reaches the client.
-  const friendRes = friendId ? await resolveFriendProfile(req, friendId, lang, supaCalls) : { text: '', wishlist: '', debug: null };
+  const friendRes = friendId ? await resolveFriendProfile(requesterId, friendId, lang, supaCalls) : { text: '', wishlist: '', debug: null };
   const friendProfile = friendRes.text;
   const friendWishlist = friendRes.wishlist || '';
   const giftStr = [gift, friendProfile].map((s) => String(s || '').trim()).filter(Boolean).join('; ');
