@@ -75,21 +75,20 @@ export default function GiftLanding({ onStartDiscover, onHome, onOpenGuide, onOp
         </button>
         {inspOpen && (
           <div className="gl-insp-panel">
-            <div className="home-guides-grid">
+            <ul className="gl-insp-list">
               {guides.map((g) => (
-                <a
-                  key={g.slug}
-                  className="guide-card"
-                  href={'/guide/' + g.slug}
-                  onClick={(e) => { e.preventDefault(); onOpenGuide(g.slug); }}
-                >
-                  <div className="guide-card-eyebrow">{t('guides.cardEyebrow', { time: g.readTime })}</div>
-                  <h3 className="guide-card-title">{g.title}</h3>
-                  <p className="guide-card-sub">{g.subtitle}</p>
-                  <span className="guide-card-link">{t('guides.read')}</span>
-                </a>
+                <li key={g.slug}>
+                  <a
+                    className="gl-insp-item"
+                    href={'/guide/' + g.slug}
+                    onClick={(e) => { e.preventDefault(); onOpenGuide(g.slug); }}
+                  >
+                    <span className="gl-insp-item-label">{g.title}</span>
+                    <span className="gl-insp-item-arrow" aria-hidden="true">→</span>
+                  </a>
+                </li>
               ))}
-            </div>
+            </ul>
             <a
               className="gl-hub-link"
               href="/idees-cadeaux"

@@ -5510,7 +5510,29 @@ select.profile-input {
   transition: transform 0.2s ease;
 }
 .gl-insp-link.is-open .gl-insp-caret { transform: rotate(180deg); }
-.gl-insp-panel { margin-top: 18px; }
+.gl-insp-panel { margin-top: 14px; }
+/* Compact label list — just the guide titles, no description. */
+.gl-insp-list {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 560px;
+}
+.gl-insp-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 14.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.gl-insp-item:hover { color: var(--accent); }
+.gl-insp-item-label { min-width: 0; }
+.gl-insp-item-arrow { flex-shrink: 0; color: var(--accent); }
 .gl-hub-link {
   display: inline-block;
   margin-top: 18px;
