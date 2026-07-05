@@ -173,9 +173,7 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
   const canViewPrev = pastCount > 0 && (viewingPastIndex === null || viewingPastIndex < pastCount - 1);
   const canViewNext = viewingPastIndex !== null;
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [barPulse, setBarPulse] = useState(false);
-  const autoOpenedRef = useRef(false); // sheet auto-opens once, on the first batch
-  const batchReadyRef = useRef(false); // de-dupes the ready→pulse transition
+  const batchReadyRef = useRef(false); // de-dupes the ready→open transition per batch
   // Drag-to-dismiss the drawer (swipe the grip/header down). Tracks a live drag
   // offset; releasing past a threshold — or a small tap — closes it, otherwise it
   // snaps back. Pointer events cover touch + mouse.
@@ -211,22 +209,15 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
     }
   }, [messages, isTyping, currentQuestion, products, loadingProducts, cardsReady, skelLeaving]);
 
-  // When a fresh batch of picks becomes ready: open the drawer the FIRST time
-  // (so the user sees the reveal), and pulse the handle bar on later updates so a
-  // change is noticed without dumping cards back into the conversation.
+  // Open the drawer every time a fresh batch of picks becomes ready, so the user
+  // is always shown the new proposals. batchReadyRef de-dupes per batch (it resets
+  // while loading) so in-place enrichment updates don't re-open it.
   useEffect(() => {
     if (!showInline) { batchReadyRef.current = false; return; }
     if (batchReadyRef.current) return;
     batchReadyRef.current = true;
-    if (!autoOpenedRef.current) {
-      autoOpenedRef.current = true;
-      setSheetOpen(true);
-    } else {
-      setBarPulse(true);
-      const id = setTimeout(() => setBarPulse(false), 1500);
-      return () => clearTimeout(id);
-    }
-  }, [showInline, products]);
+    setSheetOpen(true);
+  }, [showInline]);
 
   // Close the drawer on Escape.
   useEffect(() => {
@@ -361,7 +352,7 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
       {showResultsBar && (
         <button
           type="button"
-          className={'chat-results-bar' + (barPulse ? ' is-pulse' : '') + (sheetOpen ? ' is-open' : '')}
+          className={'chat-results-bar' + (sheetOpen ? ' is-open' : '')}
           onClick={() => setSheetOpen((v) => !v)}
           aria-expanded={sheetOpen}
         >
