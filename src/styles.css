@@ -2201,6 +2201,13 @@ button.chat-bubble.chat-editable {
     transform: translateY(0) scale(1);
   }
 }
+.modal-top-buy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 16px 0 4px;
+}
 .modal-close {
   position: absolute;
   top: 16px;

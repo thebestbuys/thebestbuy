@@ -796,6 +796,18 @@ function ProductDetail({ product, onClose, onBuy }) {
                 </div>
               </div>
             )}
+            {/* Buy CTA near the top so it's reachable without scrolling to the
+                bottom; the full price / favourite / owned box stays below. */}
+            <a
+              className="btn-primary big modal-top-buy"
+              href={amazonUrl}
+              target="_blank"
+              rel="noopener noreferrer sponsored"
+              onClick={() => onBuy(product)}
+            >
+              {t('product.viewAmazon')}
+              <span className="btn-arrow">→</span>
+            </a>
             {product.why && (
               <>
                 <div className="modal-section-title">{t('product.why')}</div>
