@@ -1238,7 +1238,9 @@ button.chat-bubble.chat-editable {
   position: relative;
   background: var(--bg);
   border-radius: 20px 20px 0 0;
-  max-height: 80dvh;
+  /* Definite height so the 3 tiles can flex-fill it exactly — no inner scroll. */
+  height: 86dvh;
+  max-height: 86dvh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
@@ -1281,9 +1283,22 @@ button.chat-bubble.chat-editable {
 .chat-sheet-body {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  /* The tiles are sized to fit exactly, so nothing scrolls inside the drawer. */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   padding: 0 16px 12px;
+}
+/* The product list fills the body; each card takes an equal share of the height
+   and clips any overflow, so 3 tiles always fit the drawer with no scroll. */
+.chat-sheet-body .chat-products-list {
+  flex: 1;
+  min-height: 0;
+}
+.chat-sheet-body .chat-products-list .product-link-card {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
 }
 /* Batch navigation row under the title: ◀ older · Voir d'autres · newer ▶. */
 .chat-sheet-nav {
