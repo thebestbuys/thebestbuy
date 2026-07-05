@@ -176,6 +176,32 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
   const [barPulse, setBarPulse] = useState(false);
   const autoOpenedRef = useRef(false); // sheet auto-opens once, on the first batch
   const batchReadyRef = useRef(false); // de-dupes the ready→pulse transition
+  // Drag-to-dismiss the drawer (swipe the grip/header down). Tracks a live drag
+  // offset; releasing past a threshold — or a small tap — closes it, otherwise it
+  // snaps back. Pointer events cover touch + mouse.
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef({ startY: 0, active: false, moved: 0, dy: 0 });
+  const onDragStart = (e) => {
+    dragRef.current = { startY: e.clientY, active: true, moved: 0, dy: 0 };
+    setDragging(true);
+    try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* ignore */ }
+  };
+  const onDragMove = (e) => {
+    if (!dragRef.current.active) return;
+    const dy = Math.max(0, e.clientY - dragRef.current.startY);
+    dragRef.current.dy = dy;
+    dragRef.current.moved = Math.max(dragRef.current.moved, dy);
+    setDragY(dy);
+  };
+  const onDragEnd = () => {
+    if (!dragRef.current.active) return;
+    const { dy, moved } = dragRef.current;
+    dragRef.current.active = false;
+    setDragging(false);
+    setDragY(0);
+    if (dy > 110 || moved < 6) setSheetOpen(false); // dragged far enough, or a tap
+  };
   const ratio = progressInfo?.ratio ?? 0;
   const editing = editMsgIndex != null && editQuestion;
 
@@ -352,11 +378,23 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
       {showResultsBar && sheetOpen && (
         <div className="chat-sheet" role="dialog" aria-modal="true" aria-label={t('chat.mySelection')}>
           <div className="chat-sheet-backdrop" onClick={() => setSheetOpen(false)} />
-          <div className="chat-sheet-panel">
-            <button type="button" className="chat-sheet-grip" onClick={() => setSheetOpen(false)} aria-label={t('auth.close')} />
-            <div className="chat-sheet-head">
-              <h3 className="chat-sheet-title">{t('chat.mySelection')}</h3>
-              <button type="button" className="chat-sheet-close" onClick={() => setSheetOpen(false)} aria-label={t('auth.close')}>✕</button>
+          <div
+            className={'chat-sheet-panel' + (dragging ? ' is-dragging' : '')}
+            style={dragY ? { transform: `translateY(${dragY}px)` } : undefined}
+          >
+            {/* Grip + title double as the drag handle: swipe down (or tap) to
+                lower/close the drawer — no explicit ✕ needed. */}
+            <div
+              className="chat-sheet-drag"
+              onPointerDown={onDragStart}
+              onPointerMove={onDragMove}
+              onPointerUp={onDragEnd}
+              onPointerCancel={onDragEnd}
+            >
+              <div className="chat-sheet-grip" aria-hidden="true" />
+              <div className="chat-sheet-head">
+                <h3 className="chat-sheet-title">{t('chat.mySelection')}</h3>
+              </div>
             </div>
 
             {/* Navigation row under the title: browse batches with the arrows
@@ -373,8 +411,16 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
                 ◀
               </button>
               {onShowOthers && viewingPastIndex === null ? (
-                <button type="button" className="chat-sheet-nav-others" onClick={onShowOthers} disabled={isTyping}>
-                  <span aria-hidden="true">↻</span> {t('results.showOthers')}
+                <button
+                  type="button"
+                  className={'chat-sheet-nav-others' + (loadingProducts ? ' is-loading' : '')}
+                  onClick={onShowOthers}
+                  disabled={isTyping || loadingProducts}
+                >
+                  {loadingProducts
+                    ? <span className="chat-others-spinner" aria-hidden="true" />
+                    : <span aria-hidden="true">↻</span>}
+                  {t('results.showOthers')}
                 </button>
               ) : (
                 <span className="chat-sheet-nav-others is-empty" aria-hidden="true" />

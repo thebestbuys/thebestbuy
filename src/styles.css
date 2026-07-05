@@ -1313,23 +1313,46 @@ button.chat-bubble.chat-editable {
   opacity: 0.5;
   cursor: default;
 }
+/* Discreet text button (no fill) so it doesn't compete with the cards. */
 .chat-sheet-nav-others {
   justify-self: center;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  border: 1px solid var(--accent);
+  gap: 6px;
+  padding: 6px 10px;
+  border: 0;
   border-radius: 999px;
-  background: var(--accent-light);
-  color: var(--text);
+  background: none;
+  color: var(--text-muted);
   font: inherit;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
 }
-.chat-sheet-nav-others.is-empty { border: 0; background: none; padding: 0; }
-.chat-sheet-nav-others:disabled { opacity: 0.5; cursor: default; }
+.chat-sheet-nav-others:hover:not(:disabled) { color: var(--accent); }
+.chat-sheet-nav-others.is-empty { padding: 0; }
+.chat-sheet-nav-others:disabled { cursor: default; opacity: 0.75; }
+.chat-sheet-nav-others.is-loading { color: var(--accent); }
+.chat-others-spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--accent-light);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: others-spin 0.7s linear infinite;
+}
+@keyframes others-spin { to { transform: rotate(360deg); } }
+/* Grip + title act as the drag handle (swipe down to dismiss). */
+.chat-sheet-drag {
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.chat-sheet-drag:active { cursor: grabbing; }
+.chat-sheet-panel { transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1); }
+.chat-sheet-panel.is-dragging { transition: none; }
 /* Bottom bar: "keep answering" returns to the chat, pinned bottom-right. */
 .chat-sheet-foot {
   flex-shrink: 0;
