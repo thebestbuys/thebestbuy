@@ -95,6 +95,7 @@ const TRANSLATIONS = {
     "chat.refineHint": "Continuez à répondre pour affiner ma sélection.",
     "chat.resultsReady": "{n} idées prêtes",
     "chat.resultsLoading": "Recherche d'idées…",
+    "chat.continueChat": "Continuer à répondre",
     "chat.error":
       "Désolé, le service de recommandation n'a pas répondu ({msg}). Réessayez ou rafraîchissez la page.",
     "chat.skip": "Peu importe",
@@ -649,6 +650,7 @@ const TRANSLATIONS = {
     "chat.refineHint": "Keep answering to refine my picks.",
     "chat.resultsReady": "{n} ideas ready",
     "chat.resultsLoading": "Finding ideas…",
+    "chat.continueChat": "Keep answering",
     "chat.error":
       "Sorry, the recommendation service didn't respond ({msg}). Try again or refresh the page.",
     "chat.skip": "No preference",

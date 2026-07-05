@@ -983,6 +983,10 @@ export default function App() {
     });
   };
   const viewLatestSuggestions = () => setViewingPastIndex(null);
+  // Step one batch NEWER (toward the live set); null once we reach the latest.
+  const viewNextSuggestions = () => {
+    setViewingPastIndex((idx) => (idx == null ? null : idx === 0 ? null : idx - 1));
+  };
   // Jump straight to the very first batch ever shown, instead of stepping back
   // one "Précédent" click at a time. pastProductBatches is most-recent-first,
   // so the oldest (= first shown) sits at the last index.
@@ -1709,6 +1713,7 @@ export default function App() {
         pastCount={pastProductBatches.length}
         viewingPastIndex={viewingPastIndex}
         onViewPrevious={viewPreviousSuggestions}
+        onViewNext={viewNextSuggestions}
         onViewLatest={viewLatestSuggestions}
         onViewFirst={viewFirstSuggestions}
         headerExtras={narrow ? (

@@ -157,7 +157,7 @@ function ChoiceControl({ question, onAnswer, onSkip }) {
   );
 }
 
-export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, onRetry = null, onShowOthers = null, onRecommendNow = null, guide = null, onOpenGuide = null, budget = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, loadingProducts = false, cardsReady = true, skelLeaving = false, pastCount = 0, viewingPastIndex = null, onViewPrevious = null, onViewLatest = null, onViewFirst = null, headerExtras = null }) {
+export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, onRetry = null, onShowOthers = null, onRecommendNow = null, guide = null, onOpenGuide = null, budget = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, loadingProducts = false, cardsReady = true, skelLeaving = false, pastCount = 0, viewingPastIndex = null, onViewPrevious = null, onViewNext = null, onViewLatest = null, onViewFirst = null, headerExtras = null }) {
   const { t } = useI18n();
   const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
@@ -168,6 +168,10 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
   const showInlineSkeleton = inlineProducts && (loadingProducts || skelLeaving) && !showInline;
   const resultsLoading = inlineProducts && (loadingProducts || skelLeaving) && products.length === 0;
   const showResultsBar = inlineProducts && (showInline || resultsLoading);
+  // Batch navigation (drawer arrows): older ◀ available while a previous batch
+  // exists; newer ▶ available while viewing a past batch.
+  const canViewPrev = pastCount > 0 && (viewingPastIndex === null || viewingPastIndex < pastCount - 1);
+  const canViewNext = viewingPastIndex !== null;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [barPulse, setBarPulse] = useState(false);
   const autoOpenedRef = useRef(false); // sheet auto-opens once, on the first batch
@@ -354,6 +358,39 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
               <h3 className="chat-sheet-title">{t('chat.mySelection')}</h3>
               <button type="button" className="chat-sheet-close" onClick={() => setSheetOpen(false)} aria-label={t('auth.close')}>✕</button>
             </div>
+
+            {/* Navigation row under the title: browse batches with the arrows
+                (older ◀ left / newer ▶ right); ask for a fresh set in the middle. */}
+            <div className="chat-sheet-nav">
+              <button
+                type="button"
+                className="chat-sheet-nav-arrow"
+                onClick={onViewPrevious}
+                disabled={!onViewPrevious || !canViewPrev}
+                aria-label={t('results.viewPrevious')}
+                title={t('results.viewPrevious')}
+              >
+                ◀
+              </button>
+              {onShowOthers && viewingPastIndex === null ? (
+                <button type="button" className="chat-sheet-nav-others" onClick={onShowOthers} disabled={isTyping}>
+                  <span aria-hidden="true">↻</span> {t('results.showOthers')}
+                </button>
+              ) : (
+                <span className="chat-sheet-nav-others is-empty" aria-hidden="true" />
+              )}
+              <button
+                type="button"
+                className="chat-sheet-nav-arrow"
+                onClick={onViewNext}
+                disabled={!onViewNext || !canViewNext}
+                aria-label={t('results.viewLatest')}
+                title={t('results.viewLatest')}
+              >
+                ▶
+              </button>
+            </div>
+
             <div className="chat-sheet-body">
               {resultsLoading ? (
                 <div className="chat-products-list">
@@ -368,39 +405,18 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
                   ))}
                 </div>
               )}
-              {onShowOthers && !isTyping && viewingPastIndex === null && (
-                <button type="button" className="show-others-btn show-others-chat" onClick={onShowOthers}>
-                  <span aria-hidden="true">↻</span> {t('results.showOthers')}
-                </button>
-              )}
-              {viewingPastIndex === null && pastCount > 0 && onViewPrevious && (
-                <button type="button" className="show-others-btn show-others-chat" onClick={onViewPrevious}>
-                  <span aria-hidden="true">◀</span> {t('results.viewPrevious')}
-                </button>
-              )}
-              {viewingPastIndex !== null && onViewLatest && (
-                <button type="button" className="show-others-btn show-others-chat" onClick={onViewLatest}>
-                  {t('results.viewLatest')} <span aria-hidden="true">▶</span>
-                </button>
-              )}
-              {viewingPastIndex !== null && viewingPastIndex < pastCount - 1 && onViewPrevious && (
-                <button type="button" className="show-others-btn show-others-chat" onClick={onViewPrevious}>
-                  <span aria-hidden="true">◀</span> {t('results.viewPrevious')}
-                </button>
-              )}
-              {pastCount > 1 && viewingPastIndex !== pastCount - 1 && onViewFirst && (
-                <button type="button" className="show-others-btn show-others-chat" onClick={onViewFirst}>
-                  <span aria-hidden="true">⏮</span> {t('results.viewFirst')}
-                </button>
-              )}
               {guide && onOpenGuide && (
                 <button type="button" className="results-guide-link results-guide-chat" onClick={() => onOpenGuide(guide.slug)}>
                   {t('results.guideCta', { title: guide.title })}
                 </button>
               )}
-              {currentQuestion && (
-                <div className="chat-products-hint">{t('chat.refineHint')}</div>
-              )}
+            </div>
+
+            {/* Bottom-right: close the drawer and go back to answering. */}
+            <div className="chat-sheet-foot">
+              <button type="button" className="chat-sheet-continue" onClick={() => setSheetOpen(false)}>
+                {t('chat.continueChat')} <span aria-hidden="true">→</span>
+              </button>
             </div>
           </div>
         </div>
