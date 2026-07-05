@@ -157,7 +157,7 @@ function ChoiceControl({ question, onAnswer, onSkip }) {
   );
 }
 
-export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, onRetry = null, onShowOthers = null, onRecommendNow = null, guide = null, onOpenGuide = null, budget = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, loadingProducts = false, cardsReady = true, skelLeaving = false, pastCount = 0, viewingPastIndex = null, onViewPrevious = null, onViewNext = null, onViewLatest = null, onViewFirst = null, headerExtras = null }) {
+export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeText, onRestart, onHome, onOpenHistory, onStartEdit, onCancelEdit, onApplyEdit, editMsgIndex = null, editQuestion = null, onRetry = null, onShowOthers = null, onRecommendNow = null, guide = null, onOpenGuide = null, budget = null, isTyping, layout, progressInfo, products = [], onSelectProduct, inlineProducts = false, batchId = 0, loadingProducts = false, cardsReady = true, skelLeaving = false, pastCount = 0, viewingPastIndex = null, onViewPrevious = null, onViewNext = null, onViewLatest = null, onViewFirst = null, headerExtras = null }) {
   const { t } = useI18n();
   const scrollRef = useRef(null);
   const [freeText, setFreeText] = useState('');
@@ -173,7 +173,7 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
   const canViewPrev = pastCount > 0 && (viewingPastIndex === null || viewingPastIndex < pastCount - 1);
   const canViewNext = viewingPastIndex !== null;
   const [sheetOpen, setSheetOpen] = useState(false);
-  const batchReadyRef = useRef(false); // de-dupes the ready→open transition per batch
+  const prevBatchRef = useRef(0); // last batch id we opened the drawer for
   // Drag-to-dismiss the drawer (swipe the grip/header down). Tracks a live drag
   // offset; releasing past a threshold — or a small tap — closes it, otherwise it
   // snaps back. Pointer events cover touch + mouse.
@@ -209,15 +209,16 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
     }
   }, [messages, isTyping, currentQuestion, products, loadingProducts, cardsReady, skelLeaving]);
 
-  // Open the drawer every time a fresh batch of picks becomes ready, so the user
-  // is always shown the new proposals. batchReadyRef de-dupes per batch (it resets
-  // while loading) so in-place enrichment updates don't re-open it.
+  // Open the drawer every time a NEW batch is loaded (batchId bumps in App's
+  // loadProducts), so the user is always shown the fresh proposals — even when
+  // products were already on screen (in that case showInline never dips, so we
+  // key off the batch id instead). Enrichment updates keep the same id → no reopen.
   useEffect(() => {
-    if (!showInline) { batchReadyRef.current = false; return; }
-    if (batchReadyRef.current) return;
-    batchReadyRef.current = true;
+    if (!inlineProducts || !batchId) return;
+    if (batchId === prevBatchRef.current) return;
+    prevBatchRef.current = batchId;
     setSheetOpen(true);
-  }, [showInline]);
+  }, [batchId, inlineProducts]);
 
   // Close the drawer on Escape.
   useEffect(() => {
@@ -356,11 +357,11 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
           onClick={() => setSheetOpen((v) => !v)}
           aria-expanded={sheetOpen}
         >
-          <span className="chat-results-bar-ico" aria-hidden="true">🎁</span>
+          <span className="chat-results-bar-ico" aria-hidden="true">
+            {loadingProducts ? <span className="chat-others-spinner" /> : '💡'}
+          </span>
           <span className="chat-results-bar-text">
-            {resultsLoading
-              ? t('chat.resultsLoading')
-              : t('chat.resultsReady', { n: Math.min(3, products.length) })}
+            {loadingProducts ? t('chat.resultsLoading') : t('chat.myProposals')}
           </span>
           <span className="chat-results-bar-caret" aria-hidden="true">⌃</span>
         </button>

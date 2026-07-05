@@ -94,6 +94,7 @@ const TRANSLATIONS = {
     "chat.mySelection": "Voici ma sélection pour vous 🎁",
     "chat.refineHint": "Continuez à répondre pour affiner ma sélection.",
     "chat.resultsReady": "{n} idées prêtes",
+    "chat.myProposals": "Mes propositions",
     "chat.resultsLoading": "Recherche d'idées…",
     "chat.continueChat": "Continuer à répondre",
     "chat.error":
@@ -649,6 +650,7 @@ const TRANSLATIONS = {
     "chat.mySelection": "Here's my pick for you 🎁",
     "chat.refineHint": "Keep answering to refine my picks.",
     "chat.resultsReady": "{n} ideas ready",
+    "chat.myProposals": "My picks",
     "chat.resultsLoading": "Finding ideas…",
     "chat.continueChat": "Keep answering",
     "chat.error":

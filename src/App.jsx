@@ -980,6 +980,9 @@ export default function App() {
   // looking at the live batch, or an index into pastProductBatches otherwise.
   const [pastProductBatches, setPastProductBatches] = useState([]);
   const [viewingPastIndex, setViewingPastIndex] = useState(null);
+  // Increments each time a fresh batch is loaded (see loadProducts) — the mobile
+  // results drawer opens whenever this changes so new proposals are surfaced.
+  const [productsBatchId, setProductsBatchId] = useState(0);
   // Always-current snapshot of recommendedProducts, read inside loadProducts()
   // (which may run after an await, so a closure over the render-time value
   // could miss enrichment updates that happened in between).
@@ -1100,6 +1103,9 @@ export default function App() {
     setViewingPastIndex(null);
     setDone(true);
     setRecommendedProducts(base);
+    // Bump the batch id on every fresh batch so the mobile drawer knows to (re)open
+    // and show the new proposals — even when products were already on screen.
+    setProductsBatchId((n) => n + 1);
     base.forEach((p, i) => {
       enrichProduct(p).then((enriched) => {
         setRecommendedProducts((prev) => {
@@ -1719,6 +1725,7 @@ export default function App() {
         products={displayedProducts}
         onSelectProduct={navOpenProduct}
         inlineProducts={narrow}
+        batchId={productsBatchId}
         loadingProducts={loadingProducts}
         cardsReady={cardsReady}
         skelLeaving={skelLeaving}
