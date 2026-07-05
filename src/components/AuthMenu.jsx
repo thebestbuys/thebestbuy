@@ -169,6 +169,46 @@ function LoginModal({ onClose }) {
   );
 }
 
+// Small line icons (16px, stroke currentColor) shown at the left of each account
+// menu row. Kept inline so the menu stays self-contained.
+const DD_ICONS = {
+  profile: (
+    <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="6.5" r="3.1" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M4.2 16.2c0-2.9 2.6-4.6 5.8-4.6s5.8 1.7 5.8 4.6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  ),
+  selections: (
+    <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
+      <path d="M10 16.4C10 16.4 3.6 12.7 3.6 8.4A3.1 3.1 0 0 1 10 6.1a3.1 3.1 0 0 1 6.4 2.3c0 4.3-6.4 8-6.4 8Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  ),
+  history: (
+    <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="6.4" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M10 6.3V10l2.6 1.7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  ),
+  occasions: (
+    <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
+      <rect x="3.5" y="5" width="13" height="11.5" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M3.5 8.6h13M7 3.6v3M13 3.6v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  ),
+  friends: (
+    <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
+      <circle cx="7.6" cy="7.2" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M3 16c0-2.5 2.1-4 4.6-4s4.6 1.5 4.6 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M13 5.4a2.3 2.3 0 0 1 0 4.4M14.2 12c1.8.5 3 1.8 3 3.9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  ),
+  admin: (
+    <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
+      <path d="M10.8 2.8 5.5 11h3.7l-1 6.2 6-8.6h-3.8l1.2-5.8Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+    </svg>
+  ),
+};
+
 function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfile, onOpenFriends, onOpenHistory, onOpenAsk, onOpenNotifications, onOpenTrending, onOpenAdmin }) {
   const { t } = useI18n();
   const wrapRef = useRef(null);
@@ -176,7 +216,7 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
   // The left rail was retired, so the account menu is now the single home for
   // all navigation (selections / history / occasions / friends / ask / trends)
   // on every surface, plus the account actions (profile / appearance / sign out).
-  const item = (label, onOpen, extra = null) => (
+  const item = (icon, label, onOpen, extra = null) => (
     <button
       type="button"
       className="auth-dropdown-item"
@@ -185,7 +225,10 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
         onClose();
       }}
     >
-      {label}
+      <span className="auth-dropdown-item-main">
+        <span className="auth-dropdown-ico" aria-hidden="true">{icon}</span>
+        {label}
+      </span>
       {extra}
     </button>
   );
@@ -216,21 +259,22 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
         </div>
       </div>
       <div className="auth-dropdown-sep" />
-      {item(t('auth.myProfile'), onOpenProfile)}
+      {item(DD_ICONS.profile, t('auth.myProfile'), onOpenProfile)}
       {item(
+        DD_ICONS.selections,
         t('auth.mySelections'),
         onOpenSelections,
         count > 0 ? <span className="auth-dropdown-count">{count}</span> : null,
       )}
-      {item(t('home.history'), onOpenHistory)}
-      {item(t('auth.occasions'), onOpenNotifications)}
-      {item(t('auth.myFriends'), onOpenFriends)}
+      {item(DD_ICONS.history, t('home.history'), onOpenHistory)}
+      {item(DD_ICONS.occasions, t('auth.occasions'), onOpenNotifications)}
+      {item(DD_ICONS.friends, t('auth.myFriends'), onOpenFriends)}
       {/* "Demander l'avis d'un ami" and "Tendances de mes amis" live inside the
           "Mes amis" view now (quick-nav there), so they're not repeated here. */}
       {isSuperuserEmail(user.email) && (
         <>
           <div className="auth-dropdown-sep" />
-          {item(t('auth.admin'), onOpenAdmin)}
+          {item(DD_ICONS.admin, t('auth.admin'), onOpenAdmin)}
         </>
       )}
       <div className="auth-dropdown-sep" />

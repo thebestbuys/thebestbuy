@@ -217,7 +217,7 @@ const TRANSLATIONS = {
     "friends.back": "← Retour",
 
     // Admin (superuser / "god mode")
-    "auth.admin": "⚡ Admin",
+    "auth.admin": "Admin",
     "admin.title": "Admin",
     "admin.sub": "Accès superutilisateur : toutes les données de tous les comptes.",
     "admin.searchPlaceholder": "Filtrer par nom ou e-mail…",
@@ -771,7 +771,7 @@ const TRANSLATIONS = {
     "friends.back": "← Back",
 
     // Admin (superuser / "god mode")
-    "auth.admin": "⚡ Admin",
+    "auth.admin": "Admin",
     "admin.title": "Admin",
     "admin.sub": "Superuser access: every account's data.",
     "admin.searchPlaceholder": "Filter by name or e-mail…",

@@ -2981,8 +2981,22 @@ button.chat-bubble.chat-editable {
   justify-content: space-between;
   transition: background 0.12s;
 }
+.auth-dropdown-item-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+.auth-dropdown-ico {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
 .auth-dropdown-item:hover:not(:disabled) {
   background: var(--bg-soft);
+}
+.auth-dropdown-item:hover:not(:disabled) .auth-dropdown-ico {
+  color: var(--accent);
 }
 .auth-dropdown-item:disabled {
   color: var(--text-faint);
