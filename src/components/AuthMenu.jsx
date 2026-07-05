@@ -225,8 +225,8 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
       {item(t('home.history'), onOpenHistory)}
       {item(t('auth.occasions'), onOpenNotifications)}
       {item(t('auth.myFriends'), onOpenFriends)}
-      {item(t('poll.ask'), onOpenAsk)}
-      {item(t('auth.myTrends'), onOpenTrending)}
+      {/* "Demander l'avis d'un ami" and "Tendances de mes amis" live inside the
+          "Mes amis" view now (quick-nav there), so they're not repeated here. */}
       {isSuperuserEmail(user.email) && (
         <>
           <div className="auth-dropdown-sep" />
