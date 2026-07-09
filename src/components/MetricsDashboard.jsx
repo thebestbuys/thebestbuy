@@ -49,6 +49,7 @@ function zeroSeries(totalUsers = 0, days = 90) {
     newU: zeros(), cum: new Array(N).fill(totalUsers || 0),
     convos: zeros(), clicks: zeros(), sels: zeros(), owned: zeros(), dau: zeros(),
     geminiCalls: zeros(), amazonCalls: zeros(), supabaseCalls: zeros(),
+    anonSessions: zeros(), anonCalls: zeros(),
   };
 }
 
@@ -70,12 +71,14 @@ function fromDaily(rows, totalUsers) {
   const geminiCalls = rows.map((r) => Number(r.gemini_calls) || 0);
   const amazonCalls = rows.map((r) => Number(r.amazon_calls) || 0);
   const supabaseCalls = rows.map((r) => Number(r.supabase_calls) || 0);
+  const anonSessions = rows.map((r) => Number(r.anon_sessions) || 0);
+  const anonCalls = rows.map((r) => Number(r.anon_ai_calls) || 0);
   // Cumulative users, ending at the real total: signups before the window are
   // folded into the starting baseline.
   const totalNew = newU.reduce((a, b) => a + b, 0);
   let run = Math.max(0, (totalUsers || totalNew) - totalNew);
   const cum = newU.map((n) => (run += n));
-  return { labels, dates, newU, cum, convos, clicks, sels, owned, dau, geminiCalls, amazonCalls, supabaseCalls };
+  return { labels, dates, newU, cum, convos, clicks, sels, owned, dau, geminiCalls, amazonCalls, supabaseCalls, anonSessions, anonCalls };
 }
 
 function normalizeProducts(topProducts) {
@@ -188,7 +191,8 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries, in
   // ── refs for canvases
   const spkUsers = useRef(), spkActive = useRef(), spkConvos = useRef(), spkClicks = useRef();
   const spkGemini = useRef(), spkAmazon = useRef(), spkSupabase = useRef();
-  const growth = useRef(), activity = useRef(), social = useRef();
+  const spkAnonSessions = useRef(), spkAnonCalls = useRef();
+  const growth = useRef(), activity = useRef(), anonChart = useRef(), social = useRef();
   const charts = useRef({});
 
   useEffect(() => {
@@ -215,6 +219,8 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries, in
     spark('sg', spkGemini, series.geminiCalls, C.purple);
     spark('sz', spkAmazon, series.amazonCalls, C.amber);
     spark('sb', spkSupabase, series.supabaseCalls, C.blue);
+    spark('san', spkAnonSessions, series.anonSessions, C.purple);
+    spark('sac', spkAnonCalls, series.anonCalls, C.accent);
 
     const L = slice(series.labels);
     const pr = L.length <= 3 ? 3 : 0; // show dots when the window is tiny (24h)
@@ -233,6 +239,14 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries, in
     const mk = (label, arr, color) => ({ label, data: slice(arr), borderColor: color, backgroundColor: color, borderWidth: 2, tension: 0.35, pointRadius: pr });
     if (activity.current) charts.current.activity = new Chart(activity.current, {
       type: 'line', data: { labels: L, datasets: [mk('Conversations', series.convos, C.accent), mk('Clics Amazon', series.clicks, C.blue), mk('Sélections', series.sels, C.green)] },
+      options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top', align: 'end', labels: { boxWidth: 8, boxHeight: 8, usePointStyle: true, padding: 14 } }, tooltip: tip },
+        scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0 } }, y: { grid: { color: grid }, ticks: { maxTicksLimit: 5 }, beginAtZero: true } } },
+    });
+
+    kill('anon');
+    if (anonChart.current) charts.current.anon = new Chart(anonChart.current, {
+      type: 'line', data: { labels: L, datasets: [mk('Sessions anonymes', series.anonSessions, C.purple), mk('Appels IA anonymes', series.anonCalls, C.accent)] },
       options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
         plugins: { legend: { position: 'top', align: 'end', labels: { boxWidth: 8, boxHeight: 8, usePointStyle: true, padding: 14 } }, tooltip: tip },
         scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0 } }, y: { grid: { color: grid }, ticks: { maxTicksLimit: 5 }, beginAtZero: true } } },
@@ -370,8 +384,19 @@ export default function MetricsDashboard({ metrics, topProducts, dailySeries, in
         <p style={{ fontSize: 11.5, color: C.faint, margin: 0 }}>Usage du conseiller par des personnes non connectées (sans compte)</p>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 14, marginBottom: 16 }}>
-        <KPI label="Sessions anonymes · 7 j" value={fmt(m.anon_sessions_7d ?? 0)} sub={`${fmt(m.anon_sessions ?? 0)} au total · conversations sans compte`} />
-        <KPI label="Appels IA anonymes" value={fmt(m.anon_ai_calls ?? 0)} sub="génération IA par des visiteurs non connectés" />
+        <KPI label="Sessions anonymes" value={fmt(winSum(series.anonSessions))} sub={`${fmt(m.anon_sessions ?? 0)} au total · conversations sans compte`} delta={winDelta(series.anonSessions)} canvasRef={spkAnonSessions} />
+        <KPI label="Appels IA anonymes" value={fmt(winSum(series.anonCalls))} sub={`${fmt(m.anon_ai_calls ?? 0)} au total · sans compte`} delta={winDelta(series.anonCalls)} canvasRef={spkAnonCalls} />
+      </div>
+      {/* Dedicated anonymous-visitor activity chart (the "Activité quotidienne"
+          chart above only covers signed-in users). */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16, marginBottom: 16 }}>
+        <div style={{ ...card, padding: '20px 22px 18px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
+            <h3 style={{ font: '600 14px Inter,sans-serif', margin: 0 }}>Activité anonyme</h3>
+            <span style={{ fontSize: 11, color: C.faint }}>Sessions · appels IA (sans compte)</span>
+          </div>
+          <div style={{ position: 'relative', height: 248 }}><canvas ref={anonChart} /></div>
+        </div>
       </div>
 
       {/* Backend API call volume */}

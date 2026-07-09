@@ -852,7 +852,7 @@ grant execute on function public.admin_top_products(int, date, date, boolean) to
 drop function if exists public.admin_daily_series(int);
 drop function if exists public.admin_daily_series(int, boolean);
 create or replace function public.admin_daily_series(days int default 90, p_include_testers boolean default false)
-returns table (d date, new_users int, active_users int, conversations int, link_clicks int, selections int, owned int, gemini_calls int, amazon_calls int, supabase_calls int)
+returns table (d date, new_users int, active_users int, conversations int, link_clicks int, selections int, owned int, gemini_calls int, amazon_calls int, supabase_calls int, anon_sessions int, anon_ai_calls int)
 language sql stable security definer set search_path = public, auth as $$
   with span as (
     select generate_series(
@@ -870,7 +870,11 @@ language sql stable security definer set search_path = public, auth as $$
     (select count(*) from public.owned o where o.added_at::date = s.d and (p_include_testers or o.user_id not in (select user_id from public.tester_ids())))::int,
     (select coalesce(sum(count), 0) from public.api_call_logs l where l.service = 'gemini'   and l.created_at::date = s.d and (p_include_testers or l.user_id is null or l.user_id not in (select user_id from public.tester_ids())))::int,
     (select coalesce(sum(count), 0) from public.api_call_logs l where l.service = 'amazon'   and l.created_at::date = s.d and (p_include_testers or l.user_id is null or l.user_id not in (select user_id from public.tester_ids())))::int,
-    (select coalesce(sum(count), 0) from public.api_call_logs l where l.service = 'supabase' and l.created_at::date = s.d and (p_include_testers or l.user_id is null or l.user_id not in (select user_id from public.tester_ids())))::int
+    (select coalesce(sum(count), 0) from public.api_call_logs l where l.service = 'supabase' and l.created_at::date = s.d and (p_include_testers or l.user_id is null or l.user_id not in (select user_id from public.tester_ids())))::int,
+    -- Anonymous (not-signed-in) usage: rows with user_id null. Sessions ≈ distinct
+    -- advisor conversation ids; AI calls = gemini generations without an account.
+    (select count(distinct l.conversation_id) from public.api_call_logs l where l.service = 'gemini' and l.user_id is null and l.conversation_id is not null and l.created_at::date = s.d)::int,
+    (select coalesce(sum(count), 0) from public.api_call_logs l where l.service = 'gemini' and l.user_id is null and l.created_at::date = s.d)::int
   from span s
   where public.is_superuser()
   order by s.d;
