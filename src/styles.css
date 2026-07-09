@@ -4120,6 +4120,25 @@ button.chat-bubble.chat-editable {
   min-height: 0;
   overflow-y: auto;
 }
+.friends-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 16px;
+  margin-bottom: 12px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.friends-add-btn:hover { filter: brightness(1.05); }
 .friends-quicknav {
   display: flex;
   flex-direction: column;

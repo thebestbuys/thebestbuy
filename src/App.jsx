@@ -1402,6 +1402,10 @@ export default function App() {
   // the auto-start effect (keyed on convoId) fires the first recommend + ask.
   const startGift = (giftData) => {
     setGiftOpen(false);
+    // Close any panel the gift flow can be launched from so the advisor isn't
+    // rendered under an overlay (home CTA, /cadeau landing, or the friends view).
+    setFriendsOpen(false);
+    setCadeauOpen(false);
     setGift(giftData);
     setConvoId(newConversationId());
     setObjet('');
@@ -1419,6 +1423,9 @@ export default function App() {
   // /cadeau "Trouver un cadeau": start a gift session with NO pre-known recipient.
   // The advisor (discovery mode) asks who it's for, age, gender, interests… itself.
   const startGiftDiscovery = () => { setCadeauOpen(false); startGift({ discover: true }); };
+  // Home "Trouver un cadeau": same discovery chat, launched straight from home
+  // (push a history entry so Back returns home, like navPickCategory).
+  const navStartGiftDiscovery = () => { pushHistory(); startGift({ discover: true }); };
   const navPickCategory = (cat, q) => {
     pushHistory();
     setConvoId(newConversationId());
@@ -1655,7 +1662,7 @@ export default function App() {
           onToggleNotif={() => setNotifOpen((v) => !v)}
           onCloseNotif={() => setNotifOpen(false)}
           onGiftReminder={giftFromReminder}
-          onOpenGift={navOpenGift}
+          onOpenGift={navStartGiftDiscovery}
           onOpenGiftHub={navOpenGiftHub}
           onOpenLegal={navOpenLegal}
           onOpenPrivacy={navOpenPrivacy}
@@ -1677,7 +1684,7 @@ export default function App() {
             <SelectionsPanel open initialTab={selectionsTab} onClose={navBack} getAmazonUrl={getAmazonUrl} onBuy={handleBuy} onOpenProduct={navOpenProduct} />
           )}
           {profileOpen && <ProfilePanel open onClose={navBack} />}
-          {friendsOpen && <FriendsPanel open onClose={navBack} onOpenAsk={navOpenAsk} onOpenTrending={navOpenTrending} />}
+          {friendsOpen && <FriendsPanel open onClose={navBack} onOpenAsk={navOpenAsk} onOpenTrending={navOpenTrending} onAddFriend={navOpenGift} />}
           {adminOpen && <AdminPanel open onClose={navBack} onOpenProduct={navOpenProduct} />}
 
           {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
@@ -1868,7 +1875,7 @@ export default function App() {
         )}
         {profileOpen && <ProfilePanel open onClose={navBack} />}
         {giftOpen && <GiftPanel open onClose={navBack} onSubmit={startGift} initial={giftPrefill} />}
-        {friendsOpen && <FriendsPanel open onClose={navBack} onOpenAsk={navOpenAsk} onOpenTrending={navOpenTrending} />}
+        {friendsOpen && <FriendsPanel open onClose={navBack} onOpenAsk={navOpenAsk} onOpenTrending={navOpenTrending} onAddFriend={navOpenGift} />}
 
         {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
         {trendingOpen && <TrendingPanel onClose={navBack} onOpen={navOpenProduct} />}

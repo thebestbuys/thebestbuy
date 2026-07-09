@@ -43,7 +43,7 @@ function Avatar({ name, url, size = 36 }) {
 
 // "Mes amis": search registered users by name, send/accept friend requests, see
 // the friends list. Friend profiles stay private (used server-side for gifts).
-export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending }) {
+export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending, onAddFriend }) {
   const { user, cloudReady } = useAuth();
   const { t } = useI18n();
   const { closing, close } = useDismiss(onClose);
@@ -216,6 +216,13 @@ export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending 
           </div>
         ) : (
           <div className="friends-body">
+            {/* Add a person to gift to (relationship, age, interests…) — the
+                recipient form that used to live behind the home "Trouver un cadeau". */}
+            {onAddFriend && (
+              <button type="button" className="friends-add-btn" onClick={() => onAddFriend()}>
+                <span aria-hidden="true">＋</span> {t('friends.addFriendCta')}
+              </button>
+            )}
             {/* Quick access to the two friend-centric views (also in the account
                 menu), surfaced here right under the header for discoverability. */}
             {(onOpenAsk || onOpenTrending) && (
