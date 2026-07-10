@@ -1261,7 +1261,18 @@ button.chat-bubble.chat-editable {
 }
 .chat-results-bar-ico { font-size: 18px; line-height: 1; }
 .chat-results-bar-text { flex: 1; text-align: left; }
-.chat-results-bar-caret { font-size: 16px; line-height: 1; transition: transform 0.2s ease; }
+.chat-results-bar-caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--accent);
+  background: var(--accent-soft);
+  transition: transform 0.25s ease, background 0.15s ease;
+}
+.chat-results-bar-caret svg { display: block; }
 .chat-results-bar.is-open .chat-results-bar-caret { transform: rotate(180deg); }
 .chat-results-bar.is-pulse { animation: bar-pulse 1.5s ease; }
 @keyframes bar-pulse {
