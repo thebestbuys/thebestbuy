@@ -5,6 +5,7 @@ import { AuthProvider } from './lib/auth.jsx';
 import { LanguageProvider } from './lib/i18n.jsx';
 import ThemeEditor from './components/ThemeEditor.jsx';
 import Toaster from './components/Toaster.jsx';
+import SplashScreen from './components/SplashScreen.jsx';
 import { applyStoredTheme, getMode } from './lib/theme.js';
 import './styles.css';
 
@@ -16,6 +17,7 @@ applyStoredTheme();
 // hook; the old self-contained MobileApp.jsx was retired.
 function Root() {
   const [themeOpen, setThemeOpen] = useState(false);
+  const [splashDone, setSplashDone] = useState(false);
 
   // Re-apply the theme when the OS scheme changes, while preference is "system".
   useEffect(() => {
@@ -45,6 +47,7 @@ function Root() {
       <App />
       <ThemeEditor open={themeOpen} onClose={() => setThemeOpen(false)} />
       <Toaster />
+      {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
     </>
   );
 }

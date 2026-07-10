@@ -132,6 +132,57 @@ ul {
   padding: 32px 24px 80px;
   gap: 28px;
 }
+/* ── Launch splash animation ──────────────────────────────────────────────
+   Full-screen cream overlay shown once on app open: the wordmark spins in,
+   holds, then collapses into a point before the overlay fades out. */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  opacity: 1;
+  transition: opacity 0.25s ease;
+  overflow: hidden;
+  pointer-events: none;
+}
+.splash.is-leaving {
+  opacity: 0;
+}
+.splash-logo {
+  font-family: "Outfit", var(--sans);
+  font-size: 92px;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+  color: var(--accent);
+  user-select: none;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  animation: splash-logo 1650ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+@media (max-width: 560px) {
+  .splash-logo { font-size: 64px; }
+}
+@keyframes splash-logo {
+  0%   { transform: rotate(-140deg) scale(0.55); opacity: 0; }
+  18%  { transform: rotate(0deg) scale(1);       opacity: 1; }
+  55%  { transform: rotate(360deg) scale(1);     opacity: 1; }
+  78%  { transform: rotate(430deg) scale(1.06);  opacity: 1; }
+  100% { transform: rotate(560deg) scale(0);     opacity: 0; }
+}
+/* Reduced motion: no spin/collapse, just a brief fade. */
+.splash--reduced .splash-logo {
+  animation: splash-logo-reduced 550ms ease forwards;
+}
+@keyframes splash-logo-reduced {
+  0%   { opacity: 0; transform: scale(0.96); }
+  35%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 .home-logo {
   font-family: "Outfit", var(--sans);
   font-size: 92px;
@@ -5172,6 +5223,10 @@ select.profile-input {
   margin-top: 28px;
   padding-top: 20px;
   border-top: 0.5px solid var(--border-soft);
+  text-align: center;
+}
+.profile-delete-confirm {
+  text-align: left;
 }
 .profile-delete-btn {
   appearance: none;
