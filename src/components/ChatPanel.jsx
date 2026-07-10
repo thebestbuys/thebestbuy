@@ -243,19 +243,6 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
   return (
     <aside className="chat-panel" data-layout={layout}>
       <header className="chat-header">
-        <div className="chat-header-left">
-          <div className="chat-avatar">
-            <span className="chat-avatar-pulse" />
-            O
-          </div>
-          <div>
-            <div className="chat-title">Oraklia</div>
-            <div className="chat-subtitle">
-              <span className="chat-status-dot" />
-              {t('chat.subtitle')}
-            </div>
-          </div>
-        </div>
         <div className="chat-header-actions">
           {onHome && (
             <button

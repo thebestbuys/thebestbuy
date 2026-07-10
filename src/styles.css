@@ -772,6 +772,7 @@ ul {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-left: auto; /* right-align now that the identity block is gone */
 }
 .chat-restart {
   width: 32px;
