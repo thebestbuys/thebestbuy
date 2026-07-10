@@ -2832,7 +2832,7 @@ button.chat-bubble.chat-editable {
 /* ───────────────────────── Auth (Web) ─────────────────────────── */
 .home-topbar {
   position: absolute;
-  top: calc(18px + env(safe-area-inset-top));
+  top: calc(6px + env(safe-area-inset-top));
   right: calc(24px + env(safe-area-inset-right));
   z-index: 5;
   display: flex;
@@ -5165,6 +5165,68 @@ select.profile-input {
 .profile-clear:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Danger zone — account deletion (RGPD) */
+.profile-danger {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 0.5px solid var(--border-soft);
+}
+.profile-delete-btn {
+  appearance: none;
+  background: transparent;
+  border: 0.5px solid var(--danger, #c0392b);
+  color: var(--danger, #c0392b);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.12s, filter 0.12s;
+}
+.profile-delete-btn:hover {
+  background: rgba(192, 57, 43, 0.08);
+}
+.profile-delete-btn.is-confirm {
+  background: var(--danger, #c0392b);
+  color: #fff;
+  border-color: var(--danger, #c0392b);
+}
+.profile-delete-btn.is-confirm:hover {
+  filter: brightness(0.95);
+  background: var(--danger, #c0392b);
+}
+.profile-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.profile-delete-hint {
+  margin-top: 8px;
+}
+.profile-delete-confirm {
+  border: 0.5px solid var(--danger, #c0392b);
+  border-radius: 14px;
+  padding: 16px;
+  background: rgba(192, 57, 43, 0.05);
+}
+.profile-delete-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin: 0 0 4px;
+}
+.profile-delete-error {
+  color: var(--danger, #c0392b);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 8px 0 0;
+}
+.profile-delete-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
 }
 
 /* Gift finder entry button (home top bar) */

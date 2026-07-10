@@ -358,6 +358,17 @@ const TRANSLATIONS = {
     "profile.shareTrends": "Partager mes sélections dans les tendances",
     "profile.shareTrendsHint":
       "Vos produits sauvegardés et cliqués alimentent (de façon anonyme et agrégée) les « Tendances dans mon cercle » de vos amis. Décochez pour ne pas y contribuer.",
+    "profile.deleteAccount": "Supprimer mon compte",
+    "profile.deleteAccountHint":
+      "Supprime définitivement votre compte et toutes vos données (favoris, historique, profil, amis). Cette action est irréversible.",
+    "profile.deleteConfirmTitle": "Supprimer votre compte ?",
+    "profile.deleteConfirmBody":
+      "Toutes vos données seront définitivement effacées : favoris, historique, profil, listes, amis et sondages. Cette action est irréversible.",
+    "profile.deleteConfirm": "Supprimer définitivement",
+    "profile.deleteCancel": "Annuler",
+    "profile.deleting": "Suppression…",
+    "profile.deleteError":
+      "La suppression a échoué. Vérifiez votre connexion et réessayez.",
 
     // Trends in my circle (home)
     "trending.title": "Tendances",
@@ -914,6 +925,17 @@ const TRANSLATIONS = {
     "profile.shareTrends": "Share my selections in trends",
     "profile.shareTrendsHint":
       "Your saved and clicked products feed (anonymously and aggregated) your friends' “Trends in my circle”. Uncheck to opt out of contributing.",
+    "profile.deleteAccount": "Delete my account",
+    "profile.deleteAccountHint":
+      "Permanently deletes your account and all your data (favorites, history, profile, friends). This cannot be undone.",
+    "profile.deleteConfirmTitle": "Delete your account?",
+    "profile.deleteConfirmBody":
+      "All your data will be permanently erased: favorites, history, profile, lists, friends and polls. This action is irreversible.",
+    "profile.deleteConfirm": "Delete permanently",
+    "profile.deleteCancel": "Cancel",
+    "profile.deleting": "Deleting…",
+    "profile.deleteError":
+      "Deletion failed. Check your connection and try again.",
 
     // Trends in my circle (home)
     "trending.title": "Trends",

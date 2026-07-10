@@ -58,12 +58,15 @@ const splitHobbies = (s) =>
 // the AI prompts so questions/recommendations match the user. Mirrors the modal
 // styling of SelectionsPanel / HistoryPanel.
 export default function ProfilePanel({ open, onClose }) {
-  const { user } = useAuth();
+  const { user, deleteAccount } = useAuth();
   const { t, lang } = useI18n();
   const { closing, close } = useDismiss(onClose);
   const [form, setForm] = useState(getProfile());
   const [saved, setSaved] = useState(false);
   const [hobbyQuery, setHobbyQuery] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
 
   // Load fresh whenever the panel opens (or the user changes).
   useEffect(() => {
@@ -71,6 +74,9 @@ export default function ProfilePanel({ open, onClose }) {
     setForm(getProfile(user?.sub));
     setSaved(false);
     setHobbyQuery('');
+    setConfirmDelete(false);
+    setDeleting(false);
+    setDeleteError(false);
   }, [open, user?.sub]);
 
   useEffect(() => {
@@ -99,6 +105,18 @@ export default function ProfilePanel({ open, onClose }) {
     setForm(saveProfile(user?.sub, {}));
     setSaved(false);
     setHobbyQuery('');
+  };
+
+  const doDelete = async () => {
+    setDeleting(true);
+    setDeleteError(false);
+    const res = await deleteAccount();
+    if (res?.ok) {
+      close(); // signed out + local data wiped; drop back to the home
+    } else {
+      setDeleting(false);
+      setDeleteError(true);
+    }
   };
 
   // ── Passions / hobbies (multi-select) ──────────────────────────────────────
@@ -354,6 +372,51 @@ export default function ProfilePanel({ open, onClose }) {
               {saved ? t('profile.saved') : t('profile.save')}
             </button>
           </div>
+
+          {user && (
+            <div className="profile-danger">
+              {!confirmDelete ? (
+                <>
+                  <button
+                    type="button"
+                    className="profile-delete-btn"
+                    onClick={() => { setConfirmDelete(true); setDeleteError(false); }}
+                  >
+                    {t('profile.deleteAccount')}
+                  </button>
+                  <p className="profile-hint profile-delete-hint">
+                    {t('profile.deleteAccountHint')}
+                  </p>
+                </>
+              ) : (
+                <div className="profile-delete-confirm">
+                  <p className="profile-delete-title">{t('profile.deleteConfirmTitle')}</p>
+                  <p className="profile-hint">{t('profile.deleteConfirmBody')}</p>
+                  {deleteError && (
+                    <p className="profile-delete-error">{t('profile.deleteError')}</p>
+                  )}
+                  <div className="profile-delete-actions">
+                    <button
+                      type="button"
+                      className="profile-clear"
+                      onClick={() => setConfirmDelete(false)}
+                      disabled={deleting}
+                    >
+                      {t('profile.deleteCancel')}
+                    </button>
+                    <button
+                      type="button"
+                      className="profile-delete-btn is-confirm"
+                      onClick={doDelete}
+                      disabled={deleting}
+                    >
+                      {deleting ? t('profile.deleting') : t('profile.deleteConfirm')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -9,7 +9,7 @@ import React, {
 import { Capacitor } from '@capacitor/core';
 import { SocialLogin } from '@capgo/capacitor-social-login';
 import { supabase, isSupabaseConfigured } from './supabase.js';
-import { setCloudSession, cloudUpsertProfileIdentity } from './cloud.js';
+import { setCloudSession, cloudUpsertProfileIdentity, cloudDeleteAccount } from './cloud.js';
 import { linkAndSync, pullOnly } from './cloudSync.js';
 
 const STORAGE_KEY = 'bb_auth_user';
@@ -62,6 +62,7 @@ const AuthContext = createContext({
   lastError: null,
   signInNative: async () => {},
   signOut: async () => {},
+  deleteAccount: async () => ({ ok: false }),
   renderButton: () => {},
   promptSignIn: () => {},
 });
@@ -323,6 +324,34 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // Permanently delete the account: wipe server data (delete_account RPC →
+  // cascades from auth.users), then clear every local `bb_*` store and sign out.
+  // Returns { ok }. On cloud failure we don't touch local data (the account
+  // still exists) so the user can retry.
+  const deleteAccount = useCallback(async () => {
+    let ok = true;
+    if (isSupabaseConfigured) {
+      const res = await cloudDeleteAccount();
+      ok = res.ok;
+      if (!ok) {
+        setLastError('delete: ' + (res.error?.message || 'failed'));
+        return { ok: false };
+      }
+    }
+    // Clear all local app data (favorites, history, profile, occasions, …).
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('bb_')) keys.push(k);
+      }
+      keys.forEach((k) => localStorage.removeItem(k));
+    } catch {}
+    // Sign out (also clears the Supabase session + Google auto-select).
+    await signOut();
+    return { ok: true };
+  }, [signOut]);
+
   const renderButton = useCallback((el, options = {}) => {
     if (!el || !window.google?.accounts?.id) return;
     try {
@@ -358,6 +387,7 @@ export function AuthProvider({ children }) {
         lastError,
         signInNative,
         signOut,
+        deleteAccount,
         renderButton,
         promptSignIn,
       }}

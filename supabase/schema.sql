@@ -880,3 +880,31 @@ language sql stable security definer set search_path = public, auth as $$
   order by s.d;
 $$;
 grant execute on function public.admin_daily_series(int, boolean) to authenticated;
+
+-- ── Account deletion (RGPD "right to erasure") ─────────────────────────────
+-- A signed-in user permanently deletes their own account. Every user-owned
+-- table references auth.users(id) ON DELETE CASCADE (selections, owned,
+-- conversations, recipients, profiles, lists, occasions, friend_requests,
+-- polls/poll_recipients/poll_votes, link_clicks, ai_usage, api_call_logs …), so
+-- removing the auth.users row wipes all their data in one shot. Deleting from
+-- the auth schema needs elevated rights → SECURITY DEFINER (function owned by
+-- the postgres role, which the Supabase SQL editor uses). We re-resolve the
+-- caller from auth.uid() and only ever delete that row, so a user can never
+-- delete anyone but themselves.
+create or replace function public.delete_account()
+returns void
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  me uuid := auth.uid();
+begin
+  if me is null then
+    raise exception 'not authenticated';
+  end if;
+  delete from auth.users where id = me;
+end;
+$$;
+revoke all on function public.delete_account() from public, anon;
+grant execute on function public.delete_account() to authenticated;

@@ -427,6 +427,17 @@ export async function respondFriendRequest(requestId, accept) {
   return { ok: !error, error };
 }
 
+// ─── Account deletion (RGPD) ────────────────────────────────────────────────
+// Permanently delete the signed-in user's account and all their server data.
+// The delete_account() RPC removes the auth.users row; every user-owned table
+// cascades from it. Returns { ok } so the UI can decide whether to also clear
+// local data + sign out.
+export async function cloudDeleteAccount() {
+  if (!hasCloudSession()) return { ok: false };
+  const { error } = await supabase.rpc('delete_account');
+  return { ok: !error, error };
+}
+
 // ─── Superuser ("god mode" / SU) ───────────────────────────────────────────
 // The single hard-wired admin account. This constant is used ONLY to decide
 // whether to SHOW the Admin entry in the UI — it grants no real privilege. Every
