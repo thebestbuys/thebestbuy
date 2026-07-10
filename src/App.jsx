@@ -1450,6 +1450,18 @@ export default function App() {
     setCadeauOpen(false);
     try { window.history.replaceState({}, '', '/'); } catch { /* noop */ }
   };
+  // Chat "home" button: reset straight to the home view. We don't rely on
+  // history.back() alone — the Android WebView can swallow programmatic
+  // history.back(), so the button appeared dead on the app. Reset the advisor
+  // state directly (renders home immediately), then best-effort pop the entry
+  // we pushed on entering so the back-stack stays consistent.
+  const navChatHome = () => {
+    handleHome();
+    try {
+      if (window.history.state && window.history.state.oraklia) window.history.back();
+      else window.history.replaceState({}, '', '/');
+    } catch { /* noop */ }
+  };
 
   useEffect(() => {
     const onPop = () => {
@@ -1713,7 +1725,7 @@ export default function App() {
         onAnswer={handleAnswer}
         onFreeText={handleFreeText}
         onRestart={handleRestart}
-        onHome={navBack}
+        onHome={navChatHome}
         onOpenHistory={null}
         onStartEdit={startEditAnswer}
         onCancelEdit={cancelEditAnswer}
