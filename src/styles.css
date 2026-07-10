@@ -5230,19 +5230,19 @@ select.profile-input {
 }
 .profile-delete-btn {
   appearance: none;
-  background: transparent;
-  border: 0.5px solid var(--danger, #c0392b);
-  color: var(--danger, #c0392b);
+  background: var(--danger, #c0392b);
+  border: 0;
+  color: #fff;
   font: inherit;
   font-size: 13px;
-  font-weight: 600;
-  padding: 9px 16px;
+  font-weight: 700;
+  padding: 9px 18px;
   border-radius: 999px;
   cursor: pointer;
-  transition: background 0.12s, filter 0.12s;
+  transition: filter 0.12s;
 }
 .profile-delete-btn:hover {
-  background: rgba(192, 57, 43, 0.08);
+  filter: brightness(0.95);
 }
 .profile-delete-btn.is-confirm {
   background: var(--danger, #c0392b);
