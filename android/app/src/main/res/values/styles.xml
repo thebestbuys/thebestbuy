@@ -17,6 +17,13 @@
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <!-- Android 12+ splash (SplashScreen API): cream background + the app
+             icon, so the launch screen matches the web splash instead of the
+             default black. -->
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+        <!-- Pre-12 fallback. -->
         <item name="android:background">@drawable/splash</item>
     </style>
 </resources>

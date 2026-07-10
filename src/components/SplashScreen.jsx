@@ -34,7 +34,7 @@ export default function SplashScreen({ onDone }) {
       }
       aria-hidden="true"
     >
-      <span className="splash-logo">Oraklia</span>
+      <img className="splash-logo" src="/splash-logo.png" alt="" draggable="false" />
     </div>
   );
 }

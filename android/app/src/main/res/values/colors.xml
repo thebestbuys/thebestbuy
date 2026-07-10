@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Cream background used by the launch splash so there's no black flash
+         before the web splash (which uses the same var(--bg) = #FAF8F4). -->
+    <color name="splash_background">#FAF8F4</color>
+</resources>
