@@ -51,7 +51,7 @@ export const THEME_SCHEMA = [
 
   // ── Polices (shared) ──
   { group: 'Polices', token: 'fontSans',    cssVar: '--sans',    type: 'font', label: 'Interface', def: FONT_OPTIONS[0].value },
-  { group: 'Polices', token: 'fontDisplay', cssVar: '--display', type: 'font', label: 'Titres',    def: FONT_OPTIONS[4].value },
+  { group: 'Polices', token: 'fontDisplay', cssVar: '--display', type: 'font', label: 'Titres',    def: FONT_OPTIONS[3].value },
 
   // ── Tailles (shared) ──
   { group: 'Tailles', token: 'baseSize', cssVar: '--base-size', type: 'size', label: 'Texte',    def: 14, min: 12, max: 18, step: 0.5, unit: 'px' },

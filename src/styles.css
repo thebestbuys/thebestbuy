@@ -25,7 +25,7 @@
   --radius: 14px;
   --radius-lg: 20px;
   --base-size: 14px;
-  --display: "Instrument Serif", "Times New Roman", serif;
+  --display: "Outfit", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --sans:
     "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 
@@ -580,7 +580,7 @@ ul {
   padding: 40px 44px 36px;
 }
 .legal-title {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--display);
   font-size: 34px;
   font-weight: 400;
   margin: 0 0 14px;
@@ -677,7 +677,7 @@ ul {
 }
 .legal-page-back:hover { color: var(--accent); }
 .legal-page-brand {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--display);
   font-size: 22px;
   color: var(--accent);
 }
@@ -5667,7 +5667,7 @@ select.profile-input {
   margin-bottom: 28px;
 }
 .home-guides-title {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--display);
   font-size: 30px;
   font-weight: 400;
   color: var(--text);
@@ -5939,9 +5939,10 @@ select.profile-input {
 }
 .guide-back:hover { color: var(--text); }
 .guide-brand {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-style: italic;
+  font-family: var(--display);
+  font-weight: 700;
   font-size: 20px;
+  letter-spacing: -0.02em;
   color: var(--text);
 }
 .guide-article {
@@ -5959,7 +5960,7 @@ select.profile-input {
   margin-bottom: 14px;
 }
 .guide-title {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--display);
   font-size: 42px;
   font-weight: 400;
   line-height: 1.1;
