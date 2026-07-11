@@ -756,7 +756,7 @@ function ProductQa({ product }) {
   );
 }
 
-function ProductDetail({ product, onClose, onBuy }) {
+function ProductDetail({ product, onClose, onBuy, inline = false }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
@@ -768,11 +768,8 @@ function ProductDetail({ product, onClose, onBuy }) {
   const [owned, setOwned] = useState(() => isOwned(user?.sub, product.id));
   useEffect(() => { setOwned(isOwned(user?.sub, product.id)); }, [user?.sub, product.id]);
   const toggleOwn = () => setOwned(toggleOwned(user?.sub, product));
-  return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
-        <div className="modal-scroll">
+  const body = (
+    <div className="modal-scroll">
         <div className={'modal-grid' + (hasImage ? '' : ' no-image')}>
           {hasImage && (
             <div className="modal-left">
@@ -869,7 +866,25 @@ function ProductDetail({ product, onClose, onBuy }) {
             </div>
           </div>
         </div>
-        </div>
+    </div>
+  );
+
+  if (inline) {
+    return (
+      <div className="product-inline">
+        <button type="button" className="product-inline-back" onClick={onClose}>
+          <span aria-hidden="true">←</span> {t('product.backToResults')}
+        </button>
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+        {body}
       </div>
     </div>
   );
@@ -1793,9 +1808,11 @@ export default function App() {
 
         <div
           className="results-content"
-          key={cardsReady && recommendedProducts.length > 0 ? 'cards-' + refreshKey + '-' + (viewingPastIndex ?? 'live') : (loadingProducts || skelLeaving) ? 'loading' : 'placeholder'}
+          key={selected ? 'detail-' + selected.id : cardsReady && recommendedProducts.length > 0 ? 'cards-' + refreshKey + '-' + (viewingPastIndex ?? 'live') : (loadingProducts || skelLeaving) ? 'loading' : 'placeholder'}
         >
-          {cardsReady && recommendedProducts.length > 0 ? (
+          {selected ? (
+            <ProductDetail inline product={selected} onClose={navBack} onBuy={handleBuy} />
+          ) : cardsReady && recommendedProducts.length > 0 ? (
             <>
               {top && (
                 <div className={'hero-wrap variant-' + t.heroVariant}>
@@ -1870,7 +1887,9 @@ export default function App() {
       </main>
       )}
 
-      {selected && (
+      {/* Narrow: the product detail is a full-screen modal. Wide: it renders
+          inline inside the right results panel (see results-content above). */}
+      {selected && narrow && (
         <ProductDetail
           product={selected}
           onClose={navBack}

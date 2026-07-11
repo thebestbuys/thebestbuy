@@ -1590,6 +1590,55 @@ button.chat-bubble.chat-editable {
   }
 }
 
+/* Product detail rendered INLINE inside the right results panel (wide layout),
+   replacing the cards. The swap is animated by .results-content's contentFade
+   (its key includes the selected id). Fills the panel and scrolls internally. */
+.product-inline {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.product-inline-back {
+  flex-shrink: 0;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  appearance: none;
+  border: 0.5px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  margin-bottom: 14px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.product-inline-back:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.product-inline .modal-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+/* Single full-width column + a card frame so it reads as one panel-filling block. */
+.product-inline .modal-grid {
+  grid-template-columns: 1fr;
+  background: var(--bg-elev);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.product-inline .modal-left {
+  max-height: 340px;
+}
+
 /* ───────────────────────── Hero card ──────────────────────────── */
 .hero-card {
   position: relative;
