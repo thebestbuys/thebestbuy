@@ -39,9 +39,9 @@ const TXT = {
     website: 'Site web',
     domain: 'Nom de domaine',
     registrar: 'Registrar',
-    affiliateTitle: "Programme Partenaires d'Amazon",
+    affiliateTitle: "Programmes d'affiliation",
     affiliate:
-      "En tant que Partenaire Amazon, Oraklia réalise un bénéfice sur les achats remplissant les conditions requises. Le site Oraklia participe au Programme Partenaires d'Amazon EU, un programme d'affiliation conçu pour permettre à des sites de percevoir une rémunération grâce à la création de liens vers Amazon.fr. Les prix et la disponibilité des produits affichés sont donnés à titre indicatif et sont susceptibles d'évoluer ; seules les informations présentes sur Amazon.fr au moment de l'achat font foi.",
+      "En tant que Partenaire Amazon, Oraklia réalise un bénéfice sur les achats remplissant les conditions requises. Le site Oraklia participe au Programme Partenaires d'Amazon EU, un programme d'affiliation conçu pour permettre à des sites de percevoir une rémunération grâce à la création de liens vers Amazon.fr. Oraklia participe également à d'autres programmes d'affiliation via la plateforme Awin, notamment celui de Rakuten (fr.shopping.rakuten.com), et perçoit une commission sur les achats éligibles réalisés à la suite d'un clic sur ces liens. Les prix et la disponibilité des produits affichés sont donnés à titre indicatif et sont susceptibles d'évoluer ; seules les informations présentes sur le site marchand au moment de l'achat font foi.",
     ipTitle: 'Propriété intellectuelle',
     ip:
       "L'ensemble des éléments composant le site Oraklia (textes, mise en page, charte graphique, logo) est la propriété exclusive de l'éditeur, sauf mention contraire. Les marques, noms de produits et visuels appartiennent à leurs propriétaires respectifs. Toute reproduction, représentation ou diffusion, totale ou partielle, sans autorisation préalable est interdite et constituerait une contrefaçon.",
@@ -50,7 +50,7 @@ const TXT = {
       "Oraklia ne collecte que les données strictement nécessaires au fonctionnement du service (notamment lors de la connexion à un compte). Conformément au Règlement Général sur la Protection des Données (RGPD) et à la loi « Informatique et Libertés », vous disposez d'un droit d'accès, de rectification et de suppression de vos données. Pour exercer ce droit, contactez-nous à l'adresse darknortar@gmail.com.",
     cookiesTitle: 'Cookies',
     cookies:
-      "Le site peut déposer des cookies techniques nécessaires à son bon fonctionnement. Les liens vers Amazon.fr peuvent déposer des cookies d'affiliation permettant d'attribuer la source du trafic. Vous pouvez configurer votre navigateur pour refuser les cookies.",
+      "Le site peut déposer des cookies techniques nécessaires à son bon fonctionnement. Les liens vers nos partenaires marchands (Amazon.fr, ainsi que Rakuten via la plateforme Awin) peuvent déposer des cookies d'affiliation permettant d'attribuer la source du trafic. Vous pouvez configurer votre navigateur pour refuser les cookies.",
     updated: 'Dernière mise à jour',
   },
   en: {
@@ -70,9 +70,9 @@ const TXT = {
     website: 'Website',
     domain: 'Domain name',
     registrar: 'Registrar',
-    affiliateTitle: 'Amazon Associates Programme',
+    affiliateTitle: 'Affiliate programmes',
     affiliate:
-      'As an Amazon Associate, Oraklia earns from qualifying purchases. The Oraklia website participates in the Amazon EU Associates Programme, an affiliate programme designed to allow websites to earn a commission by linking to Amazon.fr. Displayed prices and availability are indicative and subject to change; only the information shown on Amazon.fr at the time of purchase is authoritative.',
+      'As an Amazon Associate, Oraklia earns from qualifying purchases. The Oraklia website participates in the Amazon EU Associates Programme, an affiliate programme designed to allow websites to earn a commission by linking to Amazon.fr. Oraklia also participates in other affiliate programmes through the Awin platform, notably Rakuten (fr.shopping.rakuten.com), and earns a commission on eligible purchases made after clicking those links. Displayed prices and availability are indicative and subject to change; only the information shown on the merchant site at the time of purchase is authoritative.',
     ipTitle: 'Intellectual property',
     ip:
       'All elements making up the Oraklia website (text, layout, graphic design, logo) are the exclusive property of the publisher, unless otherwise stated. Trademarks, product names and images belong to their respective owners. Any reproduction, representation or distribution, in whole or in part, without prior authorization is prohibited and would constitute infringement.',
@@ -81,7 +81,7 @@ const TXT = {
       'Oraklia only collects the data strictly necessary for the service to operate (notably when signing in to an account). In accordance with the General Data Protection Regulation (GDPR), you have the right to access, rectify and delete your data. To exercise this right, contact us at darknortar@gmail.com.',
     cookiesTitle: 'Cookies',
     cookies:
-      'The site may set technical cookies necessary for it to work properly. Links to Amazon.fr may set affiliate cookies allowing the source of traffic to be attributed. You can configure your browser to refuse cookies.',
+      'The site may set technical cookies necessary for it to work properly. Links to our merchant partners (Amazon.fr, as well as Rakuten via the Awin platform) may set affiliate cookies allowing the source of traffic to be attributed. You can configure your browser to refuse cookies.',
     updated: 'Last updated',
   },
 };

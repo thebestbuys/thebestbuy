@@ -42,9 +42,10 @@ const TXT = {
         ],
       },
       {
-        h: 'Liens d’affiliation Amazon',
+        h: "Liens d’affiliation",
         p: [
           "Oraklia est participant au Programme Partenaires d'Amazon. Lorsque vous cliquez sur un lien vers Amazon.fr, Amazon peut déposer des cookies permettant d'attribuer la source du trafic et, le cas échéant, de nous rémunérer sur les achats éligibles. Le traitement de vos données sur Amazon.fr relève de la politique de confidentialité d'Amazon.",
+          "Oraklia propose également des liens vers d'autres marchands (notamment Rakuten) via la plateforme d'affiliation Awin. Un clic sur ces liens peut déposer des cookies d'affiliation attribuant la source du trafic afin de nous rémunérer sur les achats éligibles ; le traitement de vos données sur ces sites relève de leurs propres politiques de confidentialité (Awin, Rakuten).",
         ],
       },
       {
@@ -54,7 +55,7 @@ const TXT = {
           "Google : authentification (connexion Google) et traitement par l'IA (API Gemini).",
           "Vercel : hébergement de l'application et des fonctions serveur.",
           "Fournisseurs de connexion sociale que vous choisissez (Apple, Facebook, X/Twitter).",
-          "Amazon : via les liens d'affiliation. Nous ne vendons pas vos données personnelles.",
+          "Amazon, ainsi que Rakuten via la plateforme Awin : via les liens d'affiliation. Nous ne vendons pas vos données personnelles.",
         ],
       },
       {
@@ -72,7 +73,7 @@ const TXT = {
       {
         h: 'Cookies et stockage local',
         p: [
-          "Le service utilise le stockage local de votre appareil pour mémoriser vos préférences, votre session et votre contenu hors ligne. Des cookies techniques peuvent être nécessaires à son fonctionnement, et les liens vers Amazon peuvent déposer des cookies d'affiliation. Vous pouvez configurer votre navigateur pour les refuser.",
+          "Le service utilise le stockage local de votre appareil pour mémoriser vos préférences, votre session et votre contenu hors ligne. Des cookies techniques peuvent être nécessaires à son fonctionnement, et les liens vers nos partenaires marchands (Amazon, Rakuten via Awin) peuvent déposer des cookies d'affiliation. Vous pouvez configurer votre navigateur pour les refuser.",
         ],
       },
       {
@@ -132,9 +133,10 @@ const TXT = {
         ],
       },
       {
-        h: 'Amazon affiliate links',
+        h: 'Affiliate links',
         p: [
           'Oraklia is a participant in the Amazon Associates Programme. When you click a link to Amazon.fr, Amazon may set cookies to attribute the source of traffic and, where applicable, to pay us a commission on qualifying purchases. The processing of your data on Amazon.fr is governed by Amazon’s own privacy policy.',
+          'Oraklia also offers links to other merchants (notably Rakuten) through the Awin affiliate platform. Clicking those links may set affiliate cookies attributing the source of traffic so we can be paid a commission on eligible purchases; the processing of your data on those sites is governed by their own privacy policies (Awin, Rakuten).',
         ],
       },
       {
@@ -144,7 +146,7 @@ const TXT = {
           'Google: authentication (Google sign-in) and AI processing (Gemini API).',
           'Vercel: hosting of the application and server functions.',
           'Social sign-in providers you choose (Apple, Facebook, X/Twitter).',
-          'Amazon: via affiliate links. We do not sell your personal data.',
+          'Amazon, as well as Rakuten via the Awin platform: via affiliate links. We do not sell your personal data.',
         ],
       },
       {
@@ -162,7 +164,7 @@ const TXT = {
       {
         h: 'Cookies and local storage',
         p: [
-          'The service uses your device’s local storage to remember your preferences, session and offline content. Technical cookies may be necessary for it to work, and links to Amazon may set affiliate cookies. You can configure your browser to refuse them.',
+          'The service uses your device’s local storage to remember your preferences, session and offline content. Technical cookies may be necessary for it to work, and links to our merchant partners (Amazon, Rakuten via Awin) may set affiliate cookies. You can configure your browser to refuse them.',
         ],
       },
       {

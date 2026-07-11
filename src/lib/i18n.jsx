@@ -62,7 +62,7 @@ const TRANSLATIONS = {
 
     // Footer / legal
     "footer.affiliate":
-      "En tant que Partenaire Amazon, Oraklia réalise un bénéfice sur les achats remplissant les conditions requises.",
+      "En tant que Partenaire Amazon, Oraklia réalise un bénéfice sur les achats remplissant les conditions requises. Oraklia participe aussi à d'autres programmes d'affiliation (dont Awin / Rakuten) et perçoit une commission sur certains achats.",
     "footer.rights": "© {year} Oraklia. Tous droits réservés.",
     "footer.legal": "Mentions légales",
     "footer.privacy": "Confidentialité",
@@ -635,7 +635,7 @@ const TRANSLATIONS = {
 
     // Footer / legal
     "footer.affiliate":
-      "As an Amazon Associate, Oraklia earns from qualifying purchases.",
+      "As an Amazon Associate, Oraklia earns from qualifying purchases. Oraklia also participates in other affiliate programmes (including Awin / Rakuten) and earns a commission on some purchases.",
     "footer.rights": "© {year} Oraklia. All rights reserved.",
     "footer.legal": "Legal notices",
     "footer.privacy": "Privacy policy",
