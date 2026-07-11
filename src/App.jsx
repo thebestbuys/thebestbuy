@@ -1767,7 +1767,9 @@ export default function App() {
         editQuestion={editQuestion}
         onRetry={retryAction}
         onShowOthers={recommendedProducts.length > 0 && viewingPastIndex === null ? showOtherProducts : null}
-        onRecommendNow={answers.length >= 1 && category !== 'gift' ? recommendNow : null}
+        {/* Desktop moves this into the results panel's top nav (same slot as
+            "Voir d'autres produits"); mobile keeps it at the bottom of the chat. */}
+        onRecommendNow={narrow && answers.length >= 1 && category !== 'gift' ? recommendNow : null}
         guide={resultsGuide}
         onOpenGuide={navOpenGuide}
         budget={budgetBounds}
@@ -1894,7 +1896,26 @@ export default function App() {
               </div>
             </>
           ) : (
-            <ResultsPlaceholder category={category} />
+            <>
+              {/* Before any propositions exist, the "Voir sélection" shortcut sits
+                  in the SAME top slot as "Voir d'autres produits" (they're never
+                  shown together). Desktop-only — the results panel is !narrow. */}
+              {answers.length >= 1 && category !== 'gift' && (
+                <div className="results-nav">
+                  <button
+                    type="button"
+                    className="recommend-now-btn"
+                    onClick={recommendNow}
+                    disabled={isTyping}
+                    title={tr('chat.recommendNow')}
+                  >
+                    <span aria-hidden="true">✦</span>
+                    <span className="recommend-now-label">{tr('chat.recommendNowShort')}</span>
+                  </button>
+                </div>
+              )}
+              <ResultsPlaceholder category={category} />
+            </>
           )}
         </div>
       </main>
