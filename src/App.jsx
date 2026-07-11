@@ -680,7 +680,7 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
 // product (api/chat.js mode:'product_qa'). `history` is sent back on every
 // turn so follow-ups stay coherent without re-sending the whole product each
 // time the user types.
-function ProductQa({ product }) {
+function ProductQa({ product, sideMode = false }) {
   const { t, lang } = useI18n();
   const [qaHistory, setQaHistory] = useState([]); // internal, for API coherence
   const [lastReply, setLastReply] = useState(''); // the ONLY thing displayed
@@ -718,8 +718,8 @@ function ProductQa({ product }) {
   };
 
   return (
-    <div className="modal-qa">
-      <div className="modal-section-title">{t('product.qaTitle')}</div>
+    <div className={'modal-qa' + (sideMode ? ' qa-side-body' : '')}>
+      {!sideMode && <div className="modal-section-title">{t('product.qaTitle')}</div>}
       {!lastReply && !qaLoading ? (
         <button type="button" className="modal-qa-ask-btn" onClick={askDetailed} disabled={qaLoading}>
           <span aria-hidden="true">✦</span>
@@ -872,7 +872,9 @@ function ProductDetail({ product, onClose, onBuy, inline = false }) {
         </div>
       </div>
       <div className="pi-bottom">
-        <ProductQa product={product} />
+        {/* Desktop (inline) moves the Q&A into the LEFT panel; the overlay sheet
+            (mobile) keeps it here since it has no side panel. */}
+        {!inline && <ProductQa product={product} />}
         <div className="pi-actions">{buyActions}</div>
       </div>
     </>
@@ -1752,6 +1754,15 @@ export default function App() {
 
   return (
     <div className={'app' + (narrow ? ' app-narrow' : '')}>
+      {selected && !narrow ? (
+        <aside className="chat-panel qa-side">
+          <div className="qa-side-head">
+            <div className="qa-side-eyebrow">{selected.brand}</div>
+            <div className="qa-side-name">{selected.model}</div>
+          </div>
+          <ProductQa product={selected} sideMode />
+        </aside>
+      ) : (
       <ChatPanel
         messages={messages}
         currentQuestion={currentQuestion}
@@ -1799,6 +1810,7 @@ export default function App() {
           </>
         ) : null}
       />
+      )}
 
       {!narrow && (
       <main className="results-panel">

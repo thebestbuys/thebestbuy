@@ -1801,29 +1801,60 @@ button.chat-bubble.chat-editable {
   min-height: 0;
 }
 .results-panel .pi-media .prod-gallery > .prod-img-wrap[data-size="modal"] {
-  max-height: 38vh;
+  max-height: 46vh;
 }
 .results-panel .pi-media .prod-gallery-thumbs {
-  max-height: 38vh;
+  max-height: 46vh;
   overflow: hidden;
 }
-/* Bottom = Q&A + buy actions. The BUY button must ALWAYS stay visible, so pin
-   .pi-actions and let the (secondary) Q&A be the part that shrinks/scrolls. */
+/* The Q&A moved to the left panel, so only the buy actions live at the bottom
+   of the inline detail — pin them to the bottom of the panel. */
 .results-panel .pi-bottom {
+  flex: 0 0 auto;
+  margin-top: auto;
+}
+
+/* ── Left Q&A side panel (desktop: shown while a product fills the right panel) ── */
+.qa-side {
+  overflow: hidden;
+}
+.qa-side-head {
+  padding: 24px 26px 16px;
+  border-bottom: 0.5px solid var(--border);
+}
+.qa-side-eyebrow {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+.qa-side-name {
+  font-family: var(--display);
+  font-size: 22px;
+  line-height: 1.12;
+  color: var(--text);
+}
+/* ProductQa in side mode fills the column: answer area grows/scrolls, the ask
+   input stays pinned at the bottom (chat-like). */
+.modal-qa.qa-side-body {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  gap: 14px;
+  padding: 22px 26px calc(22px + env(safe-area-inset-bottom));
 }
-.results-panel .pi-bottom .modal-qa {
+.qa-side-body .modal-qa-answer {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   scrollbar-width: none;
 }
-.results-panel .pi-bottom .modal-qa::-webkit-scrollbar { width: 0; height: 0; display: none; }
-.results-panel .pi-actions {
-  flex: 0 0 auto;
+.qa-side-body .modal-qa-answer::-webkit-scrollbar { width: 0; height: 0; display: none; }
+.qa-side-body .modal-qa-input {
+  margin-top: auto;
 }
 
 /* Overlay product detail: a full-screen sheet reusing the exact top/bottom body
