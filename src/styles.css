@@ -4354,11 +4354,6 @@ button.chat-bubble.chat-editable {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
-.friend-btn-caret {
-  margin-left: 4px;
-  font-size: 10px;
-  opacity: 0.8;
-}
 /* Expanded state: the button keeps white text would clash on accent, so use the
    soft-accent fill with accent text (readable) instead of hiding the label. */
 .friend-btn.is-active {
@@ -4378,21 +4373,26 @@ button.chat-bubble.chat-editable {
   overflow: hidden;
 }
 /* Smooth expand: the wrapper animates its height (0fr → 1fr) while the inner
-   content stays at natural size, so both opening AND closing glide. */
-.friend-lists-wrap {
+   content stays at natural size, so both opening AND closing glide. Used for a
+   friend's lists AND for a list's items. */
+.friend-lists-wrap,
+.pub-items-wrap {
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 240ms ease;
 }
-.friend-lists-wrap.is-open {
+.friend-lists-wrap.is-open,
+.pub-items-wrap.is-open {
   grid-template-rows: 1fr;
 }
-.friend-lists-inner {
+.friend-lists-inner,
+.pub-items-inner {
   min-height: 0;
   overflow: hidden;
 }
 @media (prefers-reduced-motion: reduce) {
-  .friend-lists-wrap { transition: none; }
+  .friend-lists-wrap,
+  .pub-items-wrap { transition: none; }
 }
 .friend-avatar-fallback {
   display: inline-flex;
