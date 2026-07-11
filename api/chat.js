@@ -639,12 +639,11 @@ async function checkAmazon(brand, model, searchContext, opts = {}) {
     const item = pickBestItem(items, brand, model, expectedPrice);
     if (!item || !item.asin) return { found: false };
 
-    // Brand/model for display: prefer the real Amazon title. Split the same way
-    // the old scraper did - "ASUS Zenbook S 13..." -> brand=ASUS, model=rest.
-    const titleWords = item.title ? item.title.split(' ') : [];
-    const amazonBrand = titleWords[0] || brand;
-    const amazonModel = titleWords.slice(1).join(' ') || model;
-
+    // NOTE: we deliberately do NOT derive brand/model from the Amazon title.
+    // Amazon titles are long spec dumps ("Sony WH-1000XM5 Casque Bluetooth sans
+    // Fil…") — splitting them gave a junk "brand" (first word). The caller keeps
+    // Gemini's concise brand/model for display; `title` is exposed only as the
+    // (optional) full Amazon product name.
     return {
       found: true,
       title: item.title,
@@ -656,8 +655,6 @@ async function checkAmazon(brand, model, searchContext, opts = {}) {
       // Full product gallery (primary + variant shots) for the product page.
       // Always includes image_url as the first entry; may be just that one.
       images: (item.images && item.images.length ? item.images : (item.image ? [item.image] : [])),
-      brand: amazonBrand,
-      model: amazonModel,
       price: item.price ?? null,
       // Amazon's API does not expose numeric star ratings / review counts, so
       // these stay null -> the UI keeps them hidden (amazon_verified rules).
