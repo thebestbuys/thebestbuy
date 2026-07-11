@@ -4344,6 +4344,36 @@ button.chat-bubble.chat-editable {
   background: var(--bg-elev);
   transition: border-color 220ms ease, border-radius 220ms ease;
 }
+/* A friend + their inline-expanded lists (click "Voir ses listes" to toggle). */
+.friend-item {
+  display: flex;
+  flex-direction: column;
+}
+.friend-item.is-expanded > .friend-row {
+  border-color: var(--accent);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.friend-btn-caret {
+  margin-left: 4px;
+  font-size: 10px;
+  opacity: 0.8;
+}
+.friend-btn.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.friend-lists {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 8px 10px 14px;
+  border: 0.5px solid var(--accent);
+  border-top: 0;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  background: var(--bg-soft);
+}
 .friend-avatar-fallback {
   display: inline-flex;
   align-items: center;

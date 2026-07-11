@@ -123,7 +123,14 @@ export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending,
     refresh();
   };
 
+  // Toggle an inline expansion of the friend's public lists right under their
+  // row (click again to collapse). Only one friend is expanded at a time, which
+  // is why pubLists/openListId/listItems can stay single shared states.
   const browse = (f) => {
+    if (viewing?.user_id === f.user_id) {
+      setViewing(null);
+      return;
+    }
     setViewing(f);
     setPubLists(null);
     setOpenListId(null);
@@ -149,19 +156,8 @@ export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending,
     <div className={'sheet-page friends-panel' + (closing ? ' is-closing' : '')} role="dialog" aria-modal="true" aria-labelledby="friends-title">
         <header className="sheet-head">
           <div>
-            {viewing ? (
-              <>
-                <button type="button" className="friends-back" onClick={() => setViewing(null)}>
-                  {t('friends.back')}
-                </button>
-                <h2 className="history-title">{t('friends.theirLists', { name: viewing.display_name })}</h2>
-              </>
-            ) : (
-              <>
-                <h2 id="friends-title" className="history-title">{t('friends.title')}</h2>
-                <p className="history-sub">{t('friends.sub')}</p>
-              </>
-            )}
+            <h2 id="friends-title" className="history-title">{t('friends.title')}</h2>
+            <p className="history-sub">{t('friends.sub')}</p>
           </div>
           <div className="panel-head-actions">
             <PanelHelpButton />
@@ -174,45 +170,6 @@ export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending,
           <div className="history-empty">
             <div className="history-empty-icon">👋</div>
             <div className="history-empty-text">{t('friends.signedOut')}</div>
-          </div>
-        ) : viewing ? (
-          <div className="friends-body">
-            {pubLists === null ? (
-              <div className="friends-hint">…</div>
-            ) : pubLists.length === 0 ? (
-              <div className="friends-hint">{t('friends.noPublicLists')}</div>
-            ) : (
-              pubLists.map((l) => (
-                <div key={l.id} className="pub-list">
-                  <button type="button" className="pub-list-head" onClick={() => openList(l)}>
-                    <span className="pub-list-name">🌐 {l.name}</span>
-                    <span className="sel-list-n">{t('lists.count', { n: l.item_count })}</span>
-                    <span className="pub-list-caret">{openListId === l.id ? '▾' : '▸'}</span>
-                  </button>
-                  {openListId === l.id && (
-                    <ul className="pub-items">
-                      {listItems.map((p, i) => {
-                        const url = amazonUrl(p);
-                        const onAmazon = () => logLinkClick(p).catch(() => {});
-                        return (
-                          <li key={i} className="pub-item">
-                            <a className="pub-item-img" href={url} target="_blank" rel="noopener noreferrer sponsored" title={t('product.viewAmazon')} onClick={onAmazon}>
-                              <ProductImage product={p} size="small" />
-                            </a>
-                            <a className="pub-item-main" href={url} target="_blank" rel="noopener noreferrer sponsored" onClick={onAmazon}>
-                              <span className="pub-item-title">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
-                              {p.price != null && (
-                                <span className="pub-item-price"><AmazonPrice price={p.price} /></span>
-                              )}
-                            </a>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
-              ))
-            )}
           </div>
         ) : (
           <div className="friends-body">
@@ -309,18 +266,64 @@ export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending,
               <div className="friends-hint">{t('friends.empty')}</div>
             ) : (
               <ul className="friends-list">
-                {friends.map((f) => (
-                  <li key={f.user_id} className="friend-row">
-                    <Avatar name={f.display_name} url={f.avatar_url} />
-                    <span className="friend-name">{f.display_name}</span>
-                    <button type="button" className="friend-btn" onClick={() => browse(f)}>
-                      {t('friends.viewLists')}
-                    </button>
-                    <button type="button" className="friend-btn ghost" onClick={() => remove(f)}>
-                      {t('friends.remove')}
-                    </button>
+                {friends.map((f) => {
+                  const expanded = viewing?.user_id === f.user_id;
+                  return (
+                  <li key={f.user_id} className={'friend-item' + (expanded ? ' is-expanded' : '')}>
+                    <div className="friend-row">
+                      <Avatar name={f.display_name} url={f.avatar_url} />
+                      <span className="friend-name">{f.display_name}</span>
+                      <button type="button" className={'friend-btn' + (expanded ? ' is-active' : '')} onClick={() => browse(f)}>
+                        {t('friends.viewLists')}
+                        <span className="friend-btn-caret" aria-hidden="true">{expanded ? '▾' : '▸'}</span>
+                      </button>
+                      <button type="button" className="friend-btn ghost" onClick={() => remove(f)}>
+                        {t('friends.remove')}
+                      </button>
+                    </div>
+                    {expanded && (
+                      <div className="friend-lists">
+                        {pubLists === null ? (
+                          <div className="friends-hint">…</div>
+                        ) : pubLists.length === 0 ? (
+                          <div className="friends-hint">{t('friends.noPublicLists')}</div>
+                        ) : (
+                          pubLists.map((l) => (
+                            <div key={l.id} className="pub-list">
+                              <button type="button" className="pub-list-head" onClick={() => openList(l)}>
+                                <span className="pub-list-name">🌐 {l.name}</span>
+                                <span className="sel-list-n">{t('lists.count', { n: l.item_count })}</span>
+                                <span className="pub-list-caret">{openListId === l.id ? '▾' : '▸'}</span>
+                              </button>
+                              {openListId === l.id && (
+                                <ul className="pub-items">
+                                  {listItems.map((p, i) => {
+                                    const url = amazonUrl(p);
+                                    const onAmazon = () => logLinkClick(p).catch(() => {});
+                                    return (
+                                      <li key={i} className="pub-item">
+                                        <a className="pub-item-img" href={url} target="_blank" rel="noopener noreferrer sponsored" title={t('product.viewAmazon')} onClick={onAmazon}>
+                                          <ProductImage product={p} size="small" />
+                                        </a>
+                                        <a className="pub-item-main" href={url} target="_blank" rel="noopener noreferrer sponsored" onClick={onAmazon}>
+                                          <span className="pub-item-title">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
+                                          {p.price != null && (
+                                            <span className="pub-item-price"><AmazonPrice price={p.price} /></span>
+                                          )}
+                                        </a>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </div>
