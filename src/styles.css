@@ -1085,21 +1085,23 @@ ul {
   padding-left: 4px;
   animation: bubbleIn 0.4s ease 0.1s both;
 }
+/* Answer suggestions: accent-tinted pills so they clearly read as clickable
+   options, distinct from the bot's white message bubbles. */
 .choice-chip {
   appearance: none;
-  background: var(--bg-elev);
-  border: 0.5px solid var(--border);
-  color: var(--text);
+  background: var(--accent-soft);
+  border: 0.5px solid transparent;
+  color: var(--accent);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   padding: 9px 14px;
   border-radius: 999px;
   transition: all 0.15s ease;
 }
 .choice-chip:hover {
   border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--accent);
+  color: #fff;
   transform: translateY(-1px);
 }
 
