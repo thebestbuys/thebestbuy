@@ -24,6 +24,7 @@ const ORIGIN = 'https://oraklia.fr';
 // French labels (mirror of the i18n FR dict for the static guide chrome).
 const L = {
   back: 'Retour',
+  close: 'Fermer',
   meta: (updated, time) => `Guide d'achat · ${updated} · ${time} de lecture`,
   checklist: 'La checklist à retenir',
   giftChecklist: 'Nos idées en bref',
@@ -128,9 +129,9 @@ function guideBody(g) {
     })
     .join('');
   const isGift = g.type === 'gift';
-  return `<div class="guide-page"><div class="guide-topbar"><button type="button" class="guide-back"><span aria-hidden="true">←</span> ${esc(
-    L.back,
-  )}</button><div class="guide-topbar-right"><span class="guide-brand">Oraklia</span></div></div><article class="guide-article"><header class="guide-header"><div class="guide-eyebrow">${esc(
+  return `<div class="guide-page"><div class="guide-topbar"><button type="button" class="guide-close" aria-label="${escAttr(
+    L.close,
+  )}">✕</button></div><article class="guide-article"><header class="guide-header"><div class="guide-eyebrow">${esc(
     L.meta(g.updated, g.readTime),
   )}</div><h1 class="guide-title">${esc(g.title)}</h1><p class="guide-subtitle">${esc(
     g.subtitle,

@@ -6006,6 +6006,27 @@ select.profile-input {
   transition: color 0.15s ease;
 }
 .guide-back:hover { color: var(--text); }
+/* Guide article: a plain ✕ close on the right (replaces the "Retour" text
+   button + brand + lang toggle). margin-left:auto keeps it right without
+   touching the shared .guide-topbar layout used by the gift landing. */
+.guide-close {
+  appearance: none;
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 0.5px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.guide-close:hover { background: var(--bg-soft); color: var(--text); }
 .guide-brand {
   font-family: var(--display);
   font-weight: 700;

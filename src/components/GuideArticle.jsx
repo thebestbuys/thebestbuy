@@ -1,24 +1,15 @@
 import { affiliateSearch } from '../data/guides.js';
 import { useI18n } from '../lib/i18n.jsx';
-import { useAuth } from '../lib/auth.jsx';
-import LangToggle from './LangToggle.jsx';
 
 export default function GuideArticle({ guide, onBack, onStartAdvisor }) {
   const { t } = useI18n();
-  const { user } = useAuth();
   if (!guide) return null;
   const isGift = guide.type === 'gift';
 
   return (
     <div className="guide-page">
       <div className="guide-topbar">
-        <button type="button" className="guide-back" onClick={onBack}>
-          <span aria-hidden="true">←</span> {t('guide.back')}
-        </button>
-        <div className="guide-topbar-right">
-          {user && <LangToggle />}
-          <span className="guide-brand">Oraklia</span>
-        </div>
+        <button type="button" className="guide-close" onClick={onBack} aria-label={t('auth.close')}>✕</button>
       </div>
 
       <article className="guide-article">
