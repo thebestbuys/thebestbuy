@@ -63,6 +63,17 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
+  /* Hide the document scrollbar — scrolling still works (wheel/touch), the
+     footer stays reachable. The visible page scrollbar was bleeding through
+     full-screen panels (e.g. Mes amis) on the right edge. */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge/IE */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none; /* Chromium / WebKit (Android WebView, Chrome) */
 }
 body {
   font-family: var(--sans);
