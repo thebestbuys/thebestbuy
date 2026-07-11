@@ -2573,7 +2573,6 @@ button.chat-bubble.chat-editable {
    one product (api/chat.js mode:'product_qa'). */
 .modal-qa {
   margin-top: 8px;
-  margin-bottom: 24px;
 }
 .modal-qa-ask-btn {
   display: inline-flex;
