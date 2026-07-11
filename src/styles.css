@@ -2545,6 +2545,7 @@ button.chat-bubble.chat-editable {
   gap: 2px;
   font-family: var(--display);
   font-size: 38px;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
 }
@@ -3798,6 +3799,7 @@ button.chat-bubble.chat-editable {
 }
 .modal-price .a-price {
   font-size: 38px;
+  font-weight: 700;
 }
 .small-price .a-price {
   font-size: 22px;
