@@ -1897,23 +1897,6 @@ export default function App() {
             <ResultsPlaceholder category={category} />
           )}
         </div>
-
-        {/* Footer hidden on the inline product detail so it can fit the panel
-            without scrolling. */}
-        {!selected && (
-          <footer className="results-footer">
-            <span className="results-footer-affiliate">{tr('footer.affiliate')}</span>
-            <span className="results-footer-meta">
-              {tr('footer.copyrightShort', { year: new Date().getFullYear() })} ·{' '}
-              <button type="button" className="home-footer-link" onClick={navOpenLegal}>
-                {tr('footer.legal')}
-              </button>{' · '}
-              <button type="button" className="home-footer-link" onClick={navOpenPrivacy}>
-                {tr('footer.privacy')}
-              </button>
-            </span>
-          </footer>
-        )}
       </main>
       )}
 
