@@ -307,7 +307,10 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
             {editing && i === editMsgIndex && (
               <div className="chat-edit-panel">
                 <div className="chat-edit-head">
-                  <span className="chat-edit-q">{editQuestion.text}</span>
+                  <div className="chat-edit-headmain">
+                    <span className="chat-edit-eyebrow"><span aria-hidden="true">✎</span> {t('chat.editAnswer')}</span>
+                    <span className="chat-edit-q">{editQuestion.text}</span>
+                  </div>
                   <button type="button" className="chat-edit-cancel" onClick={onCancelEdit} aria-label={t('auth.close')}>✕</button>
                 </div>
                 <ChoiceControl
