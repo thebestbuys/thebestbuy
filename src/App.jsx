@@ -847,6 +847,17 @@ function ProductDetail({ product, onClose, onBuy, inline = false }) {
       >
         {t('product.viewAmazon')}
       </a>
+      {product.rakuten_url && (
+        <a
+          className="btn-merchant big btn-rakuten"
+          href={product.rakuten_url}
+          target="_blank"
+          rel="noopener noreferrer sponsored"
+          onClick={() => onBuy(product)}
+        >
+          {t('product.viewRakuten')}
+        </a>
+      )}
     </div>
   );
 

@@ -1,4 +1,5 @@
 import { searchItems, creatorsConfigured } from './_creators.js';
+import { rakutenSearchLink } from './_awin.js';
 import { logApiCalls, setRequestUser, setRequestConversation } from './_metrics.js';
 
 // Primary + backup models are env-overridable. On the free tier each model has
@@ -1098,7 +1099,12 @@ export default async function handler(req, res) {
         images: [],
       });
     }
-    parsed.products = finalProducts.slice(0, 3);
+    // Attach a secondary Rakuten FR buy link (tracked via Awin) to every product,
+    // alongside Amazon. Link-only for now (no verified Rakuten price yet).
+    parsed.products = finalProducts.slice(0, 3).map((p) => ({
+      ...p,
+      rakuten_url: rakutenSearchLink(p.brand, p.model),
+    }));
     directCount = verifiedProducts.length;
   }
 
