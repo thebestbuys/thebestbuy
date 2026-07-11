@@ -1767,8 +1767,6 @@ export default function App() {
         editQuestion={editQuestion}
         onRetry={retryAction}
         onShowOthers={recommendedProducts.length > 0 && viewingPastIndex === null ? showOtherProducts : null}
-        {/* Desktop moves this into the results panel's top nav (same slot as
-            "Voir d'autres produits"); mobile keeps it at the bottom of the chat. */}
         onRecommendNow={narrow && answers.length >= 1 && category !== 'gift' ? recommendNow : null}
         guide={resultsGuide}
         onOpenGuide={navOpenGuide}
