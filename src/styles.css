@@ -1218,7 +1218,7 @@ button.chat-bubble.chat-editable {
 /* In-place answer editor (under the bubble being edited). */
 .chat-edit-panel {
   align-self: stretch;
-  background: var(--accent-soft, rgba(0, 0, 0, 0.03));
+  background: #eceae6;
   border: 0.5px solid var(--border);
   border-radius: 14px;
   padding: 12px 14px;
