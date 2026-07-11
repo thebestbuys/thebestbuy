@@ -1843,12 +1843,14 @@ button.chat-bubble.chat-editable {
 .price-est-range {
   font-family: var(--display);
   font-size: 26px;
+  font-weight: 700;
   line-height: 1.05;
   color: var(--text-muted);
   letter-spacing: -0.01em;
 }
 .small-price-est {
   font-size: 16px;
+  font-weight: 700;
   color: var(--text-muted);
 }
 .modal-price-note {
@@ -3778,16 +3780,16 @@ button.chat-bubble.chat-editable {
 }
 .a-price-whole {
   font-size: 1em;
-  font-weight: 400;
+  font-weight: 700;
   letter-spacing: -0.025em;
 }
 .a-price-decimal {
-  font-weight: 400;
+  font-weight: 700;
 }
 .a-price-fraction,
 .a-price-symbol {
   font-size: 0.5em;
-  font-weight: 400;
+  font-weight: 700;
   margin-top: 0.07em;
 }
 .a-price-symbol {
