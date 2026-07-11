@@ -1866,8 +1866,10 @@ button.chat-bubble.chat-editable {
   border-radius: 999px;
   font-size: 14px;
   font-weight: 600;
+  text-decoration: none;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   transition:
     filter 0.15s ease,
@@ -2607,12 +2609,22 @@ button.chat-bubble.chat-editable {
   border-radius: 12px;
   padding: 12px 14px;
   margin-bottom: 4px;
+  animation: qa-fade 0.28s ease;
 }
 .modal-qa-answer .chat-bubble-text {
   white-space: pre-line;
   font-size: 13.5px;
   line-height: 1.5;
   color: var(--text);
+  animation: qa-fade 0.3s ease;
+}
+@keyframes qa-fade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal-qa-answer,
+  .modal-qa-answer .chat-bubble-text { animation: none; }
 }
 .modal-qa-error {
   font-size: 12.5px;
@@ -3603,6 +3615,19 @@ button.chat-bubble.chat-editable {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+/* The three actions — favorite (♥), "Je l'ai déjà" and "Voir sur Amazon" —
+   share the same height and text size so the row reads as one set. */
+.modal-buy .fav-btn-inline {
+  width: 44px;
+  height: 44px;
+}
+.modal-buy .owned-toggle,
+.modal-buy .btn-primary.big {
+  height: 44px;
+  padding: 0 18px;
+  font-size: 14px;
+  line-height: 1;
 }
 /* Phone: the favorite heart, "Je l'ai déjà" toggle and "Voir sur Amazon" CTA
    no longer fit on one row once the owned-toggle was added — the CTA used to

@@ -729,7 +729,7 @@ function ProductQa({ product }) {
           {qaLoading ? (
             <span className="typing"><i/><i/><i/></span>
           ) : (
-            <div className="chat-bubble-text">{lastReply}</div>
+            <div className="chat-bubble-text" key={lastReply}>{lastReply}</div>
           )}
         </div>
       )}
@@ -846,7 +846,6 @@ function ProductDetail({ product, onClose, onBuy, inline = false }) {
           onClick={() => onBuy(product)}
         >
           {t('product.viewAmazon')}
-          <span className="btn-arrow">→</span>
         </a>
       </div>
     </div>
