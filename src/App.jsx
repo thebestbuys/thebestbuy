@@ -1829,6 +1829,45 @@ export default function App() {
             <ProductDetail inline product={selected} onClose={navBack} onBuy={handleBuy} />
           ) : cardsReady && recommendedProducts.length > 0 ? (
             <>
+              {/* Navigation ABOVE the propositions (same logic as mobile): reroll,
+                  page through past/latest batches, with a loading state while a
+                  fresh search is in flight. */}
+              <div className="results-nav">
+                {loadingProducts ? (
+                  <span className="results-nav-loading" aria-live="polite">
+                    <span className="results-spinner" aria-hidden="true" />
+                    {tr('results.searching')}
+                  </span>
+                ) : (
+                  <>
+                    {viewingPastIndex === null && (
+                      <button type="button" className="show-others-btn" onClick={showOtherProducts}>
+                        <span aria-hidden="true">↻</span> {tr('results.showOthers')}
+                      </button>
+                    )}
+                    {viewingPastIndex === null && pastProductBatches.length > 0 && (
+                      <button type="button" className="show-others-btn" onClick={viewPreviousSuggestions}>
+                        <span aria-hidden="true">◀</span> {tr('results.viewPrevious')}
+                      </button>
+                    )}
+                    {viewingPastIndex !== null && (
+                      <button type="button" className="show-others-btn" onClick={viewLatestSuggestions}>
+                        {tr('results.viewLatest')} <span aria-hidden="true">▶</span>
+                      </button>
+                    )}
+                    {viewingPastIndex !== null && viewingPastIndex < pastProductBatches.length - 1 && (
+                      <button type="button" className="show-others-btn" onClick={viewPreviousSuggestions}>
+                        <span aria-hidden="true">◀</span> {tr('results.viewPrevious')}
+                      </button>
+                    )}
+                    {pastProductBatches.length > 1 && viewingPastIndex !== pastProductBatches.length - 1 && (
+                      <button type="button" className="show-others-btn" onClick={viewFirstSuggestions}>
+                        <span aria-hidden="true">⏮</span> {tr('results.viewFirst')}
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
               {top && (
                 <div className={'hero-wrap variant-' + t.heroVariant}>
                   <HeroCard product={top} density={t.density} budget={budgetBounds} onSelect={navOpenProduct} delay={0} />
@@ -1839,38 +1878,13 @@ export default function App() {
                   <SmallCard key={p.id} product={p} rank={i + 2} density={t.density} budget={budgetBounds} onSelect={navOpenProduct} delay={(i + 1) * CARD_IN_STAGGER_MS} />
                 ))}
               </div>
-              <div className="results-actions">
-                {!isTyping && viewingPastIndex === null && (
-                  <button type="button" className="show-others-btn" onClick={showOtherProducts}>
-                    <span aria-hidden="true">↻</span> {tr('results.showOthers')}
-                  </button>
-                )}
-                {viewingPastIndex === null && pastProductBatches.length > 0 && (
-                  <button type="button" className="show-others-btn" onClick={viewPreviousSuggestions}>
-                    <span aria-hidden="true">◀</span> {tr('results.viewPrevious')}
-                  </button>
-                )}
-                {viewingPastIndex !== null && (
-                  <button type="button" className="show-others-btn" onClick={viewLatestSuggestions}>
-                    {tr('results.viewLatest')} <span aria-hidden="true">▶</span>
-                  </button>
-                )}
-                {viewingPastIndex !== null && viewingPastIndex < pastProductBatches.length - 1 && (
-                  <button type="button" className="show-others-btn" onClick={viewPreviousSuggestions}>
-                    <span aria-hidden="true">◀</span> {tr('results.viewPrevious')}
-                  </button>
-                )}
-                {pastProductBatches.length > 1 && viewingPastIndex !== pastProductBatches.length - 1 && (
-                  <button type="button" className="show-others-btn" onClick={viewFirstSuggestions}>
-                    <span aria-hidden="true">⏮</span> {tr('results.viewFirst')}
-                  </button>
-                )}
-                {resultsGuide && viewingPastIndex === null && (
+              {resultsGuide && viewingPastIndex === null && (
+                <div className="results-actions">
                   <button type="button" className="results-guide-link" onClick={() => navOpenGuide(resultsGuide.slug)}>
                     {tr('results.guideCta', { title: resultsGuide.title })}
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </>
           ) : loadingProducts || skelLeaving ? (
             <>
