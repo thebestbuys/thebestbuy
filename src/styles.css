@@ -1681,6 +1681,17 @@ button.chat-bubble.chat-editable {
 .pi-head .modal-why { margin: 0 0 12px; }
 .pi-head .modal-specs { margin-bottom: 0; gap: 5px; }
 .pi-bottom .modal-bottom { margin-top: 0; padding-top: 14px; }
+/* Price now lives in the head (top-right block) instead of the bottom-left. */
+.pi-head .detail-price {
+  margin: 12px 0 14px;
+}
+/* Bottom row: just the actions (favorite / owned / Amazon), right-aligned. */
+.pi-actions {
+  padding-top: 14px;
+  border-top: 0.5px solid var(--border-soft);
+  display: flex;
+  justify-content: flex-end;
+}
 
 /* ───────────────────────── Hero card ──────────────────────────── */
 .hero-card {

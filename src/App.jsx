@@ -805,49 +805,47 @@ function ProductDetail({ product, onClose, onBuy, inline = false }) {
     </>
   );
 
-  const bottom = (
-    <div className="modal-bottom">
-      <div>
-        <div className="modal-price-label">
-          {product.amazon_verified ? t('product.price') : t('product.priceEstimate')}
-        </div>
-        <div className="modal-price">
-          <PriceTag product={product} locale={locale} t={t} variant="hero" />
-        </div>
-        {!product.amazon_verified && product.price != null && (
-          <div className="modal-price-note">{t('product.priceEstimateNote')}</div>
+  const priceBlock = (
+    <div className="detail-price">
+      <div className="modal-price">
+        <PriceTag product={product} locale={locale} t={t} variant="hero" />
+      </div>
+      {!product.amazon_verified && product.price != null && (
+        <div className="modal-price-note">{t('product.priceEstimateNote')}</div>
+      )}
+      <div className="modal-shipping">{t('product.shipping')}</div>
+    </div>
+  );
+
+  const buyActions = (
+    <div className="modal-buy">
+      <FavoriteButton product={product} variant="inline" />
+      <button
+        type="button"
+        className={'owned-toggle' + (owned ? ' on' : '')}
+        onClick={toggleOwn}
+        aria-pressed={owned}
+      >
+        {owned ? (
+          <>
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M2 8.5 6 12l8-8.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {t('owned.marked')}
+          </>
+        ) : (
+          t('owned.mark')
         )}
-        <div className="modal-shipping">{t('product.shipping')}</div>
-      </div>
-      <div className="modal-buy">
-        <FavoriteButton product={product} variant="inline" />
-        <button
-          type="button"
-          className={'owned-toggle' + (owned ? ' on' : '')}
-          onClick={toggleOwn}
-          aria-pressed={owned}
-        >
-          {owned ? (
-            <>
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M2 8.5 6 12l8-8.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {t('owned.marked')}
-            </>
-          ) : (
-            t('owned.mark')
-          )}
-        </button>
-        <a
-          className="btn-primary big"
-          href={amazonUrl}
-          target="_blank"
-          rel="noopener noreferrer sponsored"
-          onClick={() => onBuy(product)}
-        >
-          {t('product.viewAmazon')}
-        </a>
-      </div>
+      </button>
+      <a
+        className="btn-primary big"
+        href={amazonUrl}
+        target="_blank"
+        rel="noopener noreferrer sponsored"
+        onClick={() => onBuy(product)}
+      >
+        {t('product.viewAmazon')}
+      </a>
     </div>
   );
 
@@ -867,12 +865,13 @@ function ProductDetail({ product, onClose, onBuy, inline = false }) {
           )}
           <div className="pi-head">
             {identity}
+            {priceBlock}
             {description}
           </div>
         </div>
         <div className="pi-bottom">
           <ProductQa product={product} />
-          {bottom}
+          <div className="pi-actions">{buyActions}</div>
         </div>
       </div>
     );
@@ -905,7 +904,10 @@ function ProductDetail({ product, onClose, onBuy, inline = false }) {
               </a>
               {description}
               <ProductQa product={product} />
-              {bottom}
+              <div className="modal-bottom">
+                {priceBlock}
+                {buyActions}
+              </div>
             </div>
           </div>
         </div>
