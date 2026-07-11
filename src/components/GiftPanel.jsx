@@ -143,16 +143,14 @@ export default function GiftPanel({ open, onClose, onSubmit, initial }) {
   const canSave = personName.trim() && (form.relationship || form.interests.trim());
 
   return (
-    <div className="auth-modal-bg" onClick={onClose}>
-      <form
-        className="history-panel profile-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="gift-title"
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={submit}
-      >
-        <header className="history-head">
+    <form
+      className="sheet-page profile-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="gift-title"
+      onSubmit={submit}
+    >
+        <header className="sheet-head">
           <div>
             <h2 id="gift-title" className="history-title">
               🎁 {t('gift.title')}
@@ -162,7 +160,7 @@ export default function GiftPanel({ open, onClose, onSubmit, initial }) {
           <PanelHelpButton flat />
           <button
             type="button"
-            className="auth-modal-close"
+            className="sheet-close"
             onClick={onClose}
             aria-label={t('auth.close')}
           >
@@ -170,6 +168,7 @@ export default function GiftPanel({ open, onClose, onSubmit, initial }) {
           </button>
         </header>
 
+        <div className="sheet-body">
         <div className="profile-form">
           {friends.length > 0 && (
             <div className="gift-people">
@@ -390,7 +389,7 @@ export default function GiftPanel({ open, onClose, onSubmit, initial }) {
             </button>
           </div>
         </div>
-      </form>
-    </div>
+        </div>
+    </form>
   );
 }
