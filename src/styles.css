@@ -1600,13 +1600,9 @@ button.chat-bubble.chat-editable {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
   flex: 1;
   min-height: 0;
-}
-/* Price/links stick to the bottom of the panel; top block sits at the top. */
-.pi-bottom {
-  margin-top: auto;
 }
 .product-inline-close {
   position: absolute;
@@ -1632,26 +1628,35 @@ button.chat-bubble.chat-editable {
 }
 .pi-top {
   display: flex;
-  gap: 24px;
+  gap: 20px;
   align-items: flex-start;
   padding-right: 48px; /* clear the ✕ */
 }
 .pi-media {
-  flex: 0 0 33%;
-  max-width: 33%;
+  flex: 0 0 40%; /* 2/5 */
+  max-width: 40%;
 }
 .pi-media .prod-img-wrap[data-size="modal"] {
   min-height: 0;
 }
 .pi-head {
-  flex: 1 1 auto;
+  flex: 1 1 auto; /* 3/5 */
   min-width: 0;
 }
 .pi-bottom {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
+/* Compact vertical rhythm inside the inline detail (tighter than the modal). */
+.pi-head .modal-brand { margin-bottom: 4px; }
+.pi-head .modal-title { margin-bottom: 8px; padding-right: 0; font-size: 30px; }
+.pi-head .modal-rating { margin-bottom: 8px; }
+.pi-head .modal-score-row { margin-bottom: 12px; padding: 10px 12px; }
+.pi-head .modal-section-title { margin-bottom: 5px; }
+.pi-head .modal-why { margin: 0 0 12px; }
+.pi-head .modal-specs { margin-bottom: 0; gap: 5px; }
+.pi-bottom .modal-bottom { margin-top: 0; padding-top: 14px; }
 
 /* ───────────────────────── Hero card ──────────────────────────── */
 .hero-card {
