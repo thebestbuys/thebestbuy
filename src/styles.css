@@ -1592,58 +1592,59 @@ button.chat-bubble.chat-editable {
 
 /* Product detail rendered INLINE inside the right results panel (wide layout),
    replacing the cards. The swap is animated by .results-content's contentFade
-   (its key includes the selected id). Fills the panel and scrolls internally. */
+   (its key includes the selected id). No card frame — it fills the panel; no
+   scroll of its own (the results panel scrolls if the content overflows).
+   Layout is top (image 1/3 + identity/description 2/3) then bottom (Q&A +
+   price/links, full width). A ✕ in a circle closes it (top-right). */
 .product-inline {
+  position: relative;
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
+  gap: 24px;
 }
-.product-inline-back {
-  flex-shrink: 0;
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  appearance: none;
-  border: 0.5px solid var(--border);
+.product-inline-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
   background: var(--bg-elev);
-  color: var(--text-muted);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 7px 14px;
-  border-radius: 999px;
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
-  margin-bottom: 14px;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
-.product-inline-back:hover {
-  color: var(--text);
-  border-color: var(--accent);
+.product-inline-close:hover {
+  background: var(--accent);
+  color: #fff;
 }
-.product-inline .modal-scroll {
-  flex: 1;
+.pi-top {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  padding-right: 48px; /* clear the ✕ */
+}
+.pi-media {
+  flex: 0 0 33%;
+  max-width: 33%;
+}
+.pi-media .prod-img-wrap[data-size="modal"] {
   min-height: 0;
-  overflow-y: auto;
 }
-/* Card frame so it reads as one panel-filling block. */
-.product-inline .modal-grid {
-  background: var(--bg-elev);
-  border: 0.5px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
+.pi-head {
+  flex: 1 1 auto;
+  min-width: 0;
 }
-/* With an image: a SMALL image column beside the content (not a full-width
-   photo). Without an image, the content already spans full width (.no-image). */
-.product-inline .modal-grid:not(.no-image) {
-  grid-template-columns: minmax(130px, 180px) 1fr;
-}
-.product-inline .modal-left {
-  padding: 16px;
-}
-.product-inline .modal-left .prod-img-wrap[data-size="modal"] {
-  min-height: 0;
+.pi-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 /* ───────────────────────── Hero card ──────────────────────────── */

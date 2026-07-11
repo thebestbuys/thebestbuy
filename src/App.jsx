@@ -768,114 +768,118 @@ function ProductDetail({ product, onClose, onBuy, inline = false }) {
   const [owned, setOwned] = useState(() => isOwned(user?.sub, product.id));
   useEffect(() => { setOwned(isOwned(user?.sub, product.id)); }, [user?.sub, product.id]);
   const toggleOwn = () => setOwned(toggleOwned(user?.sub, product));
-  const body = (
-    <div className="modal-scroll">
-        <div className={'modal-grid' + (hasImage ? '' : ' no-image')}>
-          {hasImage && (
-            <div className="modal-left">
-              <ProductGallery product={product} />
-            </div>
-          )}
-          <div className="modal-right">
-            <div className="modal-brand">{product.brand}</div>
-            <h2 className="modal-title">{product.model}</h2>
-            {product.amazon_verified && product.rating != null && (
-              <div className="modal-rating">
-                <VerifiedRating product={product} locale={locale} />
-              </div>
-            )}
-            {product.score != null && (
-              <div className="modal-score-row">
-                <ScoreRing score={product.score} size={56} />
-                <div>
-                  <div className="modal-score-title">{t('product.matchPct', { score: product.score })}</div>
-                  <div className="modal-score-sub">{t('product.matchSub')}</div>
-                </div>
-              </div>
-            )}
-            {/* Buy CTA near the top so it's reachable without scrolling to the
-                bottom; the full price / favourite / owned box stays below. */}
-            <a
-              className="btn-primary big modal-top-buy"
-              href={amazonUrl}
-              target="_blank"
-              rel="noopener noreferrer sponsored"
-              onClick={() => onBuy(product)}
-            >
-              {t('product.viewAmazon')}
-              <span className="btn-arrow">→</span>
-            </a>
-            {product.why && (
-              <>
-                <div className="modal-section-title">{t('product.why')}</div>
-                <p className="modal-why">{product.why}</p>
-              </>
-            )}
-            {product.specs?.length > 0 && (
-              <>
-                <div className="modal-section-title">{t('product.features')}</div>
-                <ul className="modal-specs">
-                  {product.specs.map((s, i) => <li key={i}>{s}</li>)}
-                </ul>
-              </>
-            )}
-            <ProductQa product={product} />
-            <div className="modal-bottom">
-              <div>
-                <div className="modal-price-label">
-                  {product.amazon_verified ? t('product.price') : t('product.priceEstimate')}
-                </div>
-                <div className="modal-price">
-                  <PriceTag product={product} locale={locale} t={t} variant="hero" />
-                </div>
-                {!product.amazon_verified && product.price != null && (
-                  <div className="modal-price-note">{t('product.priceEstimateNote')}</div>
-                )}
-                <div className="modal-shipping">{t('product.shipping')}</div>
-              </div>
-              <div className="modal-buy">
-                <FavoriteButton product={product} variant="inline" />
-                <button
-                  type="button"
-                  className={'owned-toggle' + (owned ? ' on' : '')}
-                  onClick={toggleOwn}
-                  aria-pressed={owned}
-                >
-                  {owned ? (
-                    <>
-                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <path d="M2 8.5 6 12l8-8.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      {t('owned.marked')}
-                    </>
-                  ) : (
-                    t('owned.mark')
-                  )}
-                </button>
-                <a
-                  className="btn-primary big"
-                  href={amazonUrl}
-                  target="_blank"
-                  rel="noopener noreferrer sponsored"
-                  onClick={() => onBuy(product)}
-                >
-                  {t('product.viewAmazon')}
-                  <span className="btn-arrow">→</span>
-                </a>
-              </div>
-            </div>
+  // Identity block (brand, title, rating, match score) + description (why,
+  // specs) — shared by the modal and the inline (desktop) layouts.
+  const identity = (
+    <>
+      <div className="modal-brand">{product.brand}</div>
+      <h2 className="modal-title">{product.model}</h2>
+      {product.amazon_verified && product.rating != null && (
+        <div className="modal-rating">
+          <VerifiedRating product={product} locale={locale} />
+        </div>
+      )}
+      {product.score != null && (
+        <div className="modal-score-row">
+          <ScoreRing score={product.score} size={56} />
+          <div>
+            <div className="modal-score-title">{t('product.matchPct', { score: product.score })}</div>
+            <div className="modal-score-sub">{t('product.matchSub')}</div>
           </div>
         </div>
+      )}
+    </>
+  );
+
+  const description = (
+    <>
+      {product.why && (
+        <>
+          <div className="modal-section-title">{t('product.why')}</div>
+          <p className="modal-why">{product.why}</p>
+        </>
+      )}
+      {product.specs?.length > 0 && (
+        <>
+          <div className="modal-section-title">{t('product.features')}</div>
+          <ul className="modal-specs">
+            {product.specs.map((s, i) => <li key={i}>{s}</li>)}
+          </ul>
+        </>
+      )}
+    </>
+  );
+
+  const bottom = (
+    <div className="modal-bottom">
+      <div>
+        <div className="modal-price-label">
+          {product.amazon_verified ? t('product.price') : t('product.priceEstimate')}
+        </div>
+        <div className="modal-price">
+          <PriceTag product={product} locale={locale} t={t} variant="hero" />
+        </div>
+        {!product.amazon_verified && product.price != null && (
+          <div className="modal-price-note">{t('product.priceEstimateNote')}</div>
+        )}
+        <div className="modal-shipping">{t('product.shipping')}</div>
+      </div>
+      <div className="modal-buy">
+        <FavoriteButton product={product} variant="inline" />
+        <button
+          type="button"
+          className={'owned-toggle' + (owned ? ' on' : '')}
+          onClick={toggleOwn}
+          aria-pressed={owned}
+        >
+          {owned ? (
+            <>
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M2 8.5 6 12l8-8.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {t('owned.marked')}
+            </>
+          ) : (
+            t('owned.mark')
+          )}
+        </button>
+        <a
+          className="btn-primary big"
+          href={amazonUrl}
+          target="_blank"
+          rel="noopener noreferrer sponsored"
+          onClick={() => onBuy(product)}
+        >
+          {t('product.viewAmazon')}
+          <span className="btn-arrow">→</span>
+        </a>
+      </div>
     </div>
   );
 
+  // Inline (wide/desktop): fills the results panel, no card frame, no scroll of
+  // its own (the results panel scrolls if needed). Layout is top (image 1/3 +
+  // identity/description 2/3) then bottom (Q&A + price/links), full width. A ✕
+  // in a circle (top-right) closes it, like the full-screen sheets.
   if (inline) {
     return (
       <div className="product-inline">
-        <button type="button" className="product-inline-back" onClick={onClose}>
-          <span aria-hidden="true">←</span> {t('product.backToResults')}
-        </button>
-        {body}
+        <button type="button" className="product-inline-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+        <div className="pi-top">
+          {hasImage && (
+            <div className="pi-media">
+              <ProductGallery product={product} />
+            </div>
+          )}
+          <div className="pi-head">
+            {identity}
+            {description}
+          </div>
+        </div>
+        <div className="pi-bottom">
+          <ProductQa product={product} />
+          {bottom}
+        </div>
       </div>
     );
   }
@@ -884,7 +888,33 @@ function ProductDetail({ product, onClose, onBuy, inline = false }) {
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
-        {body}
+        <div className="modal-scroll">
+          <div className={'modal-grid' + (hasImage ? '' : ' no-image')}>
+            {hasImage && (
+              <div className="modal-left">
+                <ProductGallery product={product} />
+              </div>
+            )}
+            <div className="modal-right">
+              {identity}
+              {/* Buy CTA near the top so it's reachable without scrolling to the
+                  bottom; the full price / favourite / owned box stays below. */}
+              <a
+                className="btn-primary big modal-top-buy"
+                href={amazonUrl}
+                target="_blank"
+                rel="noopener noreferrer sponsored"
+                onClick={() => onBuy(product)}
+              >
+                {t('product.viewAmazon')}
+                <span className="btn-arrow">→</span>
+              </a>
+              {description}
+              <ProductQa product={product} />
+              {bottom}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
