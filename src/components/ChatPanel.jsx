@@ -452,15 +452,16 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
       )}
 
       <form className="chat-input" onSubmit={submit}>
-        {!isTyping && onRecommendNow && !showInline && (
+        {onRecommendNow && (
           <button
             type="button"
             className="recommend-now-btn"
             onClick={onRecommendNow}
+            disabled={isTyping}
             title={t('chat.recommendNow')}
-            aria-label={t('chat.recommendNow')}
           >
             <span aria-hidden="true">✦</span>
+            <span className="recommend-now-label">{t('chat.recommendNowShort')}</span>
           </button>
         )}
         <input

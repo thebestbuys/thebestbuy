@@ -1775,7 +1775,7 @@ export default function App() {
         editQuestion={editQuestion}
         onRetry={retryAction}
         onShowOthers={recommendedProducts.length > 0 && viewingPastIndex === null ? showOtherProducts : null}
-        onRecommendNow={recommendedProducts.length === 0 && !isTyping && answers.length >= 1 && category !== 'gift' ? recommendNow : null}
+        onRecommendNow={answers.length >= 1 && category !== 'gift' ? recommendNow : null}
         guide={resultsGuide}
         onOpenGuide={navOpenGuide}
         budget={budgetBounds}

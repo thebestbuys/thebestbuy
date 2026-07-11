@@ -6855,25 +6855,42 @@ select.profile-input {
 /* ──────────── "Recommend now" CTA (skip the wait) ───────────────── */
 /* Compact "get recommendations now" shortcut, sits to the left of the chat
    input field (accent circle, distinct from the dark send button on the right). */
-.recommend-now-btn {
+/* Scoped under .chat-input to beat the generic ".chat-input button" (round send
+   button) styles. A labelled accent pill, always shown (disabled while typing). */
+.chat-input .recommend-now-btn {
   appearance: none;
   flex-shrink: 0;
-  width: 40px;
+  width: auto;
   height: 40px;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
   background: var(--accent);
   border: none;
-  border-radius: 50%;
+  border-radius: 999px;
   color: #fff;
-  font-size: 16px;
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition: opacity 0.15s ease;
 }
-.recommend-now-btn:hover {
-  transform: scale(1.05);
+.chat-input .recommend-now-btn:not(:disabled):hover {
   opacity: 0.92;
+  transform: none;
+}
+.chat-input .recommend-now-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.recommend-now-label {
+  white-space: nowrap;
+}
+/* On very tight widths, keep the icon but drop the label so the input keeps room. */
+@media (max-width: 360px) {
+  .recommend-now-label { display: none; }
+  .chat-input .recommend-now-btn { padding: 0; width: 40px; justify-content: center; }
 }
 
 /* ──────────── Budget fit badge ──────────────────────────────────── */
