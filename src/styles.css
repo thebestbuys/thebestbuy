@@ -1190,8 +1190,8 @@ button.chat-bubble.chat-editable {
   text-align: inherit;
 }
 .chat-editable .chat-edit-pencil {
-  font-size: 11px;
-  color: var(--text-soft, #999);
+  font-size: 16px;
+  color: var(--accent);
   opacity: 0;
   transition: opacity 0.15s ease;
   flex: none;
