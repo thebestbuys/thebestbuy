@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CATEGORIES } from './data.js';
 import { askQuestion, recommend, enrichProduct, fetchSuggestions, askProductQuestion } from './lib/askAI.js';
 import AuthMenu from './components/AuthMenu.jsx';
@@ -886,13 +887,17 @@ function ProductDetail({ product, onClose, onBuy, inline = false }) {
     );
   }
 
-  return (
+  // Portal to <body> so the full-screen sheet always covers the viewport, above
+  // any open panel — even when rendered inside a transformed/stacking ancestor
+  // (e.g. opened from the Mes sélections sheet), which would otherwise clip it.
+  return createPortal(
     <div className="product-sheet-bg" onClick={onClose}>
       <div className="product-sheet" onClick={(e) => e.stopPropagation()}>
         <button type="button" className="product-inline-close product-sheet-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
         {detailBody}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
