@@ -11,8 +11,8 @@ function ChatBubble({ role, children, layout, onEdit, editLabel }) {
         <div className="chat-list-tag">{role === 'bot' ? t('chat.assistant') : t('chat.you')}</div>
         {editable ? (
           <button type="button" className="chat-list-text chat-editable" onClick={onEdit} title={editLabel} aria-label={editLabel}>
-            {children}
             <span className="chat-edit-pencil" aria-hidden="true">✎</span>
+            {children}
           </button>
         ) : (
           <div className="chat-list-text">{children}</div>
@@ -23,8 +23,8 @@ function ChatBubble({ role, children, layout, onEdit, editLabel }) {
   if (editable) {
     return (
       <button type="button" className="chat-bubble role-user chat-editable" onClick={onEdit} title={editLabel} aria-label={editLabel}>
-        <div className="chat-bubble-text">{children}</div>
         <span className="chat-edit-pencil" aria-hidden="true">✎</span>
+        <div className="chat-bubble-text">{children}</div>
       </button>
     );
   }
