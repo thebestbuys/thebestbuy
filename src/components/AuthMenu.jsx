@@ -267,10 +267,10 @@ function UserDropdown({ user, onClose, onSignOut, onOpenSelections, onOpenProfil
         count > 0 ? <span className="auth-dropdown-count">{count}</span> : null,
       )}
       {item(DD_ICONS.history, t('home.history'), onOpenHistory)}
-      {item(DD_ICONS.occasions, t('auth.occasions'), onOpenNotifications)}
       {item(DD_ICONS.friends, t('auth.myFriends'), onOpenFriends)}
-      {/* "Demander l'avis d'un ami" and "Tendances de mes amis" live inside the
-          "Mes amis" view now (quick-nav there), so they're not repeated here. */}
+      {/* "Demander l'avis d'un ami", "Tendances de mes amis" and "Occasions" live
+          inside the "Mes amis" view now (quick-nav there), so they're not
+          repeated here. Occasions also stay reachable via the notifications bell. */}
       {isSuperuserEmail(user.email) && (
         <>
           <div className="auth-dropdown-sep" />

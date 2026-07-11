@@ -43,7 +43,7 @@ function Avatar({ name, url, size = 36 }) {
 
 // "Mes amis": search registered users by name, send/accept friend requests, see
 // the friends list. Friend profiles stay private (used server-side for gifts).
-export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending, onAddFriend }) {
+export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending, onOpenOccasions, onAddFriend }) {
   const { user, cloudReady } = useAuth();
   const { t } = useI18n();
   const { closing, close } = useDismiss(onClose);
@@ -193,7 +193,7 @@ export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending,
             )}
             {/* Quick access to the two friend-centric views (also in the account
                 menu), surfaced here right under the header for discoverability. */}
-            {(onOpenAsk || onOpenTrending) && (
+            {(onOpenAsk || onOpenTrending || onOpenOccasions) && (
               <div className="friends-quicknav">
                 {onOpenAsk && (
                   <button type="button" className="friends-quicknav-btn" onClick={() => onOpenAsk()}>
@@ -206,6 +206,13 @@ export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending,
                   <button type="button" className="friends-quicknav-btn" onClick={() => onOpenTrending()}>
                     <span className="friends-quicknav-ico" aria-hidden="true">📈</span>
                     <span>{t('auth.myTrends')}</span>
+                    <span className="friends-quicknav-arrow" aria-hidden="true">›</span>
+                  </button>
+                )}
+                {onOpenOccasions && (
+                  <button type="button" className="friends-quicknav-btn" onClick={() => onOpenOccasions()}>
+                    <span className="friends-quicknav-ico" aria-hidden="true">🎂</span>
+                    <span>{t('auth.occasions')}</span>
                     <span className="friends-quicknav-arrow" aria-hidden="true">›</span>
                   </button>
                 )}
