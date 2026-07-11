@@ -25,7 +25,7 @@ const TutorialModal = lazy(() => import('./components/TutorialModal.jsx'));
 const GiftHub = lazy(() => import('./components/GiftHub.jsx'));
 const GiftLanding = lazy(() => import('./components/GiftLanding.jsx'));
 import { GUIDES, localizeGuide, getGuide } from './data/guides.js';
-import { CARD_IN_STAGGER_MS, CARD_OUT_STAGGER_MS, CARD_SWAP_DELAY_MS, HeroCard, PriceTag, ProductImage, ProductLinkCard, ProductSkeleton, ScoreRing, SmallCard, VerifiedBadge, VerifiedRating } from './components/ProductCard.jsx';
+import { CARD_IN_STAGGER_MS, CARD_OUT_STAGGER_MS, CARD_SWAP_DELAY_MS, HeroCard, PriceTag, ProductImage, ProductGallery, ProductLinkCard, ProductSkeleton, ScoreRing, SmallCard, VerifiedBadge, VerifiedRating } from './components/ProductCard.jsx';
 import PanelHelpButton from './components/PanelHelpButton.jsx';
 import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './lib/i18n.jsx';
@@ -776,7 +776,7 @@ function ProductDetail({ product, onClose, onBuy }) {
         <div className={'modal-grid' + (hasImage ? '' : ' no-image')}>
           {hasImage && (
             <div className="modal-left">
-              <ProductImage product={product} size="modal" />
+              <ProductGallery product={product} />
             </div>
           )}
           <div className="modal-right">

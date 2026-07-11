@@ -2302,6 +2302,44 @@ button.chat-bubble.chat-editable {
   display: grid;
   place-items: center;
 }
+/* Product gallery (detail page): main photo + thumbnail row. */
+.prod-gallery {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.prod-gallery .prod-img-wrap[data-size="modal"] {
+  width: 100%;
+}
+.prod-gallery-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+.prod-gallery-thumb {
+  appearance: none;
+  padding: 3px;
+  width: 56px;
+  height: 56px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  flex: 0 0 auto;
+}
+.prod-gallery-thumb:hover { border-color: var(--accent-soft); }
+.prod-gallery-thumb.is-active { border-color: var(--accent); }
+.prod-gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
 .modal-right {
   padding: 36px 36px 32px;
 }
@@ -2697,6 +2735,15 @@ button.chat-bubble.chat-editable {
     max-height: 100%;
     object-fit: contain;
   }
+  /* Compact gallery in the floated image box: smaller thumbs on one scroll row. */
+  .prod-gallery { gap: 8px; }
+  .prod-gallery-thumbs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+  .prod-gallery-thumb { width: 40px; height: 40px; padding: 2px; border-radius: 8px; }
   /* Brand + title wrap beside the image; the rest starts below it, full-width. */
   .modal-rating,
   .modal-score-row { clear: both; }

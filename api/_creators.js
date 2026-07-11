@@ -41,10 +41,19 @@ const API_BASE = (process.env.AMAZON_CREATORS_API_BASE || 'https://creatorsapi.a
 // Notably we do NOT request customerReviews — Amazon's API has never returned
 // real star ratings / review counts, and an invalid name would break verify.
 const RESOURCES = (process.env.AMAZON_CREATORS_RESOURCES ||
-  'images.primary.large,itemInfo.title,offersV2.listings.price')
+  'images.primary.large,images.variants.large,itemInfo.title,offersV2.listings.price')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
+
+// Same list minus the extra product-gallery images ("variants"). If requesting
+// variants ever 400s (unknown/unsupported resource on this credential), we fall
+// back to this so verification never breaks — see searchItems' retry below.
+const RESOURCES_NO_VARIANTS = RESOURCES.filter((r) => !/^images\.variants/i.test(r));
+const HAS_VARIANTS = RESOURCES.length !== RESOURCES_NO_VARIANTS.length;
+// Latched off for the process once a variants request is proven to 400, so warm
+// invocations don't keep paying the double round-trip.
+let _variantsDisabled = false;
 
 export function creatorsConfigured() {
   return !!(CLIENT_ID && CLIENT_SECRET);
@@ -131,11 +140,18 @@ function mapItem(item) {
   if (!item) return null;
   const asin = item.asin || item.ASIN || null;
   const title = item.itemInfo?.title?.displayValue ?? null;
-  const image =
-    item.images?.primary?.large?.url ||
-    item.images?.primary?.medium?.url ||
-    item.images?.primary?.small?.url ||
-    null;
+
+  // Product gallery: the primary shot first, then any "variants" (alternate
+  // angles / lifestyle images). The API only exposes a subset of the on-page
+  // gallery (often 0–6), so this list can be just one long. Dedupe by URL.
+  const pickUrl = (img) => img?.large?.url || img?.medium?.url || img?.small?.url || null;
+  const variants = Array.isArray(item.images?.variants) ? item.images.variants : [];
+  const seen = new Set();
+  const images = [];
+  for (const url of [pickUrl(item.images?.primary), ...variants.map(pickUrl)]) {
+    if (url && !seen.has(url)) { seen.add(url); images.push(url); }
+  }
+  const image = images[0] || null;
 
   // Canonical affiliate product URL provided by the API — it already carries
   // our partner tag + tracking params, so it's the *proper* link to use and is
@@ -151,7 +167,7 @@ function mapItem(item) {
     null;
   const price = rawPrice != null ? Math.round(Number(rawPrice)) || null : null;
 
-  return { asin, title, image, price, detailPageURL };
+  return { asin, title, image, images, price, detailPageURL };
 }
 
 // In-process result cache to protect the daily quota (8,640/day for the first
@@ -174,11 +190,29 @@ export async function searchItems(keywords, { minPrice, maxPrice } = {}) {
   const hit = _cache.get(cacheKey);
   if (hit && hit.expiresAt > Date.now()) return hit.items;
 
-  const body = { keywords: key, itemCount: 3, resources: RESOURCES };
+  const useVariants = HAS_VARIANTS && !_variantsDisabled;
+  const body = {
+    keywords: key,
+    itemCount: 3,
+    resources: useVariants ? RESOURCES : RESOURCES_NO_VARIANTS,
+  };
   if (lo !== undefined) body.minPrice = lo;
   if (hi !== undefined) body.maxPrice = hi;
 
-  const json = await catalog('searchItems', body);
+  let json;
+  try {
+    json = await catalog('searchItems', body);
+  } catch (e) {
+    // Safety net: if the extra gallery ("variants") resource is unknown on this
+    // credential, Amazon 400s the whole call. Rather than break verification,
+    // latch variants off for the process and retry once with the core resources.
+    if (useVariants && /\b400\b/.test(String(e?.message))) {
+      _variantsDisabled = true;
+      json = await catalog('searchItems', { ...body, resources: RESOURCES_NO_VARIANTS });
+    } else {
+      throw e;
+    }
+  }
   const raw = json.searchResult?.items || json.itemsResult?.items || json.items || [];
   const items = raw.map(mapItem).filter(Boolean);
 

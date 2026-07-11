@@ -653,6 +653,9 @@ async function checkAmazon(brand, model, searchContext, opts = {}) {
       // with our tag if the API didn't return one.
       amazon_url: item.detailPageURL || `https://www.amazon.fr/dp/${item.asin}?tag=${AFFILIATE_TAG}`,
       image_url: item.image ?? null,
+      // Full product gallery (primary + variant shots) for the product page.
+      // Always includes image_url as the first entry; may be just that one.
+      images: (item.images && item.images.length ? item.images : (item.image ? [item.image] : [])),
       brand: amazonBrand,
       model: amazonModel,
       price: item.price ?? null,
@@ -1009,6 +1012,7 @@ export default async function handler(req, res) {
             model:      check.model      || p.model,
             amazon_url: check.amazon_url,
             image_url:  check.image_url  ?? null,
+            images:     check.images     ?? (check.image_url ? [check.image_url] : []),
             price:      check.price      ?? p.price,
             rating:     check.rating     ?? null,
             reviews:    check.reviews    ?? null,
@@ -1085,6 +1089,7 @@ export default async function handler(req, res) {
         amazon_verified: false,
         amazon_url: searchLink(p.brand, p.model),
         image_url: null,
+        images: [],
       });
     }
     parsed.products = finalProducts.slice(0, 3);

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useI18n } from '../lib/i18n.jsx';
 import FavoriteButton from './FavoriteButton.jsx';
 
@@ -56,6 +57,50 @@ export function ProductImage({ product, size = 'normal' }) {
       <div className="prod-img generic-img">
         <span className="generic-img-initials">{initials}</span>
       </div>
+    </div>
+  );
+}
+
+// Product gallery for the detail page: the main photo + a row of clickable
+// thumbnails. Same verified-only rule as ProductImage — real Amazon photos are
+// shown ONLY when amazon_verified; otherwise we defer to ProductImage's
+// placeholder. `product.images` is the API-provided gallery (primary + variant
+// shots); it degrades to the single image_url (or one thumbnail = no thumb row).
+export function ProductGallery({ product }) {
+  const imgs =
+    product.amazon_verified
+      ? (product.images && product.images.length
+          ? product.images
+          : (product.image_url ? [product.image_url] : []))
+      : [];
+  const [active, setActive] = useState(0);
+  // Reset when switching products (the detail modal reuses this component).
+  useEffect(() => { setActive(0); }, [product.id]);
+
+  if (!imgs.length) return <ProductImage product={product} size="modal" />;
+  const src = imgs[Math.min(active, imgs.length - 1)];
+
+  return (
+    <div className="prod-gallery">
+      <div className="prod-img-wrap is-photo" data-size="modal">
+        <img src={src} alt={`${product.brand} ${product.model}`} className="prod-img-amazon" />
+      </div>
+      {imgs.length > 1 && (
+        <div className="prod-gallery-thumbs">
+          {imgs.map((u, i) => (
+            <button
+              key={u}
+              type="button"
+              className={'prod-gallery-thumb' + (i === active ? ' is-active' : '')}
+              onClick={() => setActive(i)}
+              aria-label={`${product.brand} ${product.model} — image ${i + 1}`}
+              aria-pressed={i === active}
+            >
+              <img src={u} alt="" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
