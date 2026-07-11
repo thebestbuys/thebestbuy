@@ -813,7 +813,6 @@ function ProductDetail({ product, onClose, onBuy, inline = false }) {
       {!product.amazon_verified && product.price != null && (
         <div className="modal-price-note">{t('product.priceEstimateNote')}</div>
       )}
-      <div className="modal-shipping">{t('product.shipping')}</div>
     </div>
   );
 
@@ -1818,9 +1817,6 @@ export default function App() {
             </h2>
           </div>
           <div className="results-header-right">
-            <div className="results-meta">
-              {done && !currentQuestion && !isTyping ? tr('results.finalized') : tr('results.refining')}
-            </div>
             {category === 'gift' && recommendedProducts.length > 0 && (
               <button type="button" className="auth-trigger auth-trigger-results share-btn" onClick={shareGift}>
                 <span aria-hidden="true">🔗</span>
