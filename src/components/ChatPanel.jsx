@@ -333,23 +333,24 @@ export default function ChatPanel({ messages, currentQuestion, onAnswer, onFreeT
         {!isTyping && currentQuestion && (
           <ChoiceControl question={currentQuestion} onAnswer={onAnswer} onSkip={skip} />
         )}
-
-        {/* "See my selection" shortcut, at the very bottom of the stream. */}
-        {onRecommendNow && (
-          <div className="recommend-now-row">
-            <button
-              type="button"
-              className="recommend-now-btn"
-              onClick={onRecommendNow}
-              disabled={isTyping}
-              title={t('chat.recommendNow')}
-            >
-              <span aria-hidden="true">✦</span>
-              <span className="recommend-now-label">{t('chat.recommendNowShort')}</span>
-            </button>
-          </div>
-        )}
       </div>
+
+      {/* "See my selection" shortcut — pinned at the bottom of the chat area
+          (below the scrolling stream), left-aligned. */}
+      {onRecommendNow && (
+        <div className="recommend-now-row">
+          <button
+            type="button"
+            className="recommend-now-btn"
+            onClick={onRecommendNow}
+            disabled={isTyping}
+            title={t('chat.recommendNow')}
+          >
+            <span aria-hidden="true">✦</span>
+            <span className="recommend-now-label">{t('chat.recommendNowShort')}</span>
+          </button>
+        </div>
+      )}
 
       {/* Mobile: results live in a bottom-sheet drawer. A handle bar above the
           input opens it; the conversation stream stays clean. */}

@@ -1085,23 +1085,23 @@ ul {
   padding-left: 4px;
   animation: bubbleIn 0.4s ease 0.1s both;
 }
-/* Answer suggestions: accent-tinted pills so they clearly read as clickable
-   options, distinct from the bot's white message bubbles. */
+/* Answer suggestions: transparent pills with black text (distinct from the bot's
+   filled white bubbles); fill white on hover. */
 .choice-chip {
   appearance: none;
-  background: var(--accent-soft);
-  border: 0.5px solid transparent;
-  color: var(--accent);
+  background: transparent;
+  border: 0.5px solid var(--border);
+  color: var(--text);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   padding: 9px 14px;
   border-radius: 999px;
   transition: all 0.15s ease;
 }
 .choice-chip:hover {
   border-color: var(--accent);
-  background: var(--accent);
-  color: #fff;
+  background: #fff;
+  color: var(--text);
   transform: translateY(-1px);
 }
 
@@ -6862,8 +6862,11 @@ select.profile-input {
    stream (disabled while a reply is loading). */
 .recommend-now-row {
   display: flex;
-  justify-content: center;
-  margin-top: 4px;
+  justify-content: flex-start;
+  padding: 4px 24px 8px;
+}
+@media (max-width: 560px) {
+  .recommend-now-row { padding-left: 14px; padding-right: 14px; }
 }
 .recommend-now-btn {
   appearance: none;
