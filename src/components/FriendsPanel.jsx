@@ -220,7 +220,7 @@ export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending,
                 recipient form that used to live behind the home "Trouver un cadeau". */}
             {onAddFriend && (
               <button type="button" className="friends-add-btn" onClick={() => onAddFriend()}>
-                <span aria-hidden="true">＋</span> {t('friends.addFriendCta')}
+                <span aria-hidden="true">🎁</span> {t('friends.addFriendCta')}
               </button>
             )}
             {/* Quick access to the two friend-centric views (also in the account
