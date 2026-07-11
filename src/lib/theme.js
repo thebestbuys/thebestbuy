@@ -40,14 +40,14 @@ export const FONT_OPTIONS = [
 // Editable color tokens (per-mode) + shared font/size tokens.
 export const THEME_SCHEMA = [
   // ── Couleurs (light `def` / dark `darkDef`) ──
-  { group: 'Couleurs', token: 'bg',        cssVar: '--bg',               type: 'color', label: 'Fond',             def: '#faf8f4', darkDef: '#19150f' },
-  { group: 'Couleurs', token: 'surface',   cssVar: '--bg-elev',          type: 'color', label: 'Surfaces',         def: '#ffffff', darkDef: '#221d16' },
-  { group: 'Couleurs', token: 'text',      cssVar: '--text',             type: 'color', label: 'Texte',            def: '#1a1814', darkDef: '#f3efe7' },
-  { group: 'Couleurs', token: 'textMuted', cssVar: '--text-muted',       type: 'color', label: 'Texte secondaire', def: '#6b6555', darkDef: '#b3ab9b' },
-  { group: 'Couleurs', token: 'accent',    cssVar: '--accent',           type: 'color', label: 'Accent',           def: '#c2603c', darkDef: '#d2774e' },
-  { group: 'Couleurs', token: 'accentCta', cssVar: '--accent-light',     type: 'color', label: 'CTA / boutons',    def: '#e8b58f', darkDef: '#c2603c' },
+  { group: 'Couleurs', token: 'bg',        cssVar: '--bg',               type: 'color', label: 'Fond',             def: '#faf8f4', darkDef: '#141210' },
+  { group: 'Couleurs', token: 'surface',   cssVar: '--bg-elev',          type: 'color', label: 'Surfaces',         def: '#ffffff', darkDef: '#211d18' },
+  { group: 'Couleurs', token: 'text',      cssVar: '--text',             type: 'color', label: 'Texte',            def: '#1a1814', darkDef: '#f4f1ea' },
+  { group: 'Couleurs', token: 'textMuted', cssVar: '--text-muted',       type: 'color', label: 'Texte secondaire', def: '#6b6555', darkDef: '#aca595' },
+  { group: 'Couleurs', token: 'accent',    cssVar: '--accent',           type: 'color', label: 'Accent',           def: '#c2603c', darkDef: '#e2865d' },
+  { group: 'Couleurs', token: 'accentCta', cssVar: '--accent-light',     type: 'color', label: 'CTA / boutons',    def: '#e8b58f', darkDef: '#cc6b47' },
   { group: 'Couleurs', token: 'accentInk', cssVar: '--accent-light-ink', type: 'color', label: 'Texte sur CTA',    def: '#8a4326', darkDef: '#ffffff' },
-  { group: 'Couleurs', token: 'border',    cssVar: '--border',           type: 'color', label: 'Bordures',         def: '#e7e3da', darkDef: '#36312a' },
+  { group: 'Couleurs', token: 'border',    cssVar: '--border',           type: 'color', label: 'Bordures',         def: '#e7e3da', darkDef: '#332e28' },
 
   // ── Polices (shared) ──
   { group: 'Polices', token: 'fontSans',    cssVar: '--sans',    type: 'font', label: 'Interface', def: FONT_OPTIONS[0].value },
@@ -65,10 +65,10 @@ const byToken = Object.fromEntries(THEME_SCHEMA.map((s) => [s.token, s]));
 // Secondary (non-editable) vars that must also flip in dark mode for the whole
 // UI to read correctly.
 const DARK_EXTRA = {
-  '--bg-soft': '#211c15',
-  '--bg-softer': '#2b251c',
-  '--text-faint': '#847c6d',
-  '--border-soft': 'rgba(255,255,255,0.06)',
+  '--bg-soft': '#1b1813',
+  '--bg-softer': '#28231c',
+  '--text-faint': '#867e70',
+  '--border-soft': 'rgba(255,255,255,0.07)',
   '--accent-soft': '#3a2a20',
   // Mobile app palette (dark).
   '--m-coral': '#f2774e',

@@ -1100,7 +1100,7 @@ ul {
 }
 .choice-chip:hover {
   border-color: var(--accent);
-  background: #fff;
+  background: var(--bg-elev);
   color: var(--text);
   transform: translateY(-1px);
 }
@@ -1369,7 +1369,7 @@ button.chat-bubble.chat-editable {
   place-items: center;
   border: 1.5px solid var(--accent);
   border-radius: 50%;
-  background: #fff;
+  background: var(--bg-elev);
   color: var(--accent);
   font-size: 15px;
   font-weight: 700;
@@ -1411,7 +1411,7 @@ button.chat-bubble.chat-editable {
   place-items: center;
   border: 1.5px solid var(--accent);
   border-radius: 50%;
-  background: #fff;
+  background: var(--bg-elev);
   color: var(--accent);
   font-size: 14px;
   cursor: pointer;
@@ -2419,7 +2419,7 @@ button.chat-bubble.chat-editable {
   height: 36px;
   border-radius: 50%;
   border: 1.5px solid var(--accent);
-  background: #fff;
+  background: var(--bg-elev);
   color: var(--accent);
   font-size: 15px;
   font-weight: 700;
@@ -3344,7 +3344,7 @@ button.chat-bubble.chat-editable {
   place-items: center;
   border: 1.5px solid var(--accent);
   border-radius: 50%;
-  background: #fff;
+  background: var(--bg-elev);
   font-size: 16px;
   font-weight: 700;
   color: var(--accent);
@@ -3807,7 +3807,7 @@ button.chat-bubble.chat-editable {
 .a-price {
   display: inline-flex;
   align-items: flex-start;
-  color: #0f1111;
+  color: var(--text);
   font-family: 'Amazon Ember', var(--display), sans-serif;
   line-height: 1;
   white-space: nowrap;
@@ -3922,7 +3922,7 @@ button.chat-bubble.chat-editable {
   place-items: center;
   border: 1.5px solid var(--accent);
   border-radius: 50%;
-  background: #fff;
+  background: var(--bg-elev);
   color: var(--accent);
   font-size: 16px;
   font-weight: 700;
@@ -6200,7 +6200,7 @@ select.profile-input {
   align-items: center;
   justify-content: space-between;
   padding: calc(14px + env(safe-area-inset-top)) 28px 14px;
-  background: rgba(255, 252, 248, 0.85);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 0.5px solid var(--border-soft);
