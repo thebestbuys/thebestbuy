@@ -1718,6 +1718,52 @@ button.chat-bubble.chat-editable {
   justify-content: flex-end;
 }
 
+/* Overlay product detail: a full-screen sheet reusing the exact top/bottom body
+   (mobile chat, Mes sélections, home, history) so the detail is identical to the
+   inline (desktop panel) version — no separate modal grid, no top "buy" CTA. */
+.product-sheet-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  animation: bb-rise 0.18s ease-out;
+}
+.product-sheet {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: calc(64px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));
+}
+.product-sheet::-webkit-scrollbar { width: 0; height: 0; display: none; }
+.product-sheet .pi-top { padding-right: 0; }
+/* On the overlay sheet the ✕ is fixed to the top-right (stays while scrolling). */
+.product-sheet-close {
+  position: fixed;
+  top: calc(14px + env(safe-area-inset-top));
+  right: 16px;
+  z-index: 102;
+}
+/* Narrow (phone / narrow sheet): stack the image above the head so it never
+   overflows and the head gets full width. */
+@media (max-width: 620px) {
+  .pi-top { flex-direction: column; gap: 14px; }
+  .pi-media { flex: none; max-width: 62%; align-self: flex-start; }
+}
+@media (min-width: 980px) {
+  /* Wider centred card for the overlay sheet on desktop. */
+  .product-sheet {
+    inset: 0;
+    max-width: 760px;
+    margin: 0 auto;
+    border-left: 0.5px solid var(--border);
+    border-right: 0.5px solid var(--border);
+  }
+}
+
 /* ───────────────────────── Hero card ──────────────────────────── */
 .hero-card {
   position: relative;

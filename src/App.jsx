@@ -852,64 +852,45 @@ function ProductDetail({ product, onClose, onBuy, inline = false }) {
   // its own (the results panel scrolls if needed). Layout is top (image 1/3 +
   // identity/description 2/3) then bottom (Q&A + price/links), full width. A ✕
   // in a circle (top-right) closes it, like the full-screen sheets.
+  // Shared body: top (image + identity/price/description) then bottom (Q&A +
+  // actions). Used identically by the inline (desktop panel) and the overlay
+  // sheet (mobile / Mes sélections / home / history) so the detail looks the
+  // same everywhere.
+  const detailBody = (
+    <>
+      <div className="pi-top">
+        {hasImage && (
+          <div className="pi-media">
+            <ProductGallery product={product} />
+          </div>
+        )}
+        <div className="pi-head">
+          {identity}
+          {priceBlock}
+          {description}
+        </div>
+      </div>
+      <div className="pi-bottom">
+        <ProductQa product={product} />
+        <div className="pi-actions">{buyActions}</div>
+      </div>
+    </>
+  );
+
   if (inline) {
     return (
       <div className="product-inline">
         <button type="button" className="product-inline-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
-        <div className="pi-top">
-          {hasImage && (
-            <div className="pi-media">
-              <ProductGallery product={product} />
-            </div>
-          )}
-          <div className="pi-head">
-            {identity}
-            {priceBlock}
-            {description}
-          </div>
-        </div>
-        <div className="pi-bottom">
-          <ProductQa product={product} />
-          <div className="pi-actions">{buyActions}</div>
-        </div>
+        {detailBody}
       </div>
     );
   }
 
   return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
-        <div className="modal-scroll">
-          <div className={'modal-grid' + (hasImage ? '' : ' no-image')}>
-            {hasImage && (
-              <div className="modal-left">
-                <ProductGallery product={product} />
-              </div>
-            )}
-            <div className="modal-right">
-              {identity}
-              {/* Buy CTA near the top so it's reachable without scrolling to the
-                  bottom; the full price / favourite / owned box stays below. */}
-              <a
-                className="btn-primary big modal-top-buy"
-                href={amazonUrl}
-                target="_blank"
-                rel="noopener noreferrer sponsored"
-                onClick={() => onBuy(product)}
-              >
-                {t('product.viewAmazon')}
-                <span className="btn-arrow">→</span>
-              </a>
-              {description}
-              <ProductQa product={product} />
-              <div className="modal-bottom">
-                {priceBlock}
-                {buyActions}
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="product-sheet-bg" onClick={onClose}>
+      <div className="product-sheet" onClick={(e) => e.stopPropagation()}>
+        <button type="button" className="product-inline-close product-sheet-close" onClick={onClose} aria-label={t('auth.close')}>✕</button>
+        {detailBody}
       </div>
     </div>
   );
