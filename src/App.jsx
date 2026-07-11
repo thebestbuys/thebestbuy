@@ -782,6 +782,7 @@ function ProductDetail({ product, onClose, onBuy }) {
           <div className="modal-right">
             <div className="modal-brand">{product.brand}</div>
             <h2 className="modal-title">{product.model}</h2>
+            {product.amazon_title && <div className="prod-amazon-sub modal-amazon-sub">{product.amazon_title}</div>}
             {product.amazon_verified && product.rating != null && (
               <div className="modal-rating">
                 <VerifiedRating product={product} locale={locale} />

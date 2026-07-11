@@ -1007,9 +1007,10 @@ export default async function handler(req, res) {
           verifiedProducts.push({
             ...p,
             amazon_verified: true,
-            // Replace Gemini's guessed data with real Amazon first-result data
-            brand:      check.brand      || p.brand,
-            model:      check.model      || p.model,
+            // Keep Gemini's concise brand/model for display — Amazon titles are
+            // very long (full spec dump) and overflow the cards. Expose the exact
+            // Amazon product title separately as a small subtitle for trust.
+            amazon_title: check.title || null,
             amazon_url: check.amazon_url,
             image_url:  check.image_url  ?? null,
             images:     check.images     ?? (check.image_url ? [check.image_url] : []),

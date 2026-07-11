@@ -282,6 +282,7 @@ export function HeroCard({ product, density, budget, onSelect, delay = 0 }) {
             <VerifiedBadge product={product} />
           </div>
           <h2 className="hero-model">{product.model}</h2>
+          {product.amazon_title && <div className="prod-amazon-sub">{product.amazon_title}</div>}
           <VerifiedRating product={product} locale={locale} />
           {product.why && (
             <div className="hero-why">{product.why}</div>
@@ -338,6 +339,7 @@ export function ProductLinkCard({ product, rank, friendCount, budget, onSelect, 
           <VerifiedBadge product={product} compact />
         </span>
         <span className="plc-model">{product.model}</span>
+        {product.amazon_title && <span className="prod-amazon-sub">{product.amazon_title}</span>}
         {product.why && <span className="plc-why">{product.why}</span>}
         <span className="plc-bottom">
           <PriceTag product={product} locale={locale} t={t} variant="small" />
@@ -414,6 +416,7 @@ export function SmallCard({ product, rank, density, budget, onSelect, delay = 0 
           <VerifiedBadge product={product} compact />
         </div>
         <div className="small-model">{product.model}</div>
+        {product.amazon_title && <div className="prod-amazon-sub">{product.amazon_title}</div>}
         <VerifiedRating product={product} size="small" locale={locale} />
         {product.why && <div className="small-why">{product.why}</div>}
         <ul className="small-specs">
