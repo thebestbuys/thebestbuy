@@ -514,15 +514,16 @@ create index if not exists recipients_added_idx
 -- resolved from auth.uid() inside SECURITY DEFINER functions (the signed JWT),
 -- never from a client-supplied flag, so the UI "SU mode" toggle is purely
 -- cosmetic: every admin_* call below re-checks is_superuser() server-side and
--- returns an empty set for anyone else. To change the admin, edit the email in
--- BOTH this function and SUPERUSER_EMAIL in src/lib/cloud.js.
+-- returns an empty set for anyone else. To change the admins, edit the email
+-- list in THIS function, SUPERUSER_EMAILS in src/lib/cloud.js, and
+-- SUPERUSER_EMAILS in api/chat.js (AI-quota exemption). All lowercase.
 create or replace function public.is_superuser()
 returns boolean
 language sql stable security definer set search_path = public, auth as $$
   select exists (
     select 1 from auth.users u
     where u.id = auth.uid()
-      and lower(u.email) = 'thebestbuyersclub@gmail.com'
+      and lower(u.email) in ('thebestbuyersclub@gmail.com', 'darknortar@gmail.com')
   );
 $$;
 grant execute on function public.is_superuser() to authenticated;

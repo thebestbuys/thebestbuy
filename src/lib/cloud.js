@@ -439,15 +439,16 @@ export async function cloudDeleteAccount() {
 }
 
 // ─── Superuser ("god mode" / SU) ───────────────────────────────────────────
-// The single hard-wired admin account. This constant is used ONLY to decide
-// whether to SHOW the Admin entry in the UI — it grants no real privilege. Every
-// admin_* RPC below re-checks is_superuser() server-side (resolved from
-// auth.uid()), so a tampered client flag returns an empty set. Keep this in sync
-// with the email inside is_superuser() in supabase/schema.sql.
-export const SUPERUSER_EMAIL = 'thebestbuyersclub@gmail.com';
+// The hard-wired admin accounts. This list is used ONLY to decide whether to
+// SHOW the Admin entry in the UI — it grants no real privilege. Every admin_*
+// RPC below re-checks is_superuser() server-side (resolved from auth.uid()), so
+// a tampered client flag returns an empty set. Keep this in sync with the emails
+// inside is_superuser() in supabase/schema.sql AND SUPERUSER_EMAILS in
+// api/chat.js (AI-quota exemption). All entries must be lowercase.
+export const SUPERUSER_EMAILS = ['thebestbuyersclub@gmail.com', 'darknortar@gmail.com'];
 
 export function isSuperuserEmail(email) {
-  return String(email || '').trim().toLowerCase() === SUPERUSER_EMAIL;
+  return SUPERUSER_EMAILS.includes(String(email || '').trim().toLowerCase());
 }
 
 // Every registered user (server returns [] unless the caller is the superuser).

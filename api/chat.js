@@ -38,7 +38,8 @@ const SUPA_SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const AI_DAILY_REQUEST_CAP = Number(process.env.AI_DAILY_REQUEST_CAP || 50);
 const AI_DAILY_TOKEN_CAP = Number(process.env.AI_DAILY_TOKEN_CAP || 200000);
 // The superuser (admin) account is exempt from the daily AI quota entirely.
-const SUPERUSER_EMAIL = (process.env.SUPERUSER_EMAIL || 'thebestbuyersclub@gmail.com').toLowerCase();
+const SUPERUSER_EMAILS = (process.env.SUPERUSER_EMAILS || process.env.SUPERUSER_EMAIL || 'thebestbuyersclub@gmail.com,darknortar@gmail.com')
+  .toLowerCase().split(',').map((s) => s.trim()).filter(Boolean);
 
 const PROFILE_LABELS = {
   gender: { fr: 'Genre', en: 'Gender' },
@@ -797,7 +798,7 @@ export default async function handler(req, res) {
   const requesterId = requester.id;
   // The superuser (admin) account is exempt from the daily AI quota — skip the
   // pre-check AND the post-increment, and report no usage to the client.
-  const isSuperuser = !!requester.email && requester.email.toLowerCase() === SUPERUSER_EMAIL;
+  const isSuperuser = !!requester.email && SUPERUSER_EMAILS.includes(requester.email.toLowerCase());
   // Attribute every API call logged for the rest of this request to the user,
   // so the dashboard can exclude tester accounts from the call-volume stats.
   setRequestUser(requesterId);
