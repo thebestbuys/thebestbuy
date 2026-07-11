@@ -681,25 +681,25 @@ function CategoryPicker({ onPick, onOpenHistory, onOpenSelections, onOpenProfile
 // time the user types.
 function ProductQa({ product }) {
   const { t, lang } = useI18n();
-  const [qaHistory, setQaHistory] = useState([]); // [{role:'user'|'assistant', content}]
+  const [qaHistory, setQaHistory] = useState([]); // internal, for API coherence
+  const [lastReply, setLastReply] = useState(''); // the ONLY thing displayed
   const [qaInput, setQaInput] = useState('');
   const [qaLoading, setQaLoading] = useState(false);
   const [qaError, setQaError] = useState(false);
-  const threadRef = useRef(null);
-
-  useEffect(() => {
-    if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
-  }, [qaHistory, qaLoading]);
 
   const runQa = async (question, displayText) => {
     if (qaLoading) return;
     const history = qaHistory;
-    setQaHistory((h) => [...h, { role: 'user', content: displayText }]);
+    const userTurn = { role: 'user', content: displayText || question || '' };
     setQaError(false);
     setQaLoading(true);
     try {
       const json = await askProductQuestion({ product, question, history, lang, token: getAccessToken() || '' });
-      setQaHistory((h) => [...h, { role: 'assistant', content: json?.reply || '' }]);
+      const reply = json?.reply || '';
+      // Keep the full thread for API coherence on follow-ups, but only ever
+      // DISPLAY the latest answer — no questions echoed, minimal footprint.
+      setQaHistory((h) => [...h, userTurn, { role: 'assistant', content: reply }]);
+      setLastReply(reply);
     } catch {
       setQaError(true);
     } finally {
@@ -707,7 +707,7 @@ function ProductQa({ product }) {
     }
   };
 
-  const askDetailed = () => runQa('', t('product.askDetailed'));
+  const askDetailed = () => runQa('', '');
   const submitQa = (e) => {
     e.preventDefault();
     const text = qaInput.trim();
@@ -719,22 +719,17 @@ function ProductQa({ product }) {
   return (
     <div className="modal-qa">
       <div className="modal-section-title">{t('product.qaTitle')}</div>
-      {qaHistory.length === 0 ? (
+      {!lastReply && !qaLoading ? (
         <button type="button" className="modal-qa-ask-btn" onClick={askDetailed} disabled={qaLoading}>
           <span aria-hidden="true">✦</span>
-          {qaLoading ? <span className="typing"><i/><i/><i/></span> : t('product.askDetailed')}
+          {t('product.askDetailed')}
         </button>
       ) : (
-        <div className="modal-qa-thread" ref={threadRef}>
-          {qaHistory.map((m, i) => (
-            <div key={i} className={'chat-bubble ' + (m.role === 'assistant' ? 'role-bot' : 'role-user')}>
-              <div className="chat-bubble-text">{m.content}</div>
-            </div>
-          ))}
-          {qaLoading && (
-            <div className="chat-bubble role-bot">
-              <div className="chat-bubble-text"><span className="typing"><i/><i/><i/></span></div>
-            </div>
+        <div className="modal-qa-answer">
+          {qaLoading ? (
+            <span className="typing"><i/><i/><i/></span>
+          ) : (
+            <div className="chat-bubble-text">{lastReply}</div>
           )}
         </div>
       )}
@@ -1902,18 +1897,22 @@ export default function App() {
           )}
         </div>
 
-        <footer className="results-footer">
-          <span className="results-footer-affiliate">{tr('footer.affiliate')}</span>
-          <span className="results-footer-meta">
-            {tr('footer.copyrightShort', { year: new Date().getFullYear() })} ·{' '}
-            <button type="button" className="home-footer-link" onClick={navOpenLegal}>
-              {tr('footer.legal')}
-            </button>{' · '}
-            <button type="button" className="home-footer-link" onClick={navOpenPrivacy}>
-              {tr('footer.privacy')}
-            </button>
-          </span>
-        </footer>
+        {/* Footer hidden on the inline product detail so it can fit the panel
+            without scrolling. */}
+        {!selected && (
+          <footer className="results-footer">
+            <span className="results-footer-affiliate">{tr('footer.affiliate')}</span>
+            <span className="results-footer-meta">
+              {tr('footer.copyrightShort', { year: new Date().getFullYear() })} ·{' '}
+              <button type="button" className="home-footer-link" onClick={navOpenLegal}>
+                {tr('footer.legal')}
+              </button>{' · '}
+              <button type="button" className="home-footer-link" onClick={navOpenPrivacy}>
+                {tr('footer.privacy')}
+              </button>
+            </span>
+          </footer>
+        )}
       </main>
       )}
 
