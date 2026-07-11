@@ -139,12 +139,15 @@ function writeSuggCache(lang, profile, list) {
 }
 
 export async function fetchSuggestions({ lang = 'fr', profile = '', force = false } = {}) {
-  if (!force) {
-    const cached = readSuggCache(lang, profile);
-    if (cached) return cached;
-  }
+  const cached = readSuggCache(lang, profile);
+  if (!force && cached) return cached;
   try {
-    const json = await postChat({ mode: 'suggestions', lang, profile });
+    // On a re-roll ("other ideas"), tell Gemini which chips are already on
+    // screen so it proposes genuinely different ones instead of repeating.
+    const exclude = force && Array.isArray(cached)
+      ? cached.map((s) => (typeof s === 'string' ? s : s?.label)).filter(Boolean)
+      : [];
+    const json = await postChat({ mode: 'suggestions', lang, profile, exclude });
     const list = Array.isArray(json?.suggestions) ? json.suggestions : [];
     if (list.length) writeSuggCache(lang, profile, list);
     return list;

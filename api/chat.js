@@ -423,9 +423,16 @@ const SUGGESTION_ICONS = ['ac', 'fan', 'phone', 'laptop', 'tv', 'earbuds', 'watc
 
 // Prompt to pick ~8 product-category chips adapted to the season / current
 // events (in France) and, when available, the user's profile.
-function buildSuggestionsPrompt(lang, profile, dateStr) {
+function buildSuggestionsPrompt(lang, profile, dateStr, exclude = []) {
   const profileBullet = profile
     ? "\n- du PROFIL de l'utilisateur ci-dessus (adapte discrètement à ses centres d'intérêt probables, sans le citer),"
+    : '';
+  const excludeList = (Array.isArray(exclude) ? exclude : [])
+    .map((s) => String(s || '').trim())
+    .filter(Boolean)
+    .slice(0, 20);
+  const excludeLine = excludeList.length
+    ? `\n\nIMPORTANT : l'utilisateur a demandé d'AUTRES idées. Ne propose SURTOUT PAS celles-ci (ni des synonymes / variantes proches) : ${excludeList.join(', ')}. Donne 5 catégories franchement différentes.`
     : '';
   return `Tu es Oraklia, un conseiller d'achat. ${langLineFor(lang)}
 Nous sommes le ${dateStr}.${profileLine(profile)}
@@ -433,7 +440,7 @@ Nous sommes le ${dateStr}.${profileLine(profile)}
 Propose EXACTEMENT 5 idées de produits à acheter, sous forme de "chips" courts à afficher sur la page d'accueil. Choisis-les en fonction :
 - de la PÉRIODE de l'année et de la SAISON en France (météo, vacances, fêtes, soldes, rentrée, Black Friday, Noël… selon la date),
 - de l'actualité et des usages typiques du moment,${profileBullet}
-- en VARIANT les catégories (high-tech, maison, saisonnier, loisirs…).
+- en VARIANT les catégories (high-tech, maison, saisonnier, loisirs…).${excludeLine}
 
 Chaque chip = une catégorie de produit COURTE (1 à 3 mots), concrète et achetable sur Amazon.fr, SANS marque précise. Donne aussi un "icon" choisi dans cette liste EXACTE (le plus proche, sinon "default") : ${SUGGESTION_ICONS.join(', ')}.
 
@@ -752,7 +759,7 @@ export default async function handler(req, res) {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     });
     const payload = {
-      systemInstruction: { parts: [{ text: buildSuggestionsPrompt(lang, profile, dateStr) }] },
+      systemInstruction: { parts: [{ text: buildSuggestionsPrompt(lang, profile, dateStr, exclude) }] },
       contents: [{ role: 'user', parts: [{ text: 'Donne les suggestions.' }] }],
       generationConfig: { temperature: 0.9, maxOutputTokens: 512, responseMimeType: 'application/json' },
     };
