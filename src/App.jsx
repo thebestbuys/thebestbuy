@@ -1804,9 +1804,7 @@ export default function App() {
       <main className="results-panel">
         <header className="results-header">
           <div>
-            <h2 className="results-title">
-              {category === 'gift' || CATEGORIES.find((c) => c.id === category) ? tr('cat.' + category) : category}
-            </h2>
+            <h2 className="results-title">{tr('results.mainTitle')}</h2>
           </div>
           <div className="results-header-right">
             {category === 'gift' && recommendedProducts.length > 0 && (

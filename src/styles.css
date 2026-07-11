@@ -1560,11 +1560,12 @@ button.chat-bubble.chat-editable {
 }
 .results-title {
   font-family: var(--display);
-  font-size: 38px;
+  font-size: 32px;
   font-weight: 400;
   letter-spacing: -0.02em;
   margin: 0;
   line-height: 1;
+  color: var(--accent);
 }
 .results-count {
   font-family: var(--sans);
@@ -1606,11 +1607,11 @@ button.chat-bubble.chat-editable {
   min-height: 0; /* allow children to shrink so the whole set fits, no scroll */
   overflow: hidden;
 }
-/* Cards keep their natural height (never force-squished — that clips the image);
-   they're just made more compact below so the set fits one screen. */
+/* Cards keep their natural height and never shrink — shrinking let the hero's
+   content overflow onto the small cards below (visual overlap). They're made
+   compact below instead so the whole set fits one screen. */
 .results-content > .hero-wrap {
-  flex: 0 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
 }
 .results-content > .small-grid {
   flex: 0 0 auto;

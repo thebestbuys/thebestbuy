@@ -75,6 +75,7 @@ const TRANSLATIONS = {
     "results.eyebrow": "Top 3 sélection",
     "results.finalized": "Sélection finalisée",
     "results.refining": "Affinage en cours…",
+    "results.mainTitle": "Meilleurs choix",
     "results.showOthers": "Voir d'autres produits",
     "results.searching": "Recherche en cours…",
     "results.guideCta": "📖 Pour aller plus loin : {title}",
@@ -643,6 +644,7 @@ const TRANSLATIONS = {
     "results.placeholderTitle": "Your suggestions<br/>will appear here",
     "results.placeholderSub":
       "Answer the questions in the chat so Oraklia can select the best products for you.",
+    "results.mainTitle": "Best picks",
     "results.showOthers": "Show other products",
     "results.searching": "Searching…",
     "results.guideCta": "📖 Go further: {title}",
