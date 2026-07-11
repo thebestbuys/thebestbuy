@@ -1639,6 +1639,30 @@ button.chat-bubble.chat-editable {
 .pi-media .prod-img-wrap[data-size="modal"] {
   min-height: 0;
 }
+/* Thumbnails stacked in a column to the LEFT of the main image (less wasted
+   space, shorter overall than a row of thumbs under a big image). */
+.pi-media .prod-gallery {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+}
+.pi-media .prod-gallery-thumbs {
+  order: -1;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  width: auto;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.pi-media .prod-gallery-thumb {
+  width: 44px;
+  height: 44px;
+}
+.pi-media .prod-gallery > .prod-img-wrap[data-size="modal"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 .pi-head {
   flex: 1 1 auto; /* 3/5 */
   min-width: 0;
