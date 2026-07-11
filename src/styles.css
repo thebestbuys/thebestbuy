@@ -1627,16 +1627,23 @@ button.chat-bubble.chat-editable {
   min-height: 0;
   overflow-y: auto;
 }
-/* Single full-width column + a card frame so it reads as one panel-filling block. */
+/* Card frame so it reads as one panel-filling block. */
 .product-inline .modal-grid {
-  grid-template-columns: 1fr;
   background: var(--bg-elev);
   border: 0.5px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
+/* With an image: a SMALL image column beside the content (not a full-width
+   photo). Without an image, the content already spans full width (.no-image). */
+.product-inline .modal-grid:not(.no-image) {
+  grid-template-columns: minmax(130px, 180px) 1fr;
+}
 .product-inline .modal-left {
-  max-height: 340px;
+  padding: 16px;
+}
+.product-inline .modal-left .prod-img-wrap[data-size="modal"] {
+  min-height: 0;
 }
 
 /* ───────────────────────── Hero card ──────────────────────────── */
