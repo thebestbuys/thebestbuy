@@ -40,8 +40,8 @@ export const FONT_OPTIONS = [
 // Editable color tokens (per-mode) + shared font/size tokens.
 export const THEME_SCHEMA = [
   // ── Couleurs (light `def` / dark `darkDef`) ──
-  { group: 'Couleurs', token: 'bg',        cssVar: '--bg',               type: 'color', label: 'Fond',             def: '#faf8f4', darkDef: '#141210' },
-  { group: 'Couleurs', token: 'surface',   cssVar: '--bg-elev',          type: 'color', label: 'Surfaces',         def: '#ffffff', darkDef: '#211d18' },
+  { group: 'Couleurs', token: 'bg',        cssVar: '--bg',               type: 'color', label: 'Fond',             def: '#faf8f4', darkDef: '#0c0b0a' },
+  { group: 'Couleurs', token: 'surface',   cssVar: '--bg-elev',          type: 'color', label: 'Surfaces',         def: '#ffffff', darkDef: '#1a1713' },
   { group: 'Couleurs', token: 'text',      cssVar: '--text',             type: 'color', label: 'Texte',            def: '#1a1814', darkDef: '#f4f1ea' },
   { group: 'Couleurs', token: 'textMuted', cssVar: '--text-muted',       type: 'color', label: 'Texte secondaire', def: '#6b6555', darkDef: '#aca595' },
   { group: 'Couleurs', token: 'accent',    cssVar: '--accent',           type: 'color', label: 'Accent',           def: '#c2603c', darkDef: '#e2865d' },
@@ -65,8 +65,8 @@ const byToken = Object.fromEntries(THEME_SCHEMA.map((s) => [s.token, s]));
 // Secondary (non-editable) vars that must also flip in dark mode for the whole
 // UI to read correctly.
 const DARK_EXTRA = {
-  '--bg-soft': '#1b1813',
-  '--bg-softer': '#28231c',
+  '--bg-soft': '#131110',
+  '--bg-softer': '#221e18',
   '--text-faint': '#867e70',
   '--border-soft': 'rgba(255,255,255,0.07)',
   '--accent-soft': '#3a2a20',

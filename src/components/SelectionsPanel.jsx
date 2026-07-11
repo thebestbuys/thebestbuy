@@ -322,13 +322,13 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, on
                         >
                           ✕
                         </button>
-                        <a className="amz-card-img" href={url} target="_blank" rel="noopener noreferrer sponsored" onClick={() => onBuy?.(p)}>
+                        <button type="button" className="amz-card-img" onClick={() => onOpenProduct?.(p)}>
                           <ProductImage product={p} size="small" />
-                        </a>
+                        </button>
                         <div className="amz-card-body">
-                          <a className="amz-card-title" href={url} target="_blank" rel="noopener noreferrer sponsored" onClick={() => onBuy?.(p)}>
+                          <button type="button" className="amz-card-title" onClick={() => onOpenProduct?.(p)}>
                             {[p.brand, p.model].filter(Boolean).join(' ')}
-                          </a>
+                          </button>
                           {p.rating != null && (
                             <div className="amz-card-rating">
                               <Stars rating={p.rating} />
