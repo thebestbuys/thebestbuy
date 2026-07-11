@@ -6856,17 +6856,20 @@ select.profile-input {
 /* ──────────── "Recommend now" CTA (skip the wait) ───────────────── */
 /* Compact "get recommendations now" shortcut, sits to the left of the chat
    input field (accent circle, distinct from the dark send button on the right). */
-/* Scoped under .chat-input to beat the generic ".chat-input button" (round send
-   button) styles. A labelled accent pill, always shown (disabled while typing). */
-.chat-input .recommend-now-btn {
+/* "See my selection" shortcut — a labelled black pill at the bottom of the chat
+   stream (disabled while a reply is loading). */
+.recommend-now-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+.recommend-now-btn {
   appearance: none;
-  flex-shrink: 0;
-  width: auto;
-  height: 40px;
+  height: 38px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0 14px;
+  padding: 0 16px;
   background: var(--text);
   border: none;
   border-radius: 999px;
@@ -6877,21 +6880,15 @@ select.profile-input {
   cursor: pointer;
   transition: opacity 0.15s ease;
 }
-.chat-input .recommend-now-btn:not(:disabled):hover {
+.recommend-now-btn:not(:disabled):hover {
   opacity: 0.92;
-  transform: none;
 }
-.chat-input .recommend-now-btn:disabled {
+.recommend-now-btn:disabled {
   opacity: 0.4;
   cursor: default;
 }
 .recommend-now-label {
   white-space: nowrap;
-}
-/* On very tight widths, keep the icon but drop the label so the input keeps room. */
-@media (max-width: 360px) {
-  .recommend-now-label { display: none; }
-  .chat-input .recommend-now-btn { padding: 0; width: 40px; justify-content: center; }
 }
 
 /* ──────────── Budget fit badge ──────────────────────────────────── */
