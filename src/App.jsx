@@ -1116,8 +1116,15 @@ export default function App() {
       .map((p) => ({ ...p, id: productKey(p), category }))
       .filter((p) => !owned.has(p.id));
     if (!base.length) return;
-    // Keep the outgoing batch reachable via the "previous suggestions" toggle.
     const outgoing = recommendedProductsRef.current;
+    // No change → don't touch the UI. The background recommend runs after every
+    // answer, but often returns the SAME top picks; re-setting them would reopen
+    // the mobile drawer and replay the card animation for nothing. Only refresh
+    // when the batch actually differs (different products or order).
+    if (outgoing.length === base.length && base.every((p, i) => p.id === outgoing[i].id)) {
+      return;
+    }
+    // Keep the outgoing batch reachable via the "previous suggestions" toggle.
     if (outgoing.length > 0) {
       setPastProductBatches((past) => [outgoing, ...past]);
     }
