@@ -16,6 +16,7 @@ const ProfilePanel = lazy(() => import('./components/ProfilePanel.jsx'));
 const GiftPanel = lazy(() => import('./components/GiftPanel.jsx'));
 const SharedGiftList = lazy(() => import('./components/SharedGiftList.jsx'));
 const FriendsPanel = lazy(() => import('./components/FriendsPanel.jsx'));
+const OccasionModal = lazy(() => import('./components/OccasionModal.jsx'));
 const AdminPanel = lazy(() => import('./components/AdminPanel.jsx'));
 const AskOpinionPanel = lazy(() => import('./components/AskOpinionPanel.jsx'));
 const LegalNotices = lazy(() => import('./components/LegalNotices.jsx'));
@@ -933,6 +934,7 @@ export default function App() {
   const [selectionsTab, setSelectionsTab] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [friendsOpen, setFriendsOpen] = useState(false);
+  const [occasionOpen, setOccasionOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
@@ -1414,6 +1416,7 @@ export default function App() {
   const navOpenFriends = () => { pushHistory(); setFriendsOpen(true); };
   const navOpenAdmin = () => { pushHistory(); setAdminOpen(true); };
   const navOpenNotifications = () => { setNotifOpen(true); };
+  const navOpenOccasions = () => { pushHistory(); setOccasionOpen(true); };
   const navOpenAsk = () => { pushHistory(); setAskOpen(true); };
   const navOpenGift = () => { setGiftPrefill(null); pushHistory(); setGiftOpen(true); };
   const navOpenGuides = () => { pushHistory(); setGuidesOpen(true); };
@@ -1508,6 +1511,7 @@ export default function App() {
       if (privacyOpen) { setPrivacyOpen(false); return; }
       if (giftOpen) { setGiftOpen(false); return; }
       if (askOpen) { setAskOpen(false); return; }
+      if (occasionOpen) { setOccasionOpen(false); return; }
       if (friendsOpen) { setFriendsOpen(false); return; }
       if (adminOpen) { setAdminOpen(false); return; }
       if (profileOpen) { setProfileOpen(false); return; }
@@ -1731,7 +1735,8 @@ export default function App() {
             <SelectionsPanel open initialTab={selectionsTab} onClose={navBack} getAmazonUrl={getAmazonUrl} onBuy={handleBuy} onOpenProduct={navOpenProduct} />
           )}
           {profileOpen && <ProfilePanel open onClose={navBack} />}
-          {friendsOpen && <FriendsPanel open onClose={navBack} onOpenAsk={navOpenAsk} onOpenTrending={navOpenTrending} onOpenOccasions={() => { navBack(); navOpenNotifications(); }} onAddFriend={navOpenGift} />}
+          {friendsOpen && <FriendsPanel open onClose={navBack} onOpenAsk={navOpenAsk} onOpenTrending={navOpenTrending} onOpenOccasions={navOpenOccasions} onAddFriend={navOpenGift} />}
+        {occasionOpen && <OccasionModal onClose={navBack} />}
           {adminOpen && <AdminPanel open onClose={navBack} onOpenProduct={navOpenProduct} />}
 
           {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
@@ -1950,7 +1955,8 @@ export default function App() {
         )}
         {profileOpen && <ProfilePanel open onClose={navBack} />}
         {giftOpen && <GiftPanel open onClose={navBack} onSubmit={startGift} initial={giftPrefill} />}
-        {friendsOpen && <FriendsPanel open onClose={navBack} onOpenAsk={navOpenAsk} onOpenTrending={navOpenTrending} onOpenOccasions={() => { navBack(); navOpenNotifications(); }} onAddFriend={navOpenGift} />}
+        {friendsOpen && <FriendsPanel open onClose={navBack} onOpenAsk={navOpenAsk} onOpenTrending={navOpenTrending} onOpenOccasions={navOpenOccasions} onAddFriend={navOpenGift} />}
+        {occasionOpen && <OccasionModal onClose={navBack} />}
 
         {askOpen && <AskOpinionPanel open onClose={navBack} getAmazonUrl={getAmazonUrl} />}
         {trendingOpen && <TrendingPanel onClose={navBack} onOpen={navOpenProduct} />}
