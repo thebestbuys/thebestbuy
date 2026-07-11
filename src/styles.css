@@ -1601,7 +1601,7 @@ button.chat-bubble.chat-editable {
 .results-content {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 11px;
   animation: contentFade 0.55s ease;
   flex: 1 1 auto;
   min-height: 0; /* allow children to shrink so the whole set fits, no scroll */
@@ -1625,24 +1625,54 @@ button.chat-bubble.chat-editable {
   padding-bottom: 12px;
 }
 
-/* More compact hero (top proposition): smaller image column, title and padding,
-   so it stops dwarfing the two small cards and the whole set fits without scroll. */
+/* More compact hero (top proposition): the RIGHT text column drives the height,
+   so title/description/price/gaps are all trimmed (not just the image) to stop it
+   dwarfing the two small cards and let the whole set fit without scroll. */
 .results-content .hero-card {
-  padding: 20px 22px;
+  padding: 14px 18px;
 }
 .results-content .hero-grid {
-  grid-template-columns: 180px 1fr auto;
-  gap: 22px;
+  grid-template-columns: 150px 1fr auto;
+  gap: 18px;
+}
+.results-content .hero-meta {
+  gap: 7px;
 }
 .results-content .hero-model {
-  font-size: 25px;
+  font-size: 22px;
 }
 .results-content .hero-why {
-  font-size: 13.5px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.results-content .hero-specs {
+  margin-top: 2px;
+}
+.results-content .hero-bottom {
+  margin-top: 6px;
+}
+.results-content .hero-price .price-num {
+  font-size: 30px;
+}
+.results-content .hero-price .price-currency {
+  font-size: 17px;
 }
 .results-content .hero-score .score-ring {
-  transform: scale(0.82);
+  transform: scale(0.72);
   transform-origin: center;
+}
+.results-content .hero-score {
+  margin: -8px 0; /* the scaled-down ring leaves slack; pull siblings tighter */
+}
+
+/* Slightly tighter small cards so the pair fits under the compact hero. */
+.results-content .small-card {
+  padding: 14px;
+  grid-template-columns: 84px 1fr;
+  gap: 14px;
+}
+.results-content .small-grid {
+  gap: 12px;
 }
 @keyframes contentFade {
   from {
