@@ -4359,8 +4359,10 @@ button.chat-bubble.chat-editable {
   font-size: 10px;
   opacity: 0.8;
 }
+/* Expanded state: the button keeps white text would clash on accent, so use the
+   soft-accent fill with accent text (readable) instead of hiding the label. */
 .friend-btn.is-active {
-  border-color: var(--accent);
+  background: var(--accent-soft);
   color: var(--accent);
 }
 .friend-lists {
@@ -4373,6 +4375,24 @@ button.chat-bubble.chat-editable {
   border-bottom-left-radius: 12px;
   border-bottom-right-radius: 12px;
   background: var(--bg-soft);
+  overflow: hidden;
+}
+/* Smooth expand: the wrapper animates its height (0fr → 1fr) while the inner
+   content stays at natural size, so both opening AND closing glide. */
+.friend-lists-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 240ms ease;
+}
+.friend-lists-wrap.is-open {
+  grid-template-rows: 1fr;
+}
+.friend-lists-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .friend-lists-wrap { transition: none; }
 }
 .friend-avatar-fallback {
   display: inline-flex;

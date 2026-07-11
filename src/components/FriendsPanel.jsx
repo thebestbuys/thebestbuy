@@ -53,6 +53,7 @@ export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending,
   const [incoming, setIncoming] = useState([]);
   const [friends, setFriends] = useState([]);
   const [viewing, setViewing] = useState(null);   // friend whose lists we browse
+  const [closingId, setClosingId] = useState(null); // friend collapsing (keep mounted during the close animation)
   const [pubLists, setPubLists] = useState(null);  // null = loading
   const [openListId, setOpenListId] = useState(null);
   const [listItems, setListItems] = useState([]);
@@ -128,9 +129,14 @@ export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending,
   // is why pubLists/openListId/listItems can stay single shared states.
   const browse = (f) => {
     if (viewing?.user_id === f.user_id) {
+      // Collapse: keep the content mounted through the height transition so the
+      // close animates too (grid-rows 1fr → 0fr), then unmount.
+      setClosingId(f.user_id);
       setViewing(null);
+      setTimeout(() => setClosingId((c) => (c === f.user_id ? null : c)), 260);
       return;
     }
+    setClosingId(null);
     setViewing(f);
     setPubLists(null);
     setOpenListId(null);
@@ -268,8 +274,9 @@ export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending,
               <ul className="friends-list">
                 {friends.map((f) => {
                   const expanded = viewing?.user_id === f.user_id;
+                  const mounted = expanded || closingId === f.user_id;
                   return (
-                  <li key={f.user_id} className={'friend-item' + (expanded ? ' is-expanded' : '')}>
+                  <li key={f.user_id} className={'friend-item' + (mounted ? ' is-expanded' : '')}>
                     <div className="friend-row">
                       <Avatar name={f.display_name} url={f.avatar_url} />
                       <span className="friend-name">{f.display_name}</span>
@@ -281,46 +288,50 @@ export default function FriendsPanel({ open, onClose, onOpenAsk, onOpenTrending,
                         {t('friends.remove')}
                       </button>
                     </div>
-                    {expanded && (
-                      <div className="friend-lists">
-                        {pubLists === null ? (
-                          <div className="friends-hint">…</div>
-                        ) : pubLists.length === 0 ? (
-                          <div className="friends-hint">{t('friends.noPublicLists')}</div>
-                        ) : (
-                          pubLists.map((l) => (
-                            <div key={l.id} className="pub-list">
-                              <button type="button" className="pub-list-head" onClick={() => openList(l)}>
-                                <span className="pub-list-name">🌐 {l.name}</span>
-                                <span className="sel-list-n">{t('lists.count', { n: l.item_count })}</span>
-                                <span className="pub-list-caret">{openListId === l.id ? '▾' : '▸'}</span>
-                              </button>
-                              {openListId === l.id && (
-                                <ul className="pub-items">
-                                  {listItems.map((p, i) => {
-                                    const url = amazonUrl(p);
-                                    const onAmazon = () => logLinkClick(p).catch(() => {});
-                                    return (
-                                      <li key={i} className="pub-item">
-                                        <a className="pub-item-img" href={url} target="_blank" rel="noopener noreferrer sponsored" title={t('product.viewAmazon')} onClick={onAmazon}>
-                                          <ProductImage product={p} size="small" />
-                                        </a>
-                                        <a className="pub-item-main" href={url} target="_blank" rel="noopener noreferrer sponsored" onClick={onAmazon}>
-                                          <span className="pub-item-title">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
-                                          {p.price != null && (
-                                            <span className="pub-item-price"><AmazonPrice price={p.price} /></span>
-                                          )}
-                                        </a>
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              )}
-                            </div>
-                          ))
+                    <div className={'friend-lists-wrap' + (expanded ? ' is-open' : '')}>
+                      <div className="friend-lists-inner">
+                        {mounted && (
+                          <div className="friend-lists">
+                            {pubLists === null ? (
+                              <div className="friends-hint">…</div>
+                            ) : pubLists.length === 0 ? (
+                              <div className="friends-hint">{t('friends.noPublicLists')}</div>
+                            ) : (
+                              pubLists.map((l) => (
+                                <div key={l.id} className="pub-list">
+                                  <button type="button" className="pub-list-head" onClick={() => openList(l)}>
+                                    <span className="pub-list-name">🌐 {l.name}</span>
+                                    <span className="sel-list-n">{t('lists.count', { n: l.item_count })}</span>
+                                    <span className="pub-list-caret">{openListId === l.id ? '▾' : '▸'}</span>
+                                  </button>
+                                  {openListId === l.id && (
+                                    <ul className="pub-items">
+                                      {listItems.map((p, i) => {
+                                        const url = amazonUrl(p);
+                                        const onAmazon = () => logLinkClick(p).catch(() => {});
+                                        return (
+                                          <li key={i} className="pub-item">
+                                            <a className="pub-item-img" href={url} target="_blank" rel="noopener noreferrer sponsored" title={t('product.viewAmazon')} onClick={onAmazon}>
+                                              <ProductImage product={p} size="small" />
+                                            </a>
+                                            <a className="pub-item-main" href={url} target="_blank" rel="noopener noreferrer sponsored" onClick={onAmazon}>
+                                              <span className="pub-item-title">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
+                                              {p.price != null && (
+                                                <span className="pub-item-price"><AmazonPrice price={p.price} /></span>
+                                              )}
+                                            </a>
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  )}
+                                </div>
+                              ))
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
+                    </div>
                   </li>
                   );
                 })}
