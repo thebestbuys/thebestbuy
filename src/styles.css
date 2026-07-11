@@ -882,8 +882,8 @@ ul {
   color: var(--text);
 }
 .chat-bubble.role-user .chat-bubble-text {
-  background: var(--text-muted);
-  color: #fff;
+  background: var(--text);
+  color: var(--bg);
   border-bottom-right-radius: 6px;
 }
 
