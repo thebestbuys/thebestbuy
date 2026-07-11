@@ -1795,19 +1795,35 @@ button.chat-bubble.chat-editable {
 .results-panel .product-inline {
   overflow: hidden;
 }
+/* Image block can shrink (gallery capped) so it never pushes the rest off-screen. */
 .results-panel .pi-top {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-height: 0;
 }
 .results-panel .pi-media .prod-gallery > .prod-img-wrap[data-size="modal"] {
-  max-height: 40vh;
+  max-height: 38vh;
 }
 .results-panel .pi-media .prod-gallery-thumbs {
-  max-height: 40vh;
+  max-height: 38vh;
   overflow: hidden;
 }
+/* Bottom = Q&A + buy actions. The BUY button must ALWAYS stay visible, so pin
+   .pi-actions and let the (secondary) Q&A be the part that shrinks/scrolls. */
 .results-panel .pi-bottom {
   flex: 1 1 auto;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.results-panel .pi-bottom .modal-qa {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.results-panel .pi-bottom .modal-qa::-webkit-scrollbar { width: 0; height: 0; display: none; }
+.results-panel .pi-actions {
+  flex: 0 0 auto;
 }
 
 /* Overlay product detail: a full-screen sheet reusing the exact top/bottom body
