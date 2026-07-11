@@ -1804,7 +1804,6 @@ export default function App() {
       <main className="results-panel">
         <header className="results-header">
           <div>
-            <div className="results-eyebrow">{tr('results.eyebrow')}</div>
             <h2 className="results-title">
               {category === 'gift' || CATEGORIES.find((c) => c.id === category) ? tr('cat.' + category) : category}
             </h2>

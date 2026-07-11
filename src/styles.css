@@ -1536,7 +1536,7 @@ button.chat-bubble.chat-editable {
 .results-panel {
   height: 100vh;
   overflow: hidden; /* the panel never scrolls — everything must fit the viewport */
-  padding: 22px 36px 22px;
+  padding: 16px 22px 18px 36px; /* tighter top/right so the header controls sit higher and more to the edge */
   scrollbar-width: none;
   display: flex;
   flex-direction: column;
@@ -1606,24 +1606,42 @@ button.chat-bubble.chat-editable {
   min-height: 0; /* allow children to shrink so the whole set fits, no scroll */
   overflow: hidden;
 }
-/* The hero flexes to fill the space left by the (fixed-height) top nav + small
-   cards, and its inner media shrinks with it so three cards + nav fit one screen. */
+/* Cards keep their natural height (never force-squished — that clips the image);
+   they're just made more compact below so the set fits one screen. */
 .results-content > .hero-wrap {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-}
-.results-content > .hero-wrap > .hero-card {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-height: 0;
 }
 .results-content > .small-grid {
   flex: 0 0 auto;
 }
-/* Also reduce the header footprint so more room is left for the cards. */
+
+/* Compact header: no eyebrow, controls aligned to the top-right and pushed
+   closer to the edge, so the propositions get more vertical room. */
 .results-panel .results-header {
-  margin-bottom: 16px;
-  padding-bottom: 14px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+}
+
+/* More compact hero (top proposition): smaller image column, title and padding,
+   so it stops dwarfing the two small cards and the whole set fits without scroll. */
+.results-content .hero-card {
+  padding: 20px 22px;
+}
+.results-content .hero-grid {
+  grid-template-columns: 180px 1fr auto;
+  gap: 22px;
+}
+.results-content .hero-model {
+  font-size: 25px;
+}
+.results-content .hero-why {
+  font-size: 13.5px;
+}
+.results-content .hero-score .score-ring {
+  transform: scale(0.82);
+  transform-origin: center;
 }
 @keyframes contentFade {
   from {
