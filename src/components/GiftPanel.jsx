@@ -157,15 +157,17 @@ export default function GiftPanel({ open, onClose, onSubmit, initial }) {
             </h2>
             <p className="history-sub">{t('gift.sub')}</p>
           </div>
-          <PanelHelpButton flat />
-          <button
-            type="button"
-            className="sheet-close"
-            onClick={onClose}
-            aria-label={t('auth.close')}
-          >
-            ✕
-          </button>
+          <div className="panel-head-actions">
+            <PanelHelpButton />
+            <button
+              type="button"
+              className="sheet-close"
+              onClick={onClose}
+              aria-label={t('auth.close')}
+            >
+              ✕
+            </button>
+          </div>
         </header>
 
         <div className="sheet-body">
