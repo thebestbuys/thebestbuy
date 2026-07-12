@@ -613,6 +613,11 @@ function trendingSnapshot(p) {
     model: p.model,
     price: p.price ?? null,
     image_url: p.image_url || null,
+    // Full gallery + descriptive fields so the "Consultés" detail sheet is as
+    // complete as a favorite's (specs, why, thumbnails). Mirrors selections.js.
+    images: Array.isArray(p.images) ? p.images : [],
+    specs: Array.isArray(p.specs) ? p.specs : [],
+    why: p.why || null,
     color: p.color || null,
     rating: p.rating ?? null,
     reviews: p.reviews ?? null,

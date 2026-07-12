@@ -69,7 +69,14 @@ function snapshot(product) {
     model: product.model,
     price: product.price ?? null,
     image_url: product.image_url || null,
+    // Full gallery + descriptive fields so the owned product's detail sheet is
+    // as complete as a favorite's (specs, why, thumbnails). Mirrors selections.js.
+    images: Array.isArray(product.images) ? product.images : [],
+    specs: Array.isArray(product.specs) ? product.specs : [],
+    why: product.why || null,
     color: product.color || null,
+    rating: product.rating ?? null,
+    reviews: product.reviews ?? null,
     score: product.score ?? null,
     amazon_url: product.amazon_url || null,
     category: product.category || null,
