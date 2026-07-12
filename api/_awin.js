@@ -30,7 +30,7 @@ export function awinFeedConfig() {
 //   GET https://api.awin.com/publishers/{PUBID}/awinfeeds/download/{MID}-{VERTICAL}-{LOCALE}
 // Authenticated with a Bearer AWIN_API_TOKEN. Returns the full product catalogue.
 export function awinFeedUrl(mid = AWIN_RAKUTEN_MID) {
-  return `https://api.awin.com/publishers/${AWIN_PUBLISHER_ID}/awinfeeds/download/${mid}-${AWIN_VERTICAL}-${AWIN_LOCALE}`;
+  return `https://api.awin.com/publishers/${AWIN_PUBLISHER_ID}/awinfeeds/download/${mid}-${AWIN_VERTICAL}-${AWIN_LOCALE}.jsonl`;
 }
 
 // Wrap a destination URL in an Awin tracked ("cread") link so the click is
