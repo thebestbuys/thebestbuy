@@ -136,19 +136,22 @@ async function catalog(operation, body) {
 
 // Map one Creators API item → the compact shape checkAmazon() already returns.
 // Defensive on every path: the exact offersV2 nesting is loosely documented.
-// Amazon's image CDN renders any size on demand via a filename token
-// (._SL1500_. = longest side 1500px). The API's "large" variant is often only
-// ~500px — too soft for the on-hover product zoom — so we rewrite the URL to
-// request a higher-resolution rendition from the *same* Amazon host. Defensive:
-// only touches recognised Amazon media URLs; anything else is returned as-is.
+// The API's "large" image variant is capped at 500px by Amazon (PA-API sizes:
+// Small 75 / Medium 160 / Large 500), which is too soft for the on-hover product
+// zoom. The image CDN can enlarge to an arbitrary longest side via a filename
+// token, but the two tokens differ: "_SL<n>_" (Scale) never exceeds the 500px
+// master (so it's a no-op here), whereas "_UL<n>_" (Upscale) actually renders a
+// larger canvas. It's interpolated (no *new* detail — the master is still 500px)
+// but a smooth 1500px reads far better under magnification than a hard-upscaled
+// 500px. Defensive: only touches recognised Amazon media URLs.
 const HI_RES_PX = 1500;
 function hiResImageUrl(url) {
   if (!url || !/(?:media-amazon|images-amazon|ssl-images-amazon)\.com/i.test(url)) return url;
   return url
     // Drop any existing size/format tokens, e.g. "._SX466_SY466_SCLZZZ_."
     .replace(/\._[A-Z0-9,_]+_\.(jpg|jpeg|png|gif)$/i, '.$1')
-    // Then inject our target longest-side size.
-    .replace(/\.(jpg|jpeg|png|gif)$/i, `._SL${HI_RES_PX}_.$1`);
+    // Then upscale to our target longest side.
+    .replace(/\.(jpg|jpeg|png|gif)$/i, `._UL${HI_RES_PX}_.$1`);
 }
 
 function mapItem(item) {

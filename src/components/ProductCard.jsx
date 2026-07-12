@@ -12,17 +12,19 @@ export const CARD_OUT_STAGGER_MS = 45;
 export const CARD_POP_ANIM_MS = 220;
 export const CARD_SWAP_DELAY_MS = 2 * CARD_OUT_STAGGER_MS + CARD_POP_ANIM_MS + 20;
 
-// Amazon's image CDN renders any size on demand via a filename token
-// (._SL1500_. = longest side 1500px). Upgrade any Amazon image URL to a hi-res
-// rendition at *display* time, so even older saved snapshots / cached results
-// (which stored a soft ~500px "large" URL) render crisply and zoom well — not
-// only freshly-verified products. Idempotent + defensive (mirrors the server
-// helper in api/_creators.js); non-Amazon URLs pass through untouched.
+// Enlarge any Amazon image URL at *display* time so even older saved snapshots /
+// cached results (which stored a 500px "large" URL) render at a larger, smoother
+// size and hold up under the hover zoom — not only freshly-verified products.
+// Note: Amazon's API caps its "large" variant at 500px, so this is an *upscale*
+// (._UL1500_. = Upscale Longest side 1500 — "_SL_" would just cap back at the
+// 500px master). No new detail, but a smooth 1500px beats a hard-pixelated 500px
+// when magnified. Idempotent + defensive; mirrors api/_creators.js. Non-Amazon
+// URLs pass through untouched.
 export function hiResAmazonImg(url) {
   if (!url || !/(?:media-amazon|images-amazon|ssl-images-amazon)\.com/i.test(url)) return url;
   return url
     .replace(/\._[A-Z0-9,_]+_\.(jpg|jpeg|png|gif)$/i, '.$1')
-    .replace(/\.(jpg|jpeg|png|gif)$/i, '._SL1500_.$1');
+    .replace(/\.(jpg|jpeg|png|gif)$/i, '._UL1500_.$1');
 }
 
 // Only show a real product photo when it comes from a verified Amazon result.
