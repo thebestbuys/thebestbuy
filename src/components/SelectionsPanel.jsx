@@ -315,7 +315,6 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, re
               <>
                 <ul className="selections-grid">
                   {visible.map((p) => {
-                    const url = getAmazonUrl ? getAmazonUrl(p) : p.amazon_url;
                     return (
                       <li key={p.id} className="amz-card">
                         <FavoriteButton product={p} variant="manage" onChange={reload} />
@@ -356,9 +355,9 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, re
                           <div className="amz-card-added">
                             {t('selections.added', { when: formatRelative(p.addedAt) })}
                           </div>
-                          <a className="amz-buy-btn" href={url} target="_blank" rel="noopener noreferrer sponsored" onClick={() => onBuy?.(p)}>
-                            {t('product.viewAmazon')}
-                          </a>
+                          <button type="button" className="amz-buy-btn" onClick={() => setDetail(p)}>
+                            {t('product.viewDetails')}
+                          </button>
                         </div>
                       </li>
                     );
