@@ -71,6 +71,11 @@ function snapshot(product, listIds = []) {
     model: product.model,
     price: product.price ?? null,
     image_url: product.image_url || null,
+    // Full gallery + descriptive fields so the saved product's detail sheet is
+    // as complete as when it was recommended in the chat (specs, why, thumbnails).
+    images: Array.isArray(product.images) ? product.images : [],
+    specs: Array.isArray(product.specs) ? product.specs : [],
+    why: product.why || null,
     color: product.color || null,
     rating: product.rating ?? null,
     reviews: product.reviews ?? null,
