@@ -28,12 +28,16 @@ import { useDismiss } from '../lib/useDismiss.js';
 // bar). Clicking a Consultés/Achetés card opens the shared product detail
 // modal (`onOpenProduct`); Favoris cards still link straight to Amazon,
 // unchanged.
-export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, onOpenProduct, initialTab = 'favorites' }) {
+export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, renderProductDetail, initialTab = 'favorites' }) {
   const { user } = useAuth();
   const { t, lang } = useI18n();
   const { closing, close } = useDismiss(onClose);
   const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
   const [tab, setTab] = useState(initialTab);
+  // A product opened for its detail — rendered INSIDE the body (via
+  // renderProductDetail) so the panel header stays visible, instead of a
+  // full-screen overlay that would cover the whole sheet.
+  const [detail, setDetail] = useState(null);
   const [items, setItems] = useState([]);
   const [lists, setLists] = useState([]);
   const [active, setActive] = useState('all'); // 'all' | listId | 'unfiled'
@@ -215,6 +219,8 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, on
           </div>
         </header>
         <div className="sheet-body">
+        {detail ? renderProductDetail(detail, () => setDetail(null)) : (
+        <>
 
         <div className="sel-tabs" role="tablist">
           <button type="button" role="tab" aria-selected={tab === 'favorites'} className={'sel-tab' + (tab === 'favorites' ? ' is-active' : '')} onClick={() => setTab('favorites')}>
@@ -322,11 +328,11 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, on
                         >
                           ✕
                         </button>
-                        <button type="button" className="amz-card-img" onClick={() => onOpenProduct?.(p)}>
+                        <button type="button" className="amz-card-img" onClick={() => setDetail(p)}>
                           <ProductImage product={p} size="small" />
                         </button>
                         <div className="amz-card-body">
-                          <button type="button" className="amz-card-title" onClick={() => onOpenProduct?.(p)}>
+                          <button type="button" className="amz-card-title" onClick={() => setDetail(p)}>
                             {[p.brand, p.model].filter(Boolean).join(' ')}
                           </button>
                           {p.rating != null && (
@@ -399,11 +405,11 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, on
                       >
                         ✕
                       </button>
-                      <button type="button" className="amz-card-img" onClick={() => onOpenProduct?.(p)}>
+                      <button type="button" className="amz-card-img" onClick={() => setDetail(p)}>
                         <ProductImage product={p} size="small" />
                       </button>
                       <div className="amz-card-body">
-                        <button type="button" className="amz-card-title" onClick={() => onOpenProduct?.(p)}>
+                        <button type="button" className="amz-card-title" onClick={() => setDetail(p)}>
                           {[p.brand, p.model].filter(Boolean).join(' ')}
                         </button>
                         {p.rating != null && (
@@ -462,11 +468,11 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, on
                       >
                         ✕
                       </button>
-                      <button type="button" className="amz-card-img" onClick={() => onOpenProduct?.(p)}>
+                      <button type="button" className="amz-card-img" onClick={() => setDetail(p)}>
                         <ProductImage product={p} size="small" />
                       </button>
                       <div className="amz-card-body">
-                        <button type="button" className="amz-card-title" onClick={() => onOpenProduct?.(p)}>
+                        <button type="button" className="amz-card-title" onClick={() => setDetail(p)}>
                           {[p.brand, p.model].filter(Boolean).join(' ')}
                         </button>
                         {p.price != null && (
@@ -482,6 +488,8 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, on
               )}
             </>
           )
+        )}
+        </>
         )}
       </div>
     </div>

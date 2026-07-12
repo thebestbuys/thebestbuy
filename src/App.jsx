@@ -1743,7 +1743,7 @@ export default function App() {
             <HistoryPanel open onClose={navBack} onLoad={loadConversation} currentId={convoId} />
           )}
           {selectionsTab && (
-            <SelectionsPanel open initialTab={selectionsTab} onClose={navBack} getAmazonUrl={getAmazonUrl} onBuy={handleBuy} onOpenProduct={navOpenProduct} />
+            <SelectionsPanel open initialTab={selectionsTab} onClose={navBack} getAmazonUrl={getAmazonUrl} onBuy={handleBuy} renderProductDetail={(p, onBack) => <ProductDetail inline product={p} onClose={onBack} onBuy={handleBuy} />} />
           )}
           {profileOpen && <ProfilePanel open onClose={navBack} />}
           {friendsOpen && <FriendsPanel open onClose={navBack} onOpenAsk={navOpenAsk} onOpenTrending={navOpenTrending} onOpenOccasions={navOpenOccasions} onAddFriend={navOpenGift} />}
@@ -1962,7 +1962,7 @@ export default function App() {
           <HistoryPanel open onClose={navBack} onLoad={loadConversation} currentId={convoId} />
         )}
         {selectionsTab && (
-          <SelectionsPanel open initialTab={selectionsTab} onClose={navBack} getAmazonUrl={getAmazonUrl} onBuy={handleBuy} onOpenProduct={navOpenProduct} />
+          <SelectionsPanel open initialTab={selectionsTab} onClose={navBack} getAmazonUrl={getAmazonUrl} onBuy={handleBuy} renderProductDetail={(p, onBack) => <ProductDetail inline product={p} onClose={onBack} onBuy={handleBuy} />} />
         )}
         {profileOpen && <ProfilePanel open onClose={navBack} />}
         {giftOpen && <GiftPanel open onClose={navBack} onSubmit={startGift} initial={giftPrefill} />}
