@@ -3953,13 +3953,7 @@ button.chat-bubble.chat-editable {
 .amz-card-img {
   display: block;
   padding: 10px 10px 0;
-  /* Resets so the Consultés/Achetés tabs (read-only/unmark cards, opened via
-     a <button> instead of an Amazon <a>) look identical to the Favoris cards. */
-  appearance: none;
-  border: 0;
-  background: none;
   width: 100%;
-  cursor: pointer;
 }
 .amz-card-img .prod-img-wrap {
   background: #fff;
@@ -3976,15 +3970,6 @@ button.chat-bubble.chat-editable {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  text-decoration: none;
-  /* Resets for the <button> variant. */
-  appearance: none;
-  border: 0;
-  background: none;
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
-  padding: 0;
   min-width: 0;
 }
 .amz-card-brand {

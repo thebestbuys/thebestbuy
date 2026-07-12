@@ -327,11 +327,11 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, re
                         >
                           ✕
                         </button>
-                        <button type="button" className="amz-card-img" onClick={() => setDetail(p)}>
+                        <div className="amz-card-img">
                           <ProductImage product={p} size="small" />
-                        </button>
+                        </div>
                         <div className="amz-card-body">
-                          <button type="button" className="amz-card-title" onClick={() => setDetail(p)}>
+                          <div className="amz-card-title">
                             {p.brand && p.model ? (
                             <>
                               <span className="amz-card-brand">{p.brand}</span>
@@ -340,7 +340,7 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, re
                           ) : (
                             <span className="amz-card-model">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
                           )}
-                          </button>
+                          </div>
                           {p.rating != null && (
                             <div className="amz-card-rating">
                               <Stars rating={p.rating} />
@@ -411,11 +411,11 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, re
                       >
                         ✕
                       </button>
-                      <button type="button" className="amz-card-img" onClick={() => setDetail(p)}>
+                      <div className="amz-card-img">
                         <ProductImage product={p} size="small" />
-                      </button>
+                      </div>
                       <div className="amz-card-body">
-                        <button type="button" className="amz-card-title" onClick={() => setDetail(p)}>
+                        <div className="amz-card-title">
                           {p.brand && p.model ? (
                             <>
                               <span className="amz-card-brand">{p.brand}</span>
@@ -424,7 +424,7 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, re
                           ) : (
                             <span className="amz-card-model">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
                           )}
-                        </button>
+                        </div>
                         {p.rating != null && (
                           <div className="amz-card-rating">
                             <Stars rating={p.rating} />
@@ -439,6 +439,9 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, re
                         <div className="amz-card-added">
                           {t('selections.added', { when: formatRelative(p.clickedAt) })}
                         </div>
+                        <button type="button" className="amz-buy-btn" onClick={() => setDetail(p)}>
+                          {t('product.viewDetails')}
+                        </button>
                       </div>
                     </li>
                   ))}
@@ -481,11 +484,11 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, re
                       >
                         ✕
                       </button>
-                      <button type="button" className="amz-card-img" onClick={() => setDetail(p)}>
+                      <div className="amz-card-img">
                         <ProductImage product={p} size="small" />
-                      </button>
+                      </div>
                       <div className="amz-card-body">
-                        <button type="button" className="amz-card-title" onClick={() => setDetail(p)}>
+                        <div className="amz-card-title">
                           {p.brand && p.model ? (
                             <>
                               <span className="amz-card-brand">{p.brand}</span>
@@ -494,13 +497,16 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, re
                           ) : (
                             <span className="amz-card-model">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
                           )}
-                        </button>
+                        </div>
                         {p.price != null && (
                           <div className="amz-card-price"><AmazonPrice price={p.price} /></div>
                         )}
                         <div className="amz-card-added">
                           {t('selections.added', { when: formatRelative(p.addedAt) })}
                         </div>
+                        <button type="button" className="amz-buy-btn" onClick={() => setDetail(p)}>
+                          {t('product.viewDetails')}
+                        </button>
                       </div>
                     </li>
                   ))}
