@@ -12,6 +12,19 @@ export const CARD_OUT_STAGGER_MS = 45;
 export const CARD_POP_ANIM_MS = 220;
 export const CARD_SWAP_DELAY_MS = 2 * CARD_OUT_STAGGER_MS + CARD_POP_ANIM_MS + 20;
 
+// Amazon's image CDN renders any size on demand via a filename token
+// (._SL1500_. = longest side 1500px). Upgrade any Amazon image URL to a hi-res
+// rendition at *display* time, so even older saved snapshots / cached results
+// (which stored a soft ~500px "large" URL) render crisply and zoom well — not
+// only freshly-verified products. Idempotent + defensive (mirrors the server
+// helper in api/_creators.js); non-Amazon URLs pass through untouched.
+export function hiResAmazonImg(url) {
+  if (!url || !/(?:media-amazon|images-amazon|ssl-images-amazon)\.com/i.test(url)) return url;
+  return url
+    .replace(/\._[A-Z0-9,_]+_\.(jpg|jpeg|png|gif)$/i, '.$1')
+    .replace(/\.(jpg|jpeg|png|gif)$/i, '._SL1500_.$1');
+}
+
 // Only show a real product photo when it comes from a verified Amazon result.
 // Gemini-sourced candidates must never display a scraped/guessed Amazon image
 // (Amazon Associates Operating Agreement, art. 1 — Program Content).
@@ -20,7 +33,7 @@ export function ProductImage({ product, size = 'normal' }) {
     return (
       <div className="prod-img-wrap is-photo" data-size={size}>
         <img
-          src={product.image_url}
+          src={hiResAmazonImg(product.image_url)}
           alt={`${product.brand} ${product.model}`}
           className="prod-img-amazon"
         />
@@ -68,12 +81,13 @@ export function ProductImage({ product, size = 'normal' }) {
 // placeholder. `product.images` is the API-provided gallery (primary + variant
 // shots); it degrades to the single image_url (or one thumbnail = no thumb row).
 export function ProductGallery({ product }) {
-  const imgs =
+  const imgs = (
     product.amazon_verified
       ? (product.images && product.images.length
           ? product.images
           : (product.image_url ? [product.image_url] : []))
-      : [];
+      : []
+  ).map(hiResAmazonImg);
   const [active, setActive] = useState(0);
   // Amazon-style hover zoom: hovering the main photo draws a lens rectangle over
   // the hovered region and shows a large magnifier panel to the side with that
@@ -86,7 +100,7 @@ export function ProductGallery({ product }) {
   // Reset when switching products (the detail modal reuses this component).
   useEffect(() => { setActive(0); setZoom(null); }, [product.id]);
 
-  const ZOOM = 2.5;
+  const ZOOM = 5;
 
   const onMove = (e) => {
     const img = imgRef.current, wrap = wrapRef.current;
