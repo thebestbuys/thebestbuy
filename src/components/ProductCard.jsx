@@ -102,7 +102,7 @@ export function ProductGallery({ product }) {
   // Reset when switching products (the detail modal reuses this component).
   useEffect(() => { setActive(0); setZoom(null); }, [product.id]);
 
-  const ZOOM = 5;
+  const ZOOM = 1.25;
 
   const onMove = (e) => {
     const img = imgRef.current, wrap = wrapRef.current;
