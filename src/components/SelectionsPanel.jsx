@@ -333,7 +333,14 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, re
                         </button>
                         <div className="amz-card-body">
                           <button type="button" className="amz-card-title" onClick={() => setDetail(p)}>
-                            {[p.brand, p.model].filter(Boolean).join(' ')}
+                            {p.brand && p.model ? (
+                            <>
+                              <span className="amz-card-brand">{p.brand}</span>
+                              <span className="amz-card-model">{p.model}</span>
+                            </>
+                          ) : (
+                            <span className="amz-card-model">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
+                          )}
                           </button>
                           {p.rating != null && (
                             <div className="amz-card-rating">
@@ -410,7 +417,14 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, re
                       </button>
                       <div className="amz-card-body">
                         <button type="button" className="amz-card-title" onClick={() => setDetail(p)}>
-                          {[p.brand, p.model].filter(Boolean).join(' ')}
+                          {p.brand && p.model ? (
+                            <>
+                              <span className="amz-card-brand">{p.brand}</span>
+                              <span className="amz-card-model">{p.model}</span>
+                            </>
+                          ) : (
+                            <span className="amz-card-model">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
+                          )}
                         </button>
                         {p.rating != null && (
                           <div className="amz-card-rating">
@@ -473,7 +487,14 @@ export default function SelectionsPanel({ open, onClose, getAmazonUrl, onBuy, re
                       </button>
                       <div className="amz-card-body">
                         <button type="button" className="amz-card-title" onClick={() => setDetail(p)}>
-                          {[p.brand, p.model].filter(Boolean).join(' ')}
+                          {p.brand && p.model ? (
+                            <>
+                              <span className="amz-card-brand">{p.brand}</span>
+                              <span className="amz-card-model">{p.model}</span>
+                            </>
+                          ) : (
+                            <span className="amz-card-model">{[p.brand, p.model].filter(Boolean).join(' ')}</span>
+                          )}
                         </button>
                         {p.price != null && (
                           <div className="amz-card-price"><AmazonPrice price={p.price} /></div>
