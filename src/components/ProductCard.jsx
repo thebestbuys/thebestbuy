@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useI18n } from '../lib/i18n.jsx';
 import FavoriteButton from './FavoriteButton.jsx';
 
@@ -74,24 +75,66 @@ export function ProductGallery({ product }) {
           : (product.image_url ? [product.image_url] : []))
       : [];
   const [active, setActive] = useState(0);
-  // Amazon-style hover magnifier: on pointer devices, hovering the main photo
-  // scales it up and pans with the cursor (transform-origin follows the pointer,
-  // computed from the image's own rect so the zoom tracks accurately). The frame
-  // clips the overflow (.prod-zoom { overflow:hidden } in styles.css).
-  const [zoom, setZoom] = useState(false);
-  const [origin, setOrigin] = useState('50% 50%');
+  // Amazon-style hover zoom: hovering the main photo draws a lens rectangle over
+  // the hovered region and shows a large magnifier panel to the side with that
+  // region enlarged. The panel is portaled to <body> with position:fixed so the
+  // overflow:hidden ancestors (results-content / product-inline) never clip it.
+  // Pointer devices only — touch fires no hover/mousemove.
+  const [zoom, setZoom] = useState(null); // { lens:{left,top,w,h}, panel:{styles} } | null
+  const wrapRef = useRef(null);
   const imgRef = useRef(null);
   // Reset when switching products (the detail modal reuses this component).
-  useEffect(() => { setActive(0); setZoom(false); }, [product.id]);
+  useEffect(() => { setActive(0); setZoom(null); }, [product.id]);
+
+  const ZOOM = 2.5;
+  const PANEL = 380;
 
   const onMove = (e) => {
-    const el = imgRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const clamp = (v) => Math.max(0, Math.min(100, v));
-    const x = clamp(((e.clientX - r.left) / r.width) * 100);
-    const y = clamp(((e.clientY - r.top) / r.height) * 100);
-    setOrigin(`${x}% ${y}%`);
+    const img = imgRef.current, wrap = wrapRef.current;
+    if (!img || !wrap || !img.naturalWidth) return;
+    const er = img.getBoundingClientRect();
+    const wr = wrap.getBoundingClientRect();
+    // Rendered image box inside the element (object-fit: contain → letterboxed).
+    const scale = Math.min(er.width / img.naturalWidth, er.height / img.naturalHeight);
+    const rw = img.naturalWidth * scale;
+    const rh = img.naturalHeight * scale;
+    const rLeft = er.left + (er.width - rw) / 2;
+    const rTop = er.top + (er.height - rh) / 2;
+    const cx = e.clientX - rLeft;
+    const cy = e.clientY - rTop;
+    if (cx < 0 || cy < 0 || cx > rw || cy > rh) { setZoom(null); return; }
+    const lensW = Math.min(rw, PANEL / ZOOM);
+    const lensH = Math.min(rh, PANEL / ZOOM);
+    const lensLeft = Math.max(0, Math.min(rw - lensW, cx - lensW / 2));
+    const lensTop = Math.max(0, Math.min(rh - lensH, cy - lensH / 2));
+    const panelW = lensW * ZOOM;
+    const panelH = lensH * ZOOM;
+    // Prefer the right of the image; flip to the left if it would run off-screen,
+    // and keep the panel within the viewport vertically.
+    const gap = 16;
+    let panelLeft = er.right + gap;
+    if (panelLeft + panelW > window.innerWidth - 8) panelLeft = er.left - gap - panelW;
+    if (panelLeft < 8) panelLeft = 8;
+    let panelTop = rTop;
+    if (panelTop + panelH > window.innerHeight - 8) panelTop = window.innerHeight - 8 - panelH;
+    if (panelTop < 8) panelTop = 8;
+    setZoom({
+      lens: {
+        left: (rLeft - wr.left) + lensLeft,
+        top: (rTop - wr.top) + lensTop,
+        w: lensW,
+        h: lensH,
+      },
+      panel: {
+        left: panelLeft,
+        top: panelTop,
+        width: panelW,
+        height: panelH,
+        backgroundImage: `url(${src})`,
+        backgroundSize: `${rw * ZOOM}px ${rh * ZOOM}px`,
+        backgroundPosition: `${-lensLeft * ZOOM}px ${-lensTop * ZOOM}px`,
+      },
+    });
   };
 
   if (!imgs.length) return <ProductImage product={product} size="modal" />;
@@ -100,10 +143,10 @@ export function ProductGallery({ product }) {
   return (
     <div className="prod-gallery">
       <div
-        className={'prod-img-wrap is-photo prod-zoom' + (zoom ? ' is-zoomed' : '')}
+        ref={wrapRef}
+        className="prod-img-wrap is-photo prod-zoom"
         data-size="modal"
-        onMouseEnter={() => setZoom(true)}
-        onMouseLeave={() => setZoom(false)}
+        onMouseLeave={() => setZoom(null)}
         onMouseMove={onMove}
       >
         <img
@@ -111,9 +154,18 @@ export function ProductGallery({ product }) {
           src={src}
           alt={`${product.brand} ${product.model}`}
           className="prod-img-amazon"
-          style={{ transformOrigin: origin }}
         />
+        {zoom && (
+          <div
+            className="prod-zoom-lens"
+            style={{ left: zoom.lens.left, top: zoom.lens.top, width: zoom.lens.w, height: zoom.lens.h }}
+          />
+        )}
       </div>
+      {zoom && createPortal(
+        <div className="prod-zoom-panel" style={zoom.panel} />,
+        document.body,
+      )}
       {imgs.length > 1 && (
         <div className="prod-gallery-thumbs">
           {imgs.map((u, i) => (

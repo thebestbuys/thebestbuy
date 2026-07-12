@@ -2673,22 +2673,34 @@ button.chat-bubble.chat-editable {
 .prod-gallery .prod-img-wrap[data-size="modal"] {
   width: 100%;
 }
-/* Amazon-style hover magnifier on the main gallery photo. The frame clips the
-   scaled-up image; transform-origin (set inline from the cursor) makes it pan.
-   Only pointer devices get the zoom cursor + scale — touch has no hover. */
-.prod-gallery .prod-img-wrap.prod-zoom {
-  overflow: hidden;
-}
+/* Amazon-style hover zoom. Hovering the main photo draws a lens rectangle over
+   the hovered region; a magnifier panel (portaled to <body>, position:fixed via
+   inline styles) shows that region enlarged. Pointer devices only. */
+.prod-gallery .prod-img-wrap.prod-zoom { position: relative; }
 @media (hover: hover) and (pointer: fine) {
-  .prod-gallery .prod-img-wrap.prod-zoom { cursor: zoom-in; }
-  .prod-zoom .prod-img-amazon {
-    transition: transform 0.18s ease;
-    will-change: transform;
-  }
-  .prod-zoom.is-zoomed .prod-img-amazon {
-    transform: scale(2.4);
-    transition: transform 0.06s ease-out;
-  }
+  .prod-gallery .prod-img-wrap.prod-zoom { cursor: crosshair; }
+}
+.prod-zoom-lens {
+  position: absolute;
+  z-index: 5;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.prod-zoom-panel {
+  position: fixed;
+  z-index: 2000;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: #fff;
+  background-repeat: no-repeat;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+}
+:root[data-theme="dark"] .prod-zoom-panel {
+  background-color: #14110f;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
 .prod-gallery-thumbs {
   display: flex;
@@ -3894,7 +3906,8 @@ button.chat-bubble.chat-editable {
   height: 44px;
 }
 .modal-buy .owned-toggle,
-.modal-buy .btn-primary.big {
+.modal-buy .btn-primary.big,
+.modal-buy .btn-merchant.big {
   height: 44px;
   padding: 0 18px;
   font-size: 14px;
@@ -3914,7 +3927,8 @@ button.chat-bubble.chat-editable {
   .modal-buy {
     flex-wrap: wrap;
   }
-  .modal-buy .btn-primary.big {
+  .modal-buy .btn-primary.big,
+  .modal-buy .btn-merchant.big {
     flex: 1 1 100%;
     justify-content: center;
   }
