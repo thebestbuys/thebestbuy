@@ -136,6 +136,21 @@ async function catalog(operation, body) {
 
 // Map one Creators API item → the compact shape checkAmazon() already returns.
 // Defensive on every path: the exact offersV2 nesting is loosely documented.
+// Amazon's image CDN renders any size on demand via a filename token
+// (._SL1500_. = longest side 1500px). The API's "large" variant is often only
+// ~500px — too soft for the on-hover product zoom — so we rewrite the URL to
+// request a higher-resolution rendition from the *same* Amazon host. Defensive:
+// only touches recognised Amazon media URLs; anything else is returned as-is.
+const HI_RES_PX = 1500;
+function hiResImageUrl(url) {
+  if (!url || !/(?:media-amazon|images-amazon|ssl-images-amazon)\.com/i.test(url)) return url;
+  return url
+    // Drop any existing size/format tokens, e.g. "._SX466_SY466_SCLZZZ_."
+    .replace(/\._[A-Z0-9,_]+_\.(jpg|jpeg|png|gif)$/i, '.$1')
+    // Then inject our target longest-side size.
+    .replace(/\.(jpg|jpeg|png|gif)$/i, `._SL${HI_RES_PX}_.$1`);
+}
+
 function mapItem(item) {
   if (!item) return null;
   const asin = item.asin || item.ASIN || null;
@@ -144,7 +159,7 @@ function mapItem(item) {
   // Product gallery: the primary shot first, then any "variants" (alternate
   // angles / lifestyle images). The API only exposes a subset of the on-page
   // gallery (often 0–6), so this list can be just one long. Dedupe by URL.
-  const pickUrl = (img) => img?.large?.url || img?.medium?.url || img?.small?.url || null;
+  const pickUrl = (img) => hiResImageUrl(img?.large?.url || img?.medium?.url || img?.small?.url || null);
   const variants = Array.isArray(item.images?.variants) ? item.images.variants : [];
   const seen = new Set();
   const images = [];

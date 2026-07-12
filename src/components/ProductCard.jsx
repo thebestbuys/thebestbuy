@@ -87,7 +87,6 @@ export function ProductGallery({ product }) {
   useEffect(() => { setActive(0); setZoom(null); }, [product.id]);
 
   const ZOOM = 2.5;
-  const PANEL = 380;
 
   const onMove = (e) => {
     const img = imgRef.current, wrap = wrapRef.current;
@@ -103,21 +102,29 @@ export function ProductGallery({ product }) {
     const cx = e.clientX - rLeft;
     const cy = e.clientY - rTop;
     if (cx < 0 || cy < 0 || cx > rw || cy > rh) { setZoom(null); return; }
-    const lensW = Math.min(rw, PANEL / ZOOM);
-    const lensH = Math.min(rh, PANEL / ZOOM);
-    const lensLeft = Math.max(0, Math.min(rw - lensW, cx - lensW / 2));
-    const lensTop = Math.max(0, Math.min(rh - lensH, cy - lensH / 2));
-    const panelW = lensW * ZOOM;
-    const panelH = lensH * ZOOM;
-    // Prefer the right of the image; flip to the left if it would run off-screen,
-    // and keep the panel within the viewport vertically.
-    const gap = 16;
-    let panelLeft = er.right + gap;
-    if (panelLeft + panelW > window.innerWidth - 8) panelLeft = er.left - gap - panelW;
-    if (panelLeft < 8) panelLeft = 8;
-    let panelTop = rTop;
-    if (panelTop + panelH > window.innerHeight - 8) panelTop = window.innerHeight - 8 - panelH;
-    if (panelTop < 8) panelTop = 8;
+    // The magnifier panel overlays the detail column (.pi-head) exactly — same
+    // position + size — so the zoom lands in a predictable spot and the lens is
+    // a large rectangle matching that column's shape. Fallback to a fixed
+    // rectangle beside the image in layouts without a .pi-head.
+    const head = wrap.closest('.pi-top')?.querySelector('.pi-head');
+    let panelLeft, panelTop, panelW, panelH;
+    if (head) {
+      const hr = head.getBoundingClientRect();
+      panelLeft = hr.left; panelTop = hr.top; panelW = hr.width; panelH = hr.height;
+    } else {
+      panelW = 560; panelH = 400;
+      panelLeft = er.right + 16;
+      if (panelLeft + panelW > window.innerWidth - 8) panelLeft = er.left - 16 - panelW;
+      if (panelLeft < 8) panelLeft = 8;
+      panelTop = rTop;
+      if (panelTop + panelH > window.innerHeight - 8) panelTop = window.innerHeight - 8 - panelH;
+      if (panelTop < 8) panelTop = 8;
+    }
+    // Lens = panel shrunk by the zoom factor (same aspect → uniform magnification).
+    const lensW = panelW / ZOOM;
+    const lensH = panelH / ZOOM;
+    const lensLeft = Math.max(0, Math.min(Math.max(0, rw - lensW), cx - lensW / 2));
+    const lensTop = Math.max(0, Math.min(Math.max(0, rh - lensH), cy - lensH / 2));
     setZoom({
       lens: {
         left: (rLeft - wr.left) + lensLeft,
