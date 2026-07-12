@@ -12,6 +12,26 @@
 
 const AWIN_PUBLISHER_ID = process.env.AWIN_PUBLISHER_ID || '1634669';
 const AWIN_RAKUTEN_MID  = process.env.AWIN_RAKUTEN_MID  || '55615';
+// Enhanced-feed download coordinates (Google format, JSONL). Env-overridable.
+const AWIN_VERTICAL = process.env.AWIN_VERTICAL || 'retail';
+const AWIN_LOCALE   = process.env.AWIN_LOCALE   || 'fr_FR';
+
+export function awinFeedConfig() {
+  return {
+    publisherId: AWIN_PUBLISHER_ID,
+    rakutenMid: AWIN_RAKUTEN_MID,
+    vertical: AWIN_VERTICAL,
+    locale: AWIN_LOCALE,
+    hasToken: Boolean(process.env.AWIN_API_TOKEN),
+  };
+}
+
+// Enhanced-feed (Google format, JSONL) download URL for a given advertiser MID.
+//   GET https://api.awin.com/publishers/{PUBID}/awinfeeds/download/{MID}-{VERTICAL}-{LOCALE}
+// Authenticated with a Bearer AWIN_API_TOKEN. Returns the full product catalogue.
+export function awinFeedUrl(mid = AWIN_RAKUTEN_MID) {
+  return `https://api.awin.com/publishers/${AWIN_PUBLISHER_ID}/awinfeeds/download/${mid}-${AWIN_VERTICAL}-${AWIN_LOCALE}`;
+}
 
 // Wrap a destination URL in an Awin tracked ("cread") link so the click is
 // attributed to us and earns commission.
