@@ -102,8 +102,6 @@ export function ProductGallery({ product }) {
   // Reset when switching products (the detail modal reuses this component).
   useEffect(() => { setActive(0); setZoom(null); }, [product.id]);
 
-  const ZOOM = 1.25;
-
   const onMove = (e) => {
     const img = imgRef.current, wrap = wrapRef.current;
     if (!img || !wrap || !img.naturalWidth) return;
@@ -136,11 +134,20 @@ export function ProductGallery({ product }) {
       if (panelTop + panelH > window.innerHeight - 8) panelTop = window.innerHeight - 8 - panelH;
       if (panelTop < 8) panelTop = 8;
     }
-    // Lens = panel shrunk by the zoom factor (same aspect → uniform magnification).
-    const lensW = panelW / ZOOM;
-    const lensH = panelH / ZOOM;
-    const lensLeft = Math.max(0, Math.min(Math.max(0, rw - lensW), cx - lensW / 2));
-    const lensTop = Math.max(0, Math.min(Math.max(0, rh - lensH), cy - lensH / 2));
+    // The lens is the largest rectangle matching the panel's aspect ratio that
+    // fits inside the rendered image (× COVER<1 so it can still pan). The
+    // magnification is then derived (M = panelW / lensW). With the panel as big
+    // as .pi-head this lands around ~1.6–2× — the gentlest zoom this layout
+    // allows while keeping the lens inside the photo; a smaller factor would make
+    // the lens bigger than the image → overflow + no panning (the bug we hit).
+    const COVER = 0.85;
+    const aspect = panelW / panelH;
+    let lensW = rw * COVER;
+    let lensH = lensW / aspect;
+    if (lensH > rh * COVER) { lensH = rh * COVER; lensW = lensH * aspect; }
+    const M = panelW / lensW;
+    const lensLeft = Math.max(0, Math.min(rw - lensW, cx - lensW / 2));
+    const lensTop = Math.max(0, Math.min(rh - lensH, cy - lensH / 2));
     setZoom({
       lens: {
         left: (rLeft - wr.left) + lensLeft,
@@ -154,8 +161,8 @@ export function ProductGallery({ product }) {
         width: panelW,
         height: panelH,
         backgroundImage: `url(${src})`,
-        backgroundSize: `${rw * ZOOM}px ${rh * ZOOM}px`,
-        backgroundPosition: `${-lensLeft * ZOOM}px ${-lensTop * ZOOM}px`,
+        backgroundSize: `${rw * M}px ${rh * M}px`,
+        backgroundPosition: `${-lensLeft * M}px ${-lensTop * M}px`,
       },
     });
   };
