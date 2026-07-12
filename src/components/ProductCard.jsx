@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../lib/i18n.jsx';
 import FavoriteButton from './FavoriteButton.jsx';
 
@@ -74,16 +74,45 @@ export function ProductGallery({ product }) {
           : (product.image_url ? [product.image_url] : []))
       : [];
   const [active, setActive] = useState(0);
+  // Amazon-style hover magnifier: on pointer devices, hovering the main photo
+  // scales it up and pans with the cursor (transform-origin follows the pointer,
+  // computed from the image's own rect so the zoom tracks accurately). The frame
+  // clips the overflow (.prod-zoom { overflow:hidden } in styles.css).
+  const [zoom, setZoom] = useState(false);
+  const [origin, setOrigin] = useState('50% 50%');
+  const imgRef = useRef(null);
   // Reset when switching products (the detail modal reuses this component).
-  useEffect(() => { setActive(0); }, [product.id]);
+  useEffect(() => { setActive(0); setZoom(false); }, [product.id]);
+
+  const onMove = (e) => {
+    const el = imgRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const clamp = (v) => Math.max(0, Math.min(100, v));
+    const x = clamp(((e.clientX - r.left) / r.width) * 100);
+    const y = clamp(((e.clientY - r.top) / r.height) * 100);
+    setOrigin(`${x}% ${y}%`);
+  };
 
   if (!imgs.length) return <ProductImage product={product} size="modal" />;
   const src = imgs[Math.min(active, imgs.length - 1)];
 
   return (
     <div className="prod-gallery">
-      <div className="prod-img-wrap is-photo" data-size="modal">
-        <img src={src} alt={`${product.brand} ${product.model}`} className="prod-img-amazon" />
+      <div
+        className={'prod-img-wrap is-photo prod-zoom' + (zoom ? ' is-zoomed' : '')}
+        data-size="modal"
+        onMouseEnter={() => setZoom(true)}
+        onMouseLeave={() => setZoom(false)}
+        onMouseMove={onMove}
+      >
+        <img
+          ref={imgRef}
+          src={src}
+          alt={`${product.brand} ${product.model}`}
+          className="prod-img-amazon"
+          style={{ transformOrigin: origin }}
+        />
       </div>
       {imgs.length > 1 && (
         <div className="prod-gallery-thumbs">
